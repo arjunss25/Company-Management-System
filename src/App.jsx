@@ -1,8 +1,15 @@
 import React from 'react'
+import LoginPage from './Pages/Auth/LoginPage'
+import SuperAdminDashboard from './Pages/SuperAdmin/SuperAdminDashboard'
+
+
 
 const App = () => {
   return (
-    <div>App</div>
+    <div>
+      {/* <LoginPage/> */}
+      <SuperAdminDashboard/>
+    </div>
   )
 }
 
