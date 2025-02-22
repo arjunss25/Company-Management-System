@@ -15,11 +15,10 @@ const SuperAdminDashboard = () => {
     }, []);
   
     return (
-      <div className="flex h-screen">
-        <SuperAdminSidebar/>
+      <div className="flex">
   
         {/* Main Content */}
-        <div className="flex-1 p-10 h-screen overflow-y-auto">
+        <div className="flex-1 px-5">
           {/* Header */}
           <div className="flex flex-col lg:flex-row justify-between items-start gap-6 lg:gap-0 lg:items-center mb-12">
             <div className="flex flex-col space-y-2">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-// import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
   AiOutlineDashboard,
   AiOutlineMenu,
@@ -8,11 +8,11 @@ import {
 import { FaBuilding, FaUsers } from 'react-icons/fa';
 
 const SuperAdminSidebar = () => {
-//   const location = useLocation();
+  const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
   const isActive = (path) => {
-    if (path === '/company-management') {
+    if (path === '/superadmin/company-management') {
       // Consider both company management and viewstaff routes as part of company management
       return (
         location.pathname === path || location.pathname.startsWith('/viewstaff')
@@ -20,6 +20,29 @@ const SuperAdminSidebar = () => {
     }
     return location.pathname === path;
   };
+
+  const menuItems = [
+    {
+      path: '/superadmin/dashboard',
+      name: 'Dashboard',
+      icon: <AiOutlineDashboard size={22} />,
+    },
+    {
+      path: '/superadmin/company-management',
+      name: 'Company Management',
+      icon: <FaBuilding size={22} />,
+    },
+    {
+      path: '/superadmin/user-management',
+      name: 'User Management',
+      icon: <FaUsers size={22} />,
+    },
+    {
+      path: '/logout',
+      name: 'Logout',
+      icon: <AiOutlineLogout size={22} />,
+    },
+  ];
 
   return (
     <>
@@ -33,7 +56,7 @@ const SuperAdminSidebar = () => {
       <div
         className={`
         fixed lg:static
-        w-full lg:w-[300px] h-screen 
+        w-full lg:w-[280px] h-screen 
         bg-black text-white
         transition-all duration-300 ease-in-out
         lg:translate-x-0
@@ -52,37 +75,20 @@ const SuperAdminSidebar = () => {
 
         <nav className="mt-6">
           <ul className="space-y-2">
-            {[
-              {
-                path: '/dashboard',
-                icon: <AiOutlineDashboard size={22} />,
-                label: 'Dashboard',
-              },
-              {
-                path: '/company-management',
-                icon: <FaBuilding size={22} />,
-                label: 'Company Management',
-              },
-              {
-                path: '/user-management',
-                icon: <FaUsers size={22} />,
-                label: 'User Management',
-              },
-              {
-                path: '/logout',
-                icon: <AiOutlineLogout size={22} />,
-                label: 'Logout',
-              },
-            ].map((item) => (
+            {menuItems.map((item) => (
               <li key={item.path}>
-                <a
+                <Link
                   to={item.path}
                   className={`flex items-center gap-4 px-6 py-3 hover:bg-gray-800 text-[#8E8E8E] rounded-[2px] transition-colors
-                    ${location.pathname === item.path ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black' : ''}`}
+                    ${
+                      location.pathname === item.path
+                        ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black'
+                        : ''
+                    }`}
                 >
                   <span>{item.icon}</span>
-                  <span>{item.label}</span>
-                </a>
+                  <span>{item.name}</span>
+                </Link>
               </li>
             ))}
           </ul>

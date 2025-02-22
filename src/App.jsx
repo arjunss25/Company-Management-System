@@ -1,16 +1,16 @@
-import React from 'react'
-import LoginPage from './Pages/Auth/LoginPage'
-import SuperAdminDashboard from './Pages/SuperAdmin/SuperAdminDashboard'
-
+import React from 'react';
+import { BrowserRouter as Router } from 'react-router-dom';
+import AppRoutes from './Routes/Routes';
 
 
 const App = () => {
   return (
-    <div>
-      {/* <LoginPage/> */}
-      <SuperAdminDashboard/>
-    </div>
-  )
-}
+   
+      <Router>
+        <AppRoutes />
+      </Router>
 
-export default App
+  );
+};
+
+export default App;
