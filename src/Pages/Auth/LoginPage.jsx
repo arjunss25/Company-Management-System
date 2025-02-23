@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useAuth from '../../Hooks/useAuth.jsx';
+import useAuth from '../../Hooks/useAuth';
 import axiosInstance from '../../Config/axiosInstance';
 import TokenService from '../../Config/tokenService';
 
@@ -22,48 +22,33 @@ const LoginPage = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Login attempt with:', {
-      email: formData.email,
-      hasPassword: !!formData.password
-    });
+    
+    TokenService.clearTokens();
 
     try {
-      console.log('Making login request');
       const response = await axiosInstance.post('/user-login/', {
         email: formData.email,
         password: formData.password,
       });
 
-      console.log('Full API Response:', {
-        status: response.status,
-        data: response.data
-      });
-
-      // Check if we have the required data
       if (!response.data?.data?.access_token) {
         throw new Error('No access token received from server');
       }
 
       const userData = response.data.data;
 
-      // Store tokens using the correct response structure
-      TokenService.setToken(userData.access_token);
-      TokenService.setRefreshToken(userData.refresh_token);
-      TokenService.setUserRole(userData.role);
-      TokenService.setUserId(userData.id);
-      TokenService.setCompanyId(userData.company_id);
-
-      console.log('Tokens stored, checking localStorage:', {
-        hasAccessToken: !!TokenService.getToken(),
-        hasRefreshToken: !!TokenService.getRefreshToken(),
-        userRole: TokenService.getUserRole(),
-        userId: TokenService.getUserId(),
-        companyId: TokenService.getCompanyId()
-      });
+      // Use the login function from useAuth hook
+      login(
+        userData.access_token,
+        userData.refresh_token,
+        userData.role,
+        userData.id,
+        userData.company_id
+      );
 
       // Redirect based on role
-      const userRole = TokenService.getUserRole();
-      if (userRole?.toLowerCase() === 'superadmin') {
+      const userRole = userData.role?.toLowerCase();
+      if (userRole === 'superadmin') {
         navigate('/superadmin/dashboard');
       } else {
         navigate('/dashboard');
@@ -74,7 +59,6 @@ const LoginPage = () => {
         response: error.response?.data,
         status: error.response?.status
       });
-      // Add user feedback for error
     }
   };
 

@@ -6,23 +6,23 @@ import CompanyListTable from './CompanyListTable';
 const AccordionSection = ({ title, icon: Icon, isExpanded, onToggle, children, accentColor }) => (
   <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300">
     <button
-      className={`w-full px-6 py-4 text-left font-medium flex justify-between items-center ${
+      className={`w-full px-4 sm:px-6 py-3 sm:py-4 text-left font-medium flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0 ${
         isExpanded ? 'bg-gradient-to-r from-gray-50 to-white rounded-t-xl' : 'rounded-xl'
       }`}
       onClick={onToggle}
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-3 sm:gap-4">
         <div className={`p-2 rounded-lg ${accentColor}`}>
           <Icon className="text-white" size={20} />
         </div>
-        <span className="text-gray-700 text-lg font-semibold">{title}</span>
+        <span className="text-base sm:text-lg font-semibold text-gray-700">{title}</span>
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto gap-2 sm:gap-3">
         {title === 'Company List' && (
-          <div className="flex items-center gap-2 mr-4">
-            <span className="text-sm text-gray-500">12 Companies</span>
-            <div className="h-4 w-[1px] bg-gray-300"></div>
-            <span className="text-sm text-gray-500">Last updated: Today</span>
+          <div className="flex items-center gap-2 text-xs sm:text-sm">
+            <span className="text-gray-500">12 Companies</span>
+            <div className="h-4 w-[1px] bg-gray-300 hidden sm:block"></div>
+            <span className="text-gray-500 hidden sm:block">Last updated: Today</span>
           </div>
         )}
         <ChevronDown
@@ -38,7 +38,7 @@ const AccordionSection = ({ title, icon: Icon, isExpanded, onToggle, children, a
         isExpanded ? 'max-h-[2000px] opacity-100' : 'max-h-0 opacity-0'
       } overflow-hidden`}
     >
-      <div className="p-6 border-t">{children}</div>
+      <div className="p-4 sm:p-6 border-t">{children}</div>
     </div>
   </div>
 );
@@ -52,13 +52,13 @@ const CompanyManagement = () => {
   };
 
   return (
-    <div className="w-full flex">
-      <div className="main-content w-full  h-full p-6">
+    <div className="w-full ">
+      <div className="main-content w-full  p-4 sm:p-6">
         <div className="max-w-4xl mx-auto">
           {/* Header Section */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
-              <h1 className="text-2xl font-bold text-gray-800">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-4 sm:mb-6">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-800 mb-4 sm:mb-0">
                 Company Management
                 <div className="h-1 w-12 bg-blue-500 rounded-full mt-2"></div>
               </h1>
@@ -66,7 +66,7 @@ const CompanyManagement = () => {
             
             {/* Search and Filter Bar */}
             {expandedSection === 'list' && (
-              <div className="flex gap-4 mb-6">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
                 <div className="flex-1 relative">
                   <input
                     type="text"
@@ -77,7 +77,7 @@ const CompanyManagement = () => {
                   />
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
                 </div>
-                <button className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-300">
+                <button className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-300">
                   <Filter size={18} className="text-gray-500" />
                   <span>Filters</span>
                 </button>
@@ -86,7 +86,7 @@ const CompanyManagement = () => {
           </div>
 
           {/* Accordion Sections */}
-          <div className="space-y-6">
+          <div className="space-y-4 sm:space-y-6">
             <AccordionSection
               title="Register Company"
               icon={Building}

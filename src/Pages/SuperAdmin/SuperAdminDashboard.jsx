@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 
-
-
 import CompanyCards from '../../Components/SuperadminComponents/CompanyCards';
 import SuperAdminSidebar from '../../Components/SuperadminSidebar';
 
@@ -15,14 +13,15 @@ const SuperAdminDashboard = () => {
     }, []);
   
     return (
-      <div className="flex">
-  
+      <div className="flex flex-col lg:flex-row min-h-screen">
+      
+        
         {/* Main Content */}
-        <div className="flex-1 px-5">
+        <div className="flex-1 px-4 lg:px-8 py-6 lg:py-8 mt-16 lg:mt-0">
           {/* Header */}
-          <div className="flex flex-col lg:flex-row justify-between items-start gap-6 lg:gap-0 lg:items-center mb-12">
-            <div className="flex flex-col space-y-2">
-              <h1 className="text-[2rem] text-gray-800 font-bold tracking-tight ">
+          <div className="flex flex-col lg:flex-row justify-between items-start gap-4 lg:gap-0 lg:items-center mb-8 lg:mb-12">
+            <div className="flex flex-col space-y-2 w-full lg:w-auto">
+              <h1 className="text-2xl lg:text-[2rem] text-gray-800 font-bold tracking-tight">
                 Companies
               </h1>
             </div>
@@ -34,13 +33,13 @@ const SuperAdminDashboard = () => {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Search companies..."
-                className="w-full lg:w-[400px] px-6 py-4 rounded-full border-none
+                className="w-full lg:w-[400px] px-4 lg:px-6 py-3 lg:py-4 rounded-full border-none
                          bg-white/70 backdrop-blur-sm shadow-lg
                          focus:outline-none focus:ring-2 focus:ring-blue-500/50
                          text-gray-700 placeholder-gray-400 transition-all duration-300"
               />
               <svg
-                className="absolute right-5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
+                className="absolute right-4 lg:right-5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="none"

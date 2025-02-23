@@ -13,6 +13,11 @@ const axiosInstance = axios.create({
 // Request interceptor for adding auth token
 axiosInstance.interceptors.request.use(
   (config) => {
+    // Don't add token for login endpoint
+    if (config.url === '/user-login/') {
+      return config;
+    }
+
     const token = TokenService.getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

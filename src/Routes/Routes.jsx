@@ -15,7 +15,7 @@ const AppRoutes = () => {
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
       {/* Protected Superadmin Routes */}
-      <Route element={<ProtectedRoute allowedRoles={['superadmin']} />}>
+      <Route element={<ProtectedRoute allowedRoles={['superadmin', 'SuperAdmin']} />}>
         <Route path="/superadmin" element={<SuperadminLayout />}>
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<SuperAdminDashboard />} />

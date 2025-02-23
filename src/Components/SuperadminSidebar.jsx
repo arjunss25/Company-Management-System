@@ -55,18 +55,18 @@ const SuperAdminSidebar = () => {
 
       <div
         className={`
-        fixed lg:static
-        w-full lg:w-[280px] h-screen 
-        bg-black text-white
-        transition-all duration-300 ease-in-out
-        lg:translate-x-0
-        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-        z-10
-      `}
+          fixed lg:static
+          w-64 lg:w-[280px] h-screen 
+          bg-black text-white
+          transition-all duration-300 ease-in-out
+          lg:translate-x-0
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          z-10
+        `}
       >
         <div className="flex flex-col items-center p-6 border-b border-gray-700">
           <img
-            src="/super_admin_avatar.png"
+            src="/profile_pic2.png"
             alt="Super Admin Avatar"
             className="h-16 w-16 rounded-full mb-2"
           />
@@ -81,10 +81,11 @@ const SuperAdminSidebar = () => {
                   to={item.path}
                   className={`flex items-center gap-4 px-6 py-3 hover:bg-gray-800 text-[#8E8E8E] rounded-[2px] transition-colors
                     ${
-                      location.pathname === item.path
+                      isActive(item.path)
                         ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black'
                         : ''
                     }`}
+                  onClick={() => setIsOpen(false)}
                 >
                   <span>{item.icon}</span>
                   <span>{item.name}</span>

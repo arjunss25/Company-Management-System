@@ -11,7 +11,7 @@ const TokenService = {
     const token = localStorage.getItem(TOKEN_KEY);
     console.log('Getting token from localStorage:', {
       exists: !!token,
-      token: token?.substring(0, 20) + '...' // Only log first 20 chars for security
+      token: token?.substring(0, 20) + '...' 
     });
     return token;
   },

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IoMdClose } from 'react-icons/io';
-// import "./EditCompanyModal.css"
+
 
 const EditCompanyModal = ({ company, isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState(company ? { ...company } : {});
@@ -32,7 +32,7 @@ const EditCompanyModal = ({ company, isOpen, onClose, onSave }) => {
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-      <div className="bg-white p-6 rounded-lg shadow-lg w-[60%] h-[70vh] overflow-y-scroll relative hide-scrollbar">
+      <div className="bg-red-500  p-6 rounded-lg shadow-lg w-[60%] h-[70vh] overflow-y-scroll relative hide-scrollbar">
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-gray-600 hover:text-gray-800"
