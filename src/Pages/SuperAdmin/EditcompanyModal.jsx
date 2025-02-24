@@ -43,7 +43,6 @@ const EditCompanyModal = ({ company, isOpen, onClose, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    // Send only the fields that are in your successful Postman request
     const payload = {
       company_name: formData.company_name,
       address: formData.address,

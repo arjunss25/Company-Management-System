@@ -52,13 +52,10 @@ const CompanyListTable = () => {
         address: updatedData.address,
         description: updatedData.description,
         phone: updatedData.phone,
-        abbrevation: updatedData.abbrevation,
+        abbrevation: updatedData.abbrevation
       };
 
-      const response = await SuperadminApi.updateCompany(
-        selectedCompany.id,
-        payload
-      );
+      const response = await SuperadminApi.updateCompany(selectedCompany.id, payload);
 
       if (response.status === 'Success') {
         setSuccessMessage('Company updated successfully!');
