@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import EditCompanyModal from './EditCompanyModal';
+import EditCompanyModal from './EditcompanyModal';
 import { SuperadminApi } from '../../Services/SuperadminApi';
 import Spinner from '../../Components/Common/Spinner';
 import Modal, { ErrorModal, SuccessModal } from '../../Components/Common/Modal';
@@ -46,27 +46,14 @@ const CompanyListTable = () => {
 
   const handleEdit = async (updatedData) => {
     try {
-      let payload;
-
-      // If there's a logo_image, use FormData
-      if (updatedData.logo_image) {
-        payload = new FormData();
-        Object.keys(updatedData).forEach((key) => {
-          if (updatedData[key] !== null) {
-            payload.append(key, updatedData[key]);
-          }
-        });
-      } else {
-        payload = {
-          "company_name": updatedData.company_name,
-          "address": updatedData.address,
-          "description": updatedData.description,
-          "phone": updatedData.phone,
-          "abbrevation": updatedData.abbrevation,
-         " registration_date": updatedData.registration_date,
-          "license_number": updatedData.license_number,
-        };
-      }
+      // Send only the required fields in the correct format
+      const payload = {
+        company_name: updatedData.company_name,
+        address: updatedData.address,
+        description: updatedData.description,
+        phone: updatedData.phone,
+        abbrevation: updatedData.abbrevation,
+      };
 
       const response = await SuperadminApi.updateCompany(
         selectedCompany.id,

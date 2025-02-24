@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { IoMdClose } from 'react-icons/io';
 
-
 const EditCompanyModal = ({ company, isOpen, onClose, onSave }) => {
   const [formData, setFormData] = useState({
     company_name: '',
@@ -13,6 +12,7 @@ const EditCompanyModal = ({ company, isOpen, onClose, onSave }) => {
     license_number: '',
     logo_image: null
   });
+  const [imagePreview, setImagePreview] = useState(null);
 
   useEffect(() => {
     if (company) {
@@ -24,15 +24,18 @@ const EditCompanyModal = ({ company, isOpen, onClose, onSave }) => {
         abbrevation: company.abbrevation || '',
         registration_date: company.registration_date || '',
         license_number: company.license_number || '',
-        logo_image: null // Will be set only when user selects a new file
+        logo_image: null
       });
+      setImagePreview(company.logo_image ? `http://82.29.160.146${company.logo_image}` : null);
     }
   }, [company]);
 
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     if (name === 'logo_image') {
-      setFormData(prev => ({ ...prev, logo_image: files[0] }));
+      const file = files[0];
+      setFormData(prev => ({ ...prev, logo_image: file }));
+      setImagePreview(file ? URL.createObjectURL(file) : null);
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
@@ -40,7 +43,15 @@ const EditCompanyModal = ({ company, isOpen, onClose, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(formData);
+    // Send only the fields that are in your successful Postman request
+    const payload = {
+      company_name: formData.company_name,
+      address: formData.address,
+      description: formData.description,
+      phone: formData.phone,
+      abbrevation: formData.abbrevation
+    };
+    onSave(payload);
   };
 
   if (!isOpen || !company) return null;
@@ -104,32 +115,58 @@ const EditCompanyModal = ({ company, isOpen, onClose, onSave }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Logo</label>
-            <div className="flex items-center justify-center w-full">
-              <label className="w-full flex flex-col items-center px-4 py-6 bg-white rounded-lg border border-gray-300 border-dashed cursor-pointer hover:bg-gray-50 transition-colors">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                <span className="mt-2 text-sm text-gray-500">Click to upload logo</span>
-                <input
-                  type="file"
-                  name="logo_image"
-                  onChange={handleChange}
-                  className="hidden"
-                />
-              </label>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Date of Registration</label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Phone</label>
             <input
-              type="date"
-              name="registration_date"
-              value={formData.registration_date}
+              type="text"
+              name="phone"
+              value={formData.phone}
               onChange={handleChange}
               className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Abbreviation</label>
+            <input
+              type="text"
+              name="abbrevation"
+              value={formData.abbrevation}
+              onChange={handleChange}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Logo</label>
+            <div className="flex items-center space-x-4">
+              {imagePreview && (
+                <div className="w-20 h-20 rounded-lg overflow-hidden">
+                  <img
+                    src={imagePreview}
+                    alt="Company logo preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      e.target.src = '/default-logo.png';
+                    }}
+                  />
+                </div>
+              )}
+              <div className="flex-1">
+                <label className="w-full flex flex-col items-center px-4 py-6 bg-white rounded-lg border border-gray-300 border-dashed cursor-pointer hover:bg-gray-50 transition-colors">
+                  <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  <span className="mt-2 text-sm text-gray-500">Click to upload new logo</span>
+                  <input
+                    type="file"
+                    name="logo_image"
+                    onChange={handleChange}
+                    className="hidden"
+                    accept="image/*"
+                  />
+                </label>
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end pt-6">

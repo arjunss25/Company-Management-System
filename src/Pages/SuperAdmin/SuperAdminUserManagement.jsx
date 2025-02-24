@@ -8,7 +8,7 @@ import {
   IoImageOutline,
 } from 'react-icons/io5';
 // import CompanyList from './CompanyList';
-import EditCompanyModal from './EditCompanyModal';
+
 import StaffList from './StaffList';
 import EditStaffModal from './EditStaffModal';
 import SuperAdminSidebar from '../Sidebar/SuperAdminSidebar';
