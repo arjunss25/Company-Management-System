@@ -64,7 +64,23 @@ const LoginPage = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-full max-w-sm">
+      
+
+
+
+      
+      <div className="main-card w-[80vw] h-[70vh] flex">
+
+      {/* img-sec */}
+      <div className="image-section w-[48vw] bg-blue-500 h-full">
+
+      </div>
+
+
+
+
+      {/* form-sec */}
+      <div className="bg-white p-8 rounded-lg shadow-lg w-[32vw] ">
         <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -124,6 +140,7 @@ const LoginPage = () => {
             </button>
           </div>
         </form>
+      </div>
       </div>
     </div>
   );

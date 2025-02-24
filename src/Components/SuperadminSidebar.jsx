@@ -56,7 +56,7 @@ const SuperAdminSidebar = () => {
       <div
         className={`
           fixed lg:static
-          w-64 lg:w-[280px] h-screen 
+          w-64 lg:w-[300px] h-screen 
           bg-black text-white
           transition-all duration-300 ease-in-out
           lg:translate-x-0

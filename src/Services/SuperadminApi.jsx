@@ -29,7 +29,15 @@ export const SuperadminApi = {
 
   updateCompany: async (id, data) => {
     try {
-      const response = await axiosInstance.patch(`/edit-delete-company/${id}/`, data);
+      const headers = data instanceof FormData 
+        ? { 'Content-Type': 'multipart/form-data' }
+        : { 'Content-Type': 'application/json' };
+      
+      const response = await axiosInstance.patch(
+        `/edit-delete-company/${id}/`,
+        data,
+        { headers }
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -38,7 +46,9 @@ export const SuperadminApi = {
 
   deleteCompany: async (id) => {
     try {
-      const response = await axiosInstance.delete(`/edit-delete-company/${id}/`);
+      const response = await axiosInstance.delete(
+        `/edit-delete-company/${id}/`
+      );
       return response.data;
     } catch (error) {
       throw error;
