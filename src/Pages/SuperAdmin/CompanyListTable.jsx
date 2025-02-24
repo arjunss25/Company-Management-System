@@ -1,71 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import EditCompanyModal from './EditcompanyModal';
-import { SuperadminApi } from '../../Services/SuperadminApi';
 import Spinner from '../../Components/Common/Spinner';
 import Modal, { ErrorModal, SuccessModal } from '../../Components/Common/Modal';
-import CompanyEditModal from '../../Components/SuperadminComponents/CompanyEditModal';
+import {
+  fetchCompanies,
+  updateCompany,
+  deleteCompany,
+  setSelectedCompany,
+} from '../../Redux/SuperAdminSlice/companiesSlice';
 
 const CompanyListTable = () => {
-  const [companies, setCompanies] = useState([]);
-  const [selectedCompany, setSelectedCompany] = useState(null);
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
+  // Move all useSelector hooks to the top level
+  const {
+    items: companies,
+    status,
+    error,
+  } = useSelector((state) => state.companies);
+  const selectedCompany = useSelector(
+    (state) => state.companies.selectedCompany
+  );
+
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [companyToDelete, setCompanyToDelete] = useState(null);
   const [successMessage, setSuccessMessage] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const navigate = useNavigate();
 
   useEffect(() => {
-    fetchCompanies();
-  }, []);
-
-  const fetchCompanies = async () => {
-    try {
-      setLoading(true);
-      const response = await SuperadminApi.getCompanyList();
-
-      // Check if the response is successful and contains data
-      if (response.status === 'Success' && response.data) {
-        setCompanies(response.data);
-      } else {
-        throw new Error(response.message || 'Failed to fetch companies');
-      }
-    } catch (error) {
-      console.error('Failed to fetch companies:', error);
-      setError(
-        error.message || 'Failed to load companies. Please try again later.'
-      );
-    } finally {
-      setLoading(false);
+    if (status === 'idle') {
+      dispatch(fetchCompanies());
     }
-  };
+  }, [status, dispatch]);
 
   const handleEdit = async (updatedData) => {
     try {
-      // Send only the required fields in the correct format
-      const payload = {
-        company_name: updatedData.company_name,
-        address: updatedData.address,
-        description: updatedData.description,
-        phone: updatedData.phone,
-        abbrevation: updatedData.abbrevation
-      };
+      const resultAction = await dispatch(
+        updateCompany({ id: selectedCompany.id, data: updatedData })
+      );
 
-      const response = await SuperadminApi.updateCompany(selectedCompany.id, payload);
-
-      if (response.status === 'Success') {
+      if (updateCompany.fulfilled.match(resultAction)) {
         setSuccessMessage('Company updated successfully!');
         setShowSuccessModal(true);
-        fetchCompanies(); // Refresh the list
         setIsModalOpen(false);
+        dispatch(fetchCompanies()); // Refresh the list
       }
     } catch (error) {
       console.error('Update error:', error);
-      setError(error.response?.data?.message || 'Failed to update company');
     }
   };
 
@@ -79,18 +65,20 @@ const CompanyListTable = () => {
     if (!companyToDelete) return;
 
     try {
-      const response = await SuperadminApi.deleteCompany(companyToDelete.id);
-      if (response.status === 'Success') {
+      const resultAction = await dispatch(deleteCompany(companyToDelete.id));
+      if (deleteCompany.fulfilled.match(resultAction)) {
         setSuccessMessage('Company deleted successfully!');
         setShowSuccessModal(true);
-        fetchCompanies(); // Refresh the list
       }
-    } catch (error) {
-      setError(error.response?.data?.message || 'Failed to delete company');
     } finally {
       setIsDeleteModalOpen(false);
       setCompanyToDelete(null);
     }
+  };
+
+  const handleEditClick = (company) => {
+    dispatch(setSelectedCompany(company));
+    setIsModalOpen(true);
   };
 
   const handleViewStaff = (id) => {
@@ -98,19 +86,10 @@ const CompanyListTable = () => {
   };
 
   const handleSave = (updatedCompany) => {
-    setCompanies((prev) =>
-      prev.map((company) =>
-        company.id === updatedCompany.id ? updatedCompany : company
-      )
-    );
+    dispatch(setSelectedCompany(updatedCompany));
   };
 
-  const handleEditClick = (company) => {
-    setSelectedCompany(company);
-    setIsModalOpen(true);
-  };
-
-  if (loading) {
+  if (status === 'loading') {
     return (
       <div className="flex justify-center items-center h-64">
         <Spinner size="lg" />
@@ -321,7 +300,7 @@ const CompanyListTable = () => {
 
         <ErrorModal
           isOpen={!!error}
-          onClose={() => setError(null)}
+          onClose={() => dispatch(fetchCompanies())}
           message={error}
         />
       </div>

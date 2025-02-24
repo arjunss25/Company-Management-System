@@ -1,160 +1,235 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { SuperadminApi } from '../../Services/SuperadminApi';
+import { IoPersonCircleOutline } from 'react-icons/io5';
+import { AiFillEdit } from 'react-icons/ai';
+import { MdDelete } from 'react-icons/md';
+import ConfirmationModal from '../Common/ConfirmationModal';
+import EditStaffModal from './EditStaffModal';
 
-import { motion } from 'framer-motion';
- 
+const StaffList = () => {
+  const [staffList, setStaffList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState(null);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedStaff, setSelectedStaff] = useState(null);
 
-const StaffList = ({ onEditClick, onDelete }) => {
-  const staffList = [
-    {
-      id: 1,
-      staffName: 'AA New company',
-      role: 'Admin',
-      dateOfRegistration: '02-11-2024',
-    },
-    {
-      id: 2,
-      staffName: 'Aaa new staff',
-      role: 'Staff',
-      dateOfRegistration: '05-11-2024',
-    },
-    {
-      id: 3,
-      staffName: 'AAA new staff',
-      role: 'Staff',
-      dateOfRegistration: '05-11-2024',
-    },
-    {
-      id: 4,
-      staffName: 'AAAA Staff',
-      role: 'Staff',
-      dateOfRegistration: '08-11-2024',
-    },
-    {
-      id: 5,
-      staffName: 'Aaaaa Admin',
-      role: 'Admin',
-      dateOfRegistration: '29-11-2024',
-    },
-  ];
+  useEffect(() => {
+    fetchStaffList();
+  }, []);
 
-  const navigate = useNavigate();
+  const fetchStaffList = async () => {
+    try {
+      const response = await SuperadminApi.getStaffList();
+      if (response.status === 'Success') {
+        setStaffList(response.data);
+      }
+      setLoading(false);
+    } catch (error) {
+      console.error('Error fetching staff list:', error);
+      setError('Failed to load staff list');
+      setLoading(false);
+    }
+  };
+
+  const handleDeleteClick = (staff) => {
+    setStaffToDelete(staff);
+    setShowDeleteModal(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setDeleteLoading(true);
+    try {
+      const response = await SuperadminApi.deleteStaff(
+        staffToDelete.id,
+        staffToDelete.company_id
+      );
+      if (response.status === 'Success') {
+        setStaffList((prevList) =>
+          prevList.filter((staff) => staff.id !== staffToDelete.id)
+        );
+        setShowDeleteModal(false);
+      }
+    } catch (error) {
+      console.error('Error deleting staff:', error);
+      alert(error.response?.data?.message || 'Failed to delete staff member');
+    } finally {
+      setDeleteLoading(false);
+      setStaffToDelete(null);
+    }
+  };
+
+  const handleEditClick = (staff) => {
+    setSelectedStaff(staff);
+    setShowEditModal(true);
+  };
+
+  const handleEditClose = (wasUpdated = false) => {
+    setShowEditModal(false);
+    setSelectedStaff(null);
+    if (wasUpdated) {
+      fetchStaffList(); 
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center text-red-500 p-4 bg-red-50 rounded-lg">
+        {error}
+      </div>
+    );
+  }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6 }}
-    >
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 tracking-tight">
-          Staff List
-        </h2>
-      </div>
-
-      {/* Table Container */}
-      <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200">
+    <>
+      <div className="bg-white rounded-xl shadow-sm p-3">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[600px]">
-            <thead>
-              <tr className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
-                <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600">
-                  Sl No.
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Staff
                 </th>
-                <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600">
-                  Staff Name
-                </th>
-                <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Role
                 </th>
-                <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600">
-                  Date Of Registration
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Abbreviation
                 </th>
-                <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600">
-                  Action
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Contact
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Registration Date
+                </th>
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
                 </th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="bg-white divide-y divide-gray-200">
               {staffList.map((staff, index) => (
-                <motion.tr
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
+                <tr
                   key={staff.id}
-                  className="group hover:bg-blue-50/50 transition-colors duration-300"
+                  className="hover:bg-gray-50 transition-all duration-200"
+                  style={{
+                    animation: `fadeIn 0.5s ease-out ${index * 0.1}s`,
+                    opacity: 0,
+                    animationFillMode: 'forwards',
+                  }}
                 >
-                  <td className="px-8 py-5">
-                    <span className="text-gray-700">{index + 1}</span>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="flex items-center">
+                      {staff.image ? (
+                        <img
+                          className="h-10 w-10 rounded-full object-cover transform hover:scale-110 transition-transform duration-200"
+                          src={`http://82.29.160.146${staff.image}`}
+                          alt={staff.staff_name}
+                        />
+                      ) : (
+                        <IoPersonCircleOutline className="h-10 w-10 text-gray-400" />
+                      )}
+                      <div className="ml-4">
+                        <div className="text-sm font-medium text-gray-900">
+                          {staff.staff_name}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {staff.username}
+                        </div>
+                      </div>
+                    </div>
                   </td>
-                  <td className="px-8 py-5">
-                    <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors duration-300">
-                      {staff.staffName}
-                    </span>
-                  </td>
-                  <td className="px-8 py-5">
-                    <span
-                      className={`inline-flex items-center justify-center w-24 px-3 py-1 rounded-full text-sm font-medium ${
-                        staff.role === 'Admin'
-                          ? 'bg-purple-100 text-purple-700'
-                          : 'bg-blue-100 text-blue-700'
-                      }`}
-                    >
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 transform hover:scale-105 transition-transform duration-200">
                       {staff.role}
                     </span>
                   </td>
-                  <td className="px-8 py-5">
-                    <span className="text-gray-700">
-                      {staff.dateOfRegistration}
-                    </span>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {staff.abbrevation}
                   </td>
-                  <td className="px-8 py-5">
-                    <div className="flex space-x-2">
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => navigate('')}
-                        className="px-4 py-2 text-yellow-500 border border-yellow-500 rounded-lg hover:bg-yellow-50 transition-colors duration-300"
-                      >
-                        User Rights
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => onEditClick(staff)}
-                        className="px-4 py-2 text-blue-500 border border-blue-500 rounded-lg hover:bg-blue-50 transition-colors duration-300"
-                      >
-                        Edit
-                      </motion.button>
-                      <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => onDelete(staff.id)}
-                        className="px-4 py-2 text-red-500 border border-red-500 rounded-lg hover:bg-red-50 transition-colors duration-300"
-                      >
-                        Delete
-                      </motion.button>
-                    </div>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {staff.number}
                   </td>
-                </motion.tr>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {staff.date_of_registration}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={() => handleEditClick(staff)}
+                      className="text-blue-600 bg-blue-100 p-2 rounded-sm hover:text-blue-900 mr-4"
+                    >
+                      <AiFillEdit className="h-4 w-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteClick(staff)}
+                      className="text-red-600 bg-red-100 p-2 rounded-sm hover:text-red-900"
+                    >
+                      <MdDelete className="h-4 w-4" />
+                    </button>
+                  </td>
+                </tr>
               ))}
             </tbody>
           </table>
         </div>
 
-        {/* Pagination */}
-        <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-end">
-          <div className="flex items-center space-x-2">
-            <button className="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300">
-              Previous
-            </button>
-            <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300">
-              Next
-            </button>
+        {staffList.length === 0 && (
+          <div
+            className="text-center py-12"
+            style={{
+              animation: 'fadeIn 0.5s ease-out',
+            }}
+          >
+            <IoPersonCircleOutline className="mx-auto h-12 w-12 text-gray-400" />
+            <h3 className="mt-2 text-sm font-medium text-gray-900">No Staff</h3>
+            <p className="mt-1 text-sm text-gray-500">
+              No staff members have been added yet.
+            </p>
           </div>
-        </div>
+        )}
       </div>
-    </motion.div>
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => {
+          setShowDeleteModal(false);
+          setStaffToDelete(null);
+        }}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Staff Member"
+        message={`Are you sure you want to delete ${staffToDelete?.staff_name}? This action cannot be undone.`}
+        loading={deleteLoading}
+      />
+
+      <EditStaffModal
+        isOpen={showEditModal}
+        staffData={selectedStaff}
+        onClose={handleEditClose}
+      />
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
+    </>
   );
 };
 

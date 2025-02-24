@@ -54,6 +54,100 @@ export const SuperadminApi = {
       throw error;
     }
   },
+
+  registerStaff: async (formData) => {
+    try {
+      const response = await axiosInstance.post(
+        '/register-staff/',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  verifyOtp: async (data) => {
+    try {
+      const response = await axiosInstance.post('/otp-verify/', data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  resendOtp: async (data) => {
+    try {
+      const response = await axiosInstance.post('/otp-resend/', data);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  getStaffList: async () => {
+    try {
+      const response = await axiosInstance.get('/StaffList/');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  deleteStaff: async (staffId, companyId) => {
+    try {
+      const response = await axiosInstance.delete(`/edit-delete-staff/${staffId}/`, {
+        data: { company_id: companyId }
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
+  editStaff: async (staffId, formData) => {
+    try {
+      console.log('========================');
+      console.log('API Call Details:');
+      console.log('Endpoint:', `http://82.29.160.146/api/v1/edit-delete-staff/${staffId}/`);
+      console.log('Staff ID:', staffId);
+      console.log('Request Headers:', {
+        'Content-Type': 'multipart/form-data'
+      });
+      
+      console.log('FormData contents:');
+      for (let [key, value] of formData.entries()) {
+        console.log(`${key}: ${value}`);
+      }
+      console.log('========================');
+
+      const response = await axiosInstance({
+        method: 'patch',
+        url: `http://82.29.160.146/api/v1/edit-delete-staff/${staffId}/`,
+        data: formData,
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('API Response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('API Error Details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        fullError: error
+      });
+      throw error;
+    }
+  },
 };
 
 export default SuperadminApi;

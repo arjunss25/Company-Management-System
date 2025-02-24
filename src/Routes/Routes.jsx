@@ -6,6 +6,7 @@ import SuperadminLayout from '../layouts/SuperadminLayout';
 import SuperAdminDashboard from '../Pages/SuperAdmin/SuperAdminDashboard';
 import CompanyManagement from '../Pages/SuperAdmin/CompanyManagement';
 import UnauthorizedPage from '../Pages/Auth/UnauthorizedPage';
+import SuperAdminUserManagement from '../Pages/SuperAdmin/SuperAdminUserManagement';
 
 const AppRoutes = () => {
   return (
@@ -20,6 +21,7 @@ const AppRoutes = () => {
           <Route index element={<Navigate to="dashboard" replace />} />
           <Route path="dashboard" element={<SuperAdminDashboard />} />
           <Route path="company-management" element={<CompanyManagement />} />
+          <Route path="user-management" element={<SuperAdminUserManagement />} />
         </Route>
       </Route>
 

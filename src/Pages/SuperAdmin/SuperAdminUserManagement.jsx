@@ -1,23 +1,28 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { addStaff } from '../Redux/Slices/SuperAdmin/UserManagementSlice';
+
 import {
   IoPersonAdd,
   IoRefreshOutline,
   IoCloudUploadOutline,
   IoImageOutline,
 } from 'react-icons/io5';
-// import CompanyList from './CompanyList';
 
-import StaffList from './StaffList';
-import EditStaffModal from './EditStaffModal';
-import SuperAdminSidebar from '../Sidebar/SuperAdminSidebar';
+import StaffList from '../../Components/SuperadminComponents/StaffList';
+import EditStaffModal from '../../Components/SuperadminComponents/EditStaffModal';
+import { SuperadminApi } from '../../Services/SuperadminApi';
+import OtpVerificationModal from '../../Components/SuperadminComponents/OtpVerificationModal';
+import CustomLoader from '../../Components/Common/CustomLoader';
 
 const  SuperAdminUserManagement = () => {
   const dispatch = useDispatch();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedCompany, setSelectedCompany] = useState(null);
-  const [activeTab, setActiveTab] = useState('add'); // 'add' or 'list'
+  const [activeTab, setActiveTab] = useState('add');
+  const [companies, setCompanies] = useState([]);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState(null);
+  const [isRegistering, setIsRegistering] = useState(false);
 
   const [formData, setFormData] = useState({
     staffName: '',
@@ -32,6 +37,21 @@ const  SuperAdminUserManagement = () => {
     photoPreview: '',
   });
 
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const response = await SuperadminApi.getCompanyList();
+        if (response.status === "Success") {
+          setCompanies(response.data);
+        }
+      } catch (error) {
+        console.error('Error fetching companies:', error);
+      }
+    };
+
+    fetchCompanies();
+  }, []);
+
   const handleChange = (e) => {
     const { name, value, files } = e.target;
 
@@ -42,7 +62,7 @@ const  SuperAdminUserManagement = () => {
         setFormData((prevData) => ({
           ...prevData,
           photo: file,
-          photoPreview: reader.result, // Store Base64 string for preview
+          photoPreview: reader.result,
         }));
       };
       reader.readAsDataURL(file);
@@ -54,31 +74,62 @@ const  SuperAdminUserManagement = () => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsRegistering(true);
 
-    // Create a unique ID for each staff
-    const newStaff = {
-      id: Date.now(),
-      ...formData,
-    };
+    try {
+      const formatDate = (dateString) => {
+        if (!dateString) return '';
+        const [year, month, day] = dateString.split('-');
+        return `${day}-${month}-${year}`;
+      };
 
-    // Dispatch the addStaff action
-    dispatch(addStaff(newStaff));
+      const selectedCompany = companies.find(
+        company => company.company_name === formData.companyName
+      );
 
-    // Clear the form
-    setFormData({
-      staffName: '',
-      abbreviation: '',
-      companyName: '',
-      role: '',
-      username: '',
-      password: '',
-      dateOfRegistration: '',
-      phoneNumber: '',
-      photo: null,
-      photoPreview: '',
-    });
+      // Create FormData object with exact field names required by the API
+      const staffFormData = new FormData();
+      staffFormData.append('company_id', selectedCompany?.id);
+      staffFormData.append('staff_name', formData.staffName);
+      staffFormData.append('abbrevation', formData.abbreviation);
+      staffFormData.append('role', formData.role);
+      staffFormData.append('username', formData.username);
+      staffFormData.append('password', formData.password);
+      staffFormData.append('date_of_registration', formatDate(formData.dateOfRegistration));
+      staffFormData.append('number', formData.phoneNumber);
+      if (formData.photo) {
+        staffFormData.append('image', formData.photo);
+      }
+
+      const response = await SuperadminApi.registerStaff(staffFormData);
+      
+      if (response.status === "Success") {
+        setRegisteredEmail(formData.username);
+        setShowOtpModal(true);
+        
+        // Clear the form
+        setFormData({
+          staffName: '',
+          abbreviation: '',
+          companyName: '',
+          role: '',
+          username: '',
+          password: '',
+          dateOfRegistration: '',
+          phoneNumber: '',
+          photo: null,
+          photoPreview: '',
+        });
+      }
+    } catch (error) {
+      console.error('Error registering staff:', error);
+      const errorMessage = error.response?.data?.message || 'Failed to register staff. Please try again.';
+      alert(errorMessage);
+    } finally {
+      setIsRegistering(false);
+    }
   };
 
   const handleEditClick = (staff) => {
@@ -96,10 +147,8 @@ const  SuperAdminUserManagement = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-   
-
-      <div className="flex-1 p-6 h-screen overflow-y-scroll">
+    <div className="flex">
+      <div className="flex-1 p-6">
         {/* Header Section */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-800">User Management</h1>
@@ -212,10 +261,11 @@ const  SuperAdminUserManagement = () => {
                       className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all bg-gray-50 hover:bg-gray-100 focus:bg-white"
                     >
                       <option value="">Select company</option>
-                      <option>Alfan</option>
-                      <option>Demo</option>
-                      <option>HSTC</option>
-                      {/* ... other options ... */}
+                      {companies.map((company, index) => (
+                        <option key={company.id} value={company.company_name}>
+                          {company.company_name}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -375,6 +425,14 @@ const  SuperAdminUserManagement = () => {
         staffData={selectedCompany}
         handleClose={handleCloseModal}
         handleUpdate={handleUpdate}
+      />
+
+      {isRegistering && <CustomLoader />}
+      
+      <OtpVerificationModal
+        isOpen={showOtpModal}
+        onClose={() => setShowOtpModal(false)}
+        staffId={registeredEmail}
       />
     </div>
   );
