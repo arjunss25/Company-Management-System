@@ -89,7 +89,6 @@ const  SuperAdminUserManagement = () => {
         company => company.company_name === formData.companyName
       );
 
-      // Create FormData object with exact field names required by the API
       const staffFormData = new FormData();
       staffFormData.append('company_id', selectedCompany?.id);
       staffFormData.append('staff_name', formData.staffName);
@@ -109,7 +108,6 @@ const  SuperAdminUserManagement = () => {
         setRegisteredEmail(formData.username);
         setShowOtpModal(true);
         
-        // Clear the form
         setFormData({
           staffName: '',
           abbreviation: '',
@@ -133,12 +131,11 @@ const  SuperAdminUserManagement = () => {
   };
 
   const handleEditClick = (staff) => {
-    setSelectedCompany(staff); // Set the selected staff data for editing
+    setSelectedCompany(staff); 
     setIsModalOpen(true);
   };
 
   const handleUpdate = (updatedCompany) => {
-    // Dispatch update action to update the company data
     dispatch(updateCompany(updatedCompany));
   };
 

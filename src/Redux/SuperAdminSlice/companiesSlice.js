@@ -18,6 +18,7 @@ export const updateCompany = createAsyncThunk(
   'companies/updateCompany',
   async ({ id, data }, { rejectWithValue }) => {
     try {
+      // data is now expected to be FormData
       const response = await SuperadminApi.updateCompany(id, data);
       return response.data;
     } catch (error) {

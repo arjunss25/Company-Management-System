@@ -43,14 +43,21 @@ const EditCompanyModal = ({ company, isOpen, onClose, onSave }) => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    const payload = {
-      company_name: formData.company_name,
-      address: formData.address,
-      description: formData.description,
-      phone: formData.phone,
-      abbrevation: formData.abbrevation
-    };
-    onSave(payload);
+    const formDataObj = new FormData();
+    
+
+    formDataObj.append('company_name', formData.company_name);
+    formDataObj.append('address', formData.address);
+    formDataObj.append('description', formData.description);
+    formDataObj.append('phone', formData.phone);
+    formDataObj.append('abbrevation', formData.abbrevation);
+    formDataObj.append('license_number', formData.license_number);
+
+    if (formData.logo_image) {
+      formDataObj.append('logo_image', formData.logo_image);
+    }
+
+    onSave(formDataObj);
   };
 
   if (!isOpen || !company) return null;

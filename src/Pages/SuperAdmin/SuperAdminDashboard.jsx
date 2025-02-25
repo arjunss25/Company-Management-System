@@ -8,7 +8,6 @@ const SuperAdminDashboard = () => {
     const [companies, setCompanies] = useState([]);
   
     useEffect(() => {
-      // Simulate fetching companies data
       setCompanies(Array(13).fill(null));
     }, []);
   

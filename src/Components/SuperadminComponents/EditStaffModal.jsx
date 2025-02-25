@@ -23,7 +23,6 @@ const EditStaffModal = ({ isOpen, staffData, onClose }) => {
 
   useEffect(() => {
     if (staffData) {
-      // Convert date from dd/mm/yyyy to yyyy-mm-dd for input type="date"
       const formatDateForInput = (dateString) => {
         if (!dateString) return '';
         const [day, month, year] = dateString.split('/');
@@ -35,7 +34,7 @@ const EditStaffModal = ({ isOpen, staffData, onClose }) => {
         abbrevation: staffData.abbrevation || '',
         role: staffData.role || '',
         username: staffData.username || '',
-        password: '', // Don't show existing password
+        password: '', 
         date_of_registration: formatDateForInput(staffData.date_of_registration) || '',
         number: staffData.number || '',
         imagePreview: staffData.image ? `http://82.29.160.146${staffData.image}` : '',
@@ -89,7 +88,6 @@ const EditStaffModal = ({ isOpen, staffData, onClose }) => {
 
     setLoading(true);
     try {
-      // Format date back to dd/mm/yyyy for API
       const formatDateForApi = (dateString) => {
         if (!dateString) return '';
         const [year, month, day] = dateString.split('-');
