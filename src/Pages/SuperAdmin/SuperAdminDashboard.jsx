@@ -1,62 +1,61 @@
 import React, { useState, useEffect } from 'react';
-
+import { CgSearch } from 'react-icons/cg';
 import CompanyCards from '../../Components/SuperadminComponents/CompanyCards';
-import SuperAdminSidebar from '../../Components/SuperadminSidebar';
+import { useDispatch } from 'react-redux';
+import { fetchCompanies, searchCompanies } from '../../Redux/SuperAdminSlice/companiesSlice';
+import { useDebounce } from '../../Hooks/useDebounce';
+import LoadingSpinner from '../../Components/Common/LoadingSpinner';
 
 const SuperAdminDashboard = () => {
-    const [searchTerm, setSearchTerm] = useState('');
-    const [companies, setCompanies] = useState([]);
-  
-    useEffect(() => {
-      setCompanies(Array(13).fill(null));
-    }, []);
-  
-    return (
-      <div className="flex flex-col lg:flex-row min-h-screen">
-      
-        
-        {/* Main Content */}
-        <div className="flex-1 px-4 lg:px-8 py-6 lg:py-8 mt-16 lg:mt-0">
-          {/* Header */}
-          <div className="flex flex-col lg:flex-row justify-between items-start gap-4 lg:gap-0 lg:items-center mb-8 lg:mb-12">
-            <div className="flex flex-col space-y-2 w-full lg:w-auto">
-              <h1 className="text-2xl lg:text-[2rem] text-gray-800 font-bold tracking-tight">
-                Companies
-              </h1>
-            </div>
-  
-            {/* Search Bar */}
-            <div className="relative w-full lg:w-auto">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                placeholder="Search companies..."
-                className="w-full lg:w-[400px] px-4 lg:px-6 py-3 lg:py-4 rounded-full border-none
-                         bg-white/70 backdrop-blur-sm shadow-lg
-                         focus:outline-none focus:ring-2 focus:ring-blue-500/50
-                         text-gray-700 placeholder-gray-400 transition-all duration-300"
-              />
-              <svg
-                className="absolute right-4 lg:right-5 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400"
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="11" cy="11" r="8" />
-                <line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
+  const [searchTerm, setSearchTerm] = useState('');
+  const dispatch = useDispatch();
+  const debouncedSearch = useDebounce(searchTerm, 500);
+
+  useEffect(() => {
+    if (debouncedSearch) {
+      dispatch(searchCompanies(debouncedSearch));
+    } else {
+      dispatch(fetchCompanies());
+    }
+  }, [debouncedSearch, dispatch]);
+
+  return (
+    <div className="flex flex-col lg:flex-row min-h-screen">
+      {/* Main Content */}
+      <div className="flex-1 px-4 lg:px-8 py-6 lg:py-8 mt-16 lg:mt-0">
+        {/* Header */}
+        <div className="flex flex-col lg:flex-row justify-between items-start gap-4 lg:gap-0 lg:items-center mb-8 lg:mb-12">
+          <div className="flex flex-col space-y-2 w-full lg:w-auto">
+            <h1 className="text-2xl lg:text-[2rem] text-gray-800 font-bold tracking-tight">
+              Companies
+            </h1>
+          </div>
+
+          {/* Search Bar */}
+          <div className="relative w-full lg:w-auto">
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Search companies..."
+              className="w-full lg:w-[400px] px-12 py-3 lg:py-3.5 rounded-xl
+                         bg-white/80 backdrop-blur-md shadow-md
+                         border border-gray-100
+                         focus:outline-none focus:ring-2 focus:ring-blue-400
+                         focus:border-transparent focus:shadow-lg
+                         text-gray-700 placeholder-gray-400
+                         transition-all duration-200 ease-in-out"
+            />
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+              <CgSearch className="text-gray-400 text-xl" />
             </div>
           </div>
-  
-          {/* Cards Section */}
-          <CompanyCards />
         </div>
+
+        {/* Cards Section */}
+        <CompanyCards />
       </div>
-    );
-  };
-export default SuperAdminDashboard
+    </div>
+  );
+};
+export default SuperAdminDashboard;

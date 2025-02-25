@@ -3,13 +3,16 @@ import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import EditCompanyModal from './EditcompanyModal';
 import Spinner from '../../Components/Common/Spinner';
+import { CgSearch } from "react-icons/cg";
 import Modal, { ErrorModal, SuccessModal } from '../../Components/Common/Modal';
 import {
   fetchCompanies,
   updateCompany,
   deleteCompany,
   setSelectedCompany,
+  searchCompanies,
 } from '../../Redux/SuperAdminSlice/companiesSlice';
+import { useDebounce } from '../../Hooks/useDebounce';
 
 const CompanyListTable = () => {
   const dispatch = useDispatch();
@@ -31,12 +34,15 @@ const CompanyListTable = () => {
   const [successMessage, setSuccessMessage] = useState('');
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const debouncedSearch = useDebounce(searchQuery, 500);
 
   useEffect(() => {
-    if (status === 'idle') {
+    if (debouncedSearch) {
+      dispatch(searchCompanies(debouncedSearch));
+    } else {
       dispatch(fetchCompanies());
     }
-  }, [status, dispatch]);
+  }, [debouncedSearch, dispatch]);
 
   const handleEdit = async (updatedData) => {
     try {
@@ -91,46 +97,104 @@ const CompanyListTable = () => {
 
   if (status === 'loading') {
     return (
-      <div className="flex justify-center items-center h-64">
-        <Spinner size="lg" />
+      <div className="main-container">
+        <div className="mb-6">
+          <div className="relative w-[40vw]">
+            <input
+              type="text"
+              placeholder="Search companies..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-12 py-3 lg:py-3.5 rounded-xl
+                       bg-white/80 backdrop-blur-md shadow-md
+                       border border-gray-100
+                       focus:outline-none focus:ring-2 focus:ring-blue-400
+                       focus:border-transparent focus:shadow-lg
+                       text-gray-700 placeholder-gray-400
+                       transition-all duration-200 ease-in-out"
+            />
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+              <CgSearch className="text-gray-400 text-xl" />
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-center items-center h-64">
+          <Spinner size="lg" />
+        </div>
       </div>
     );
   }
 
   if (companies.length === 0) {
     return (
-      <div className="text-center py-12">
-        <p className="text-gray-500 text-lg">No companies found.</p>
+      <div className="main-container">
+        <div className="mb-6">
+          <div className="relative w-[40vw]">
+            <input
+              type="text"
+              placeholder="Search companies..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-12 py-3 lg:py-3.5 rounded-xl
+                       bg-white/80 backdrop-blur-md shadow-md
+                       border border-gray-100
+                       focus:outline-none focus:ring-2 focus:ring-blue-400
+                       focus:border-transparent focus:shadow-lg
+                       text-gray-700 placeholder-gray-400
+                       transition-all duration-200 ease-in-out"
+            />
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+              <CgSearch className="text-gray-400 text-xl" />
+            </div>
+          </div>
+        </div>
+        <div className="flex flex-col items-center justify-center h-64 bg-white rounded-lg shadow p-8">
+          <div className="text-gray-400 mb-4">
+            <svg
+              className="w-16 h-16 mx-auto mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+          <h3 className="text-xl font-semibold text-gray-800 mb-2">
+            No Results Found
+          </h3>
+          <p className="text-gray-600 text-center">
+            We couldn't find any companies matching your search. Please try a different search term.
+          </p>
+        </div>
       </div>
     );
   }
 
   return (
     <>
-      <div className="main-container">
+      <div className="main-container w-full ">
         <div className="mb-6">
           <div className="relative w-[40vw]">
             <input
               type="text"
-              placeholder="Search companies by name, address, or license number..."
+              placeholder="Search companies..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 pl-10 pr-4 text-gray-700 bg-white border rounded-[2rem] focus:border-blue-500 focus:outline-none focus:ring focus:ring-blue-200"
+              className="w-full px-12 py-3 lg:py-3.5 rounded-xl
+                       bg-white/80 backdrop-blur-md shadow-md
+                       border border-gray-100
+                       focus:outline-none focus:ring-2 focus:ring-blue-400
+                       focus:border-transparent focus:shadow-lg
+                       text-gray-700 placeholder-gray-400
+                       transition-all duration-200 ease-in-out"
             />
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3">
-              <svg
-                className="w-5 h-5 text-gray-400"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth="2"
-                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                />
-              </svg>
+            <div className="absolute inset-y-0 left-4 flex items-center pointer-events-none">
+              <CgSearch className="text-gray-400 text-xl" />
             </div>
           </div>
         </div>

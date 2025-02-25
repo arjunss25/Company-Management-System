@@ -27,12 +27,24 @@ export const SuperadminApi = {
     }
   },
 
+  searchCompanies: async (searchTerm) => {
+    try {
+      const response = await axiosInstance.get(
+        `/search-company/${searchTerm}/`
+      );
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   updateCompany: async (id, data) => {
     try {
-      const headers = data instanceof FormData 
-        ? { 'Content-Type': 'multipart/form-data' }
-        : { 'Content-Type': 'application/json' };
-      
+      const headers =
+        data instanceof FormData
+          ? { 'Content-Type': 'multipart/form-data' }
+          : { 'Content-Type': 'application/json' };
+
       const response = await axiosInstance.patch(
         `/edit-delete-company/${id}/`,
         data,
@@ -57,15 +69,11 @@ export const SuperadminApi = {
 
   registerStaff: async (formData) => {
     try {
-      const response = await axiosInstance.post(
-        '/register-staff/',
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
+      const response = await axiosInstance.post('/register-staff/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
       return response.data;
     } catch (error) {
       throw error;
@@ -101,9 +109,12 @@ export const SuperadminApi = {
 
   deleteStaff: async (staffId, companyId) => {
     try {
-      const response = await axiosInstance.delete(`/edit-delete-staff/${staffId}/`, {
-        data: { company_id: companyId }
-      });
+      const response = await axiosInstance.delete(
+        `/edit-delete-staff/${staffId}/`,
+        {
+          data: { company_id: companyId },
+        }
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -114,12 +125,15 @@ export const SuperadminApi = {
     try {
       console.log('========================');
       console.log('API Call Details:');
-      console.log('Endpoint:', `http://82.29.160.146/api/v1/edit-delete-staff/${staffId}/`);
+      console.log(
+        'Endpoint:',
+        `http://82.29.160.146/api/v1/edit-delete-staff/${staffId}/`
+      );
       console.log('Staff ID:', staffId);
       console.log('Request Headers:', {
-        'Content-Type': 'multipart/form-data'
+        'Content-Type': 'multipart/form-data',
       });
-      
+
       console.log('FormData contents:');
       for (let [key, value] of formData.entries()) {
         console.log(`${key}: ${value}`);
@@ -143,7 +157,7 @@ export const SuperadminApi = {
         response: error.response?.data,
         status: error.response?.status,
         statusText: error.response?.statusText,
-        fullError: error
+        fullError: error,
       });
       throw error;
     }

@@ -39,6 +39,23 @@ export const deleteCompany = createAsyncThunk(
   }
 );
 
+export const searchCompanies = createAsyncThunk(
+  'companies/searchCompanies',
+  async (searchTerm, { rejectWithValue }) => {
+    try {
+      const response = await SuperadminApi.searchCompanies(searchTerm);
+      return response.data;
+    } catch (error) {
+      // Check if it's a 404 "Not Found" error
+      if (error.response?.status === 404) {
+        // Return empty array instead of rejecting
+        return [];
+      }
+      return rejectWithValue(error.response?.data || 'Failed to search companies');
+    }
+  }
+);
+
 const companiesSlice = createSlice({
   name: 'companies',
   initialState: {
@@ -83,6 +100,20 @@ const companiesSlice = createSlice({
           (company) => company.id !== action.payload
         );
         state.error = null;
+      })
+      // Search Companies
+      .addCase(searchCompanies.pending, (state) => {
+        state.status = 'loading';
+      })
+      .addCase(searchCompanies.fulfilled, (state, action) => {
+        state.status = 'succeeded';
+        // If the response is an empty array (no results found), keep the status as succeeded
+        state.items = action.payload;
+        state.error = null;
+      })
+      .addCase(searchCompanies.rejected, (state, action) => {
+        state.status = 'failed';
+        state.error = action.payload;
       });
   },
 });
