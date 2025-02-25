@@ -255,7 +255,9 @@ const CompanyListTable = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                     <img
-                      src={`http://82.29.160.146${company.logo_image}`}
+                      src={company.logo_image?.startsWith('http') 
+                        ? company.logo_image 
+                        : `http://82.29.160.146${company.logo_image}`}
                       alt={`${company.company_name} Logo`}
                       className="h-10 w-10 object-cover rounded-full"
                       onError={(e) => {

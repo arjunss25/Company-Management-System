@@ -61,10 +61,14 @@ const CompanyCards = () => {
           {/* Company Logo */}
           <div className="relative aspect-square p-6">
             <img
-              src={`http://82.29.160.146${company.logo_image}`}
-              alt={`${company.company_name} logo`}
-              className="object-contain w-full h-full transition-transform duration-300
-              group-hover:scale-110"
+              src={company.logo_image?.startsWith('http') 
+                ? company.logo_image 
+                : `http://82.29.160.146${company.logo_image}`}
+              alt={`${company.company_name} Logo`}
+              className=" object-cover"
+              onError={(e) => {
+                e.target.src = '/default-logo.png';
+              }}
             />
           </div>
         
