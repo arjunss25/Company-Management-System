@@ -7,6 +7,7 @@ import SuperAdminDashboard from '../Pages/SuperAdmin/SuperAdminDashboard';
 import CompanyManagement from '../Pages/SuperAdmin/CompanyManagement';
 import UnauthorizedPage from '../Pages/Auth/UnauthorizedPage';
 import SuperAdminUserManagement from '../Pages/SuperAdmin/SuperAdminUserManagement';
+import SuperAdminViewStaff from '../Pages/SuperAdmin/SuperAdminViewStaff';
 
 const AppRoutes = () => {
   return (
@@ -22,6 +23,7 @@ const AppRoutes = () => {
           <Route path="dashboard" element={<SuperAdminDashboard />} />
           <Route path="company-management" element={<CompanyManagement />} />
           <Route path="user-management" element={<SuperAdminUserManagement />} />
+          <Route path="view-staffs" element={<SuperAdminViewStaff />} />
         </Route>
       </Route>
 
