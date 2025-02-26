@@ -24,6 +24,10 @@ const CompanyListTable = () => {
     status,
     error,
   } = useSelector((state) => state.companies);
+  
+  // Ensure companies is always an array
+  const companyList = Array.isArray(companies) ? companies : [];
+  
   const selectedCompany = useSelector(
     (state) => state.companies.selectedCompany
   );
@@ -88,9 +92,8 @@ const CompanyListTable = () => {
   };
 
   const handleViewStaff = (id) => {
-    navigate(`/viewstaff/${id}`);
+    navigate(`/superadmin/viewstaff/${id}`);
   };
-
   const handleSave = (updatedCompany) => {
     dispatch(setSelectedCompany(updatedCompany));
   };
@@ -239,7 +242,7 @@ const CompanyListTable = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {companies.map((company, index) => (
+              {companyList.map((company, index) => (
                 <tr key={company.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {index + 1}

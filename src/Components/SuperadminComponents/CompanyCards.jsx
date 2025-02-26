@@ -20,7 +20,10 @@ const CompanyCards = () => {
     return <div>Error: {error}</div>;
   }
 
-  if (companies.length === 0) {
+  // Ensure companies is an array
+  const companyList = Array.isArray(companies) ? companies : [];
+
+  if (companyList.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
         <div className="bg-gray-50 rounded-full p-8 mb-6">

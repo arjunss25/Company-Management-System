@@ -23,7 +23,7 @@ const AppRoutes = () => {
           <Route path="dashboard" element={<SuperAdminDashboard />} />
           <Route path="company-management" element={<CompanyManagement />} />
           <Route path="user-management" element={<SuperAdminUserManagement />} />
-          <Route path="view-staffs" element={<SuperAdminViewStaff />} />
+          <Route path="viewstaff/:companyId" element={<SuperAdminViewStaff />} />
         </Route>
       </Route>
 
