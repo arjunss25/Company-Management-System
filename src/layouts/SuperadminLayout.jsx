@@ -6,10 +6,12 @@ import Navbar from '../Components/Navbar';
 const SuperadminLayout = () => {
   return (
     <div className="flex h-screen bg-gray-100">
+      <div className="sidebar lg:w-[300px]">
       <SuperAdminSidebar />
-      <div className="flex-1 flex flex-col">
+      </div>
+      <div className=" w-full lg:w-[calc(100%-300px)]  flex flex-col">
         <Navbar />
-        <main className="flex-1 overflow-x-hidden overflow-y-auto bg-gray-100 p-6">
+        <main className="w-full overflow-x-hidden overflow-y-auto p-6">
           <Outlet />
         </main>
       </div>

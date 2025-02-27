@@ -1,0 +1,82 @@
+import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
+import {
+  AiOutlineDashboard,
+  AiOutlineFileText,
+  AiOutlineSetting,
+} from 'react-icons/ai';
+import { FaBuilding, FaFileContract, FaBoxOpen, FaUsers } from 'react-icons/fa';
+
+const GeneralSidebar = () => {
+  const location = useLocation();
+
+  const menuItems = [
+    {
+      path: '/admin-dashboard',
+      icon: <AiOutlineDashboard size={22} />,
+      label: 'Dashboard',
+    },
+    {
+      path: '/quotation-dashboard',
+      icon: <AiOutlineFileText size={22} />,
+      label: 'Quotation',
+    },
+    {
+      path: '/client-location',
+      icon: <FaBuilding size={22} />,
+      label: 'Client/Location',
+    },
+    {
+      path: '/contract-dashboard',
+      icon: <FaFileContract size={22} />,
+      label: 'Contract',
+    },
+    {
+      path: '/material-dashboard',
+      icon: <FaBoxOpen size={22} />,
+      label: 'Material',
+    },
+    {
+      path: '/user-management-dashboard',
+      icon: <FaUsers size={22} />,
+      label: 'User Management',
+    },
+    {
+      path: '/terms-and-conditions-dashboard',
+      icon: <AiOutlineSetting size={22} />,
+      label: 'Terms & Condition',
+    },
+  ];
+
+  return (
+    <div className="w-full lg:w-[300px] h-screen bg-black text-white">
+      <div className="flex flex-col items-center p-6 border-b border-gray-700">
+        <img
+          src="/admin_logo.png"
+          alt="Company Logo"
+          className="h-16 w-16 rounded-full mb-2"
+        />
+        <span className="text-lg font-bold">New company</span>
+      </div>
+
+      <nav className="mt-6">
+        <ul className="space-y-2">
+          {menuItems.map((item) => (
+            <li key={item.path}>
+              <Link
+                to={item.path}
+                className={`flex items-center gap-4 px-6 py-3 hover:bg-gray-800 text-[#8E8E8E] rounded-[2px] transition-colors
+                  ${location.pathname === item.path ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black' : ''}`}
+              >
+                <span>{item.icon}</span>
+                <span>{item.label}</span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    </div>
+  );
+};
+
+export default GeneralSidebar;

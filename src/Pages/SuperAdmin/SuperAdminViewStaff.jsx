@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useParams, useNavigate } from 'react-router-dom';
-import { TbArrowBackUp } from "react-icons/tb";
+import { TbArrowBackUp } from 'react-icons/tb';
 import EditStaffProfile from '../../Components/SuperadminComponents/EditStaffProfile';
 import { SuperadminApi } from '../../Services/SuperadminApi';
 import Spinner from '../../Components/Common/Spinner';
 import Modal from '../../Components/Common/Modal';
-import { FaUsersRays } from "react-icons/fa6";
+import { FaUsersRays } from 'react-icons/fa6';
 
 const SuperAdminViewStaff = () => {
   const { companyId } = useParams();
@@ -60,7 +60,7 @@ const SuperAdminViewStaff = () => {
   // Add empty state handler
   if (!staffList || staffList.length === 0) {
     return (
-      <div className="w-full h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
+      <div className="w-full h-screen flex">
         <div className="main-content w-full h-full overflow-y-auto p-6">
           <div className=" mx-auto">
             {/* Header Section */}
@@ -71,21 +71,21 @@ const SuperAdminViewStaff = () => {
               </h1>
 
               <div className="flex items-center gap-4 mb-4 sm:mb-0">
-              <button
-                onClick={() => navigate('/superadmin/company-management')}
-                className="flex items-center gap-2 bg-blue-500 px-5 py-1 rounded-full text-white hover:shadow-sm transition-colors"
-              >
-                <TbArrowBackUp className="w-5 h-5" />
-                <span>Back</span>
-              </button>
-            </div>
+                <button
+                  onClick={() => navigate('/superadmin/company-management')}
+                  className="flex items-center gap-2 bg-blue-500 px-5 py-1 rounded-full text-white hover:shadow-sm transition-colors"
+                >
+                  <TbArrowBackUp className="w-5 h-5" />
+                  <span>Back</span>
+                </button>
+              </div>
             </div>
 
             {/* Empty State Message */}
             <div className="bg-white rounded-xl shadow-sm p-8 text-center w-full">
               <div className="flex flex-col items-center justify-center">
                 <div className="mb-4 p-8 rounded-full bg-[#DFDFDF]">
-                <FaUsersRays  className='text-[2rem]'/>
+                  <FaUsersRays className="text-[2rem]" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                   No Staff Members Found
@@ -159,49 +159,60 @@ const SuperAdminViewStaff = () => {
   };
 
   return (
-    <div className="w-full h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
-      <div className="main-content w-full h-full overflow-y-auto p-6">
-        {/* Back button and header */}
-        <div className="mb-6">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+    <div className="w-full min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="p-2 sm:p-4 md:p-6">
+        {/* Header Section - Updated for better mobile spacing */}
+        <div className="mb-4 sm:mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4">
+            <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-800">
               Staff List
               <div className="h-1 w-12 bg-blue-500 rounded-full mt-2"></div>
             </h1>
 
-            <div className="flex items-center gap-4 mb-4 sm:mb-0">
-              <button
-                onClick={() => navigate('/superadmin/company-management')}
-                className="flex items-center gap-2 bg-blue-500 px-5 py-1 rounded-full text-white hover:shadow-sm transition-colors"
-              >
-                <TbArrowBackUp className="w-5 h-5" />
-                <span>Back</span>
-              </button>
-            </div>
-
-
+            <button
+              onClick={() => navigate('/superadmin/company-management')}
+              className="flex items-center justify-center gap-2 bg-blue-500 px-3 sm:px-4 md:px-5 py-1.5 sm:py-2 rounded-full text-white hover:bg-blue-600 transition-colors w-full sm:w-auto text-sm sm:text-base"
+            >
+              <TbArrowBackUp className="w-4 h-4 sm:w-5 sm:h-5" />
+              <span>Back</span>
+            </button>
           </div>
         </div>
 
-        {/* Staff List Table */}
-        <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-6">
+        {/* Staff List Table - Updated with fixed widths and proper scrolling */}
+        <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-2 sm:p-4 md:p-6">
           <div className="overflow-x-auto rounded-lg shadow">
-            <table className="min-w-full divide-y divide-gray-200">
+            <table className="min-w-full divide-y divide-gray-200 table-fixed overflow-x-auto">
               <thead className="bg-gray-50">
                 <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th
+                    scope="col"
+                    className="w-[80px] px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase"
+                  >
                     Sl.No
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th
+                    scope="col"
+                    className="w-[200px] px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase"
+                  >
                     Staff Name
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th
+                    scope="col"
+                    className="w-[150px] px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase"
+                  >
                     Role
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th
+                    scope="col"
+                    className="w-[180px] px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase"
+                  >
                     Date Of Registration
                   </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                  <th
+                    scope="col"
+                    className="w-[280px] px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase"
+                  >
                     Action
                   </th>
                 </tr>
@@ -213,37 +224,41 @@ const SuperAdminViewStaff = () => {
                       {index + 1}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {staff.staff_name}
+                      <div className="truncate">{staff.staff_name}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {staff.role}
+                      <div className="truncate">{staff.role}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {staff.date_of_registration}
+                      <div className="truncate">
+                        {staff.date_of_registration}
+                      </div>
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
-                      <Link
-                        to=""
-                        className="inline-flex items-center px-3 py-1.5 border border-yellow-500 text-yellow-500 bg-white rounded-md hover:bg-yellow-500 hover:text-white transition-colors duration-200"
-                      >
-                        User Rights
-                      </Link>
-                      {userRights.canEdit && (
-                        <button
-                          onClick={() => handleEdit(staff.id)}
-                          className="inline-flex items-center px-3 py-1.5 border border-green-500 text-green-500 bg-white rounded-md hover:bg-green-500 hover:text-white transition-colors duration-200"
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <div className="flex items-center gap-2">
+                        <Link
+                          to=""
+                          className="text-xs inline-flex items-center px-3 py-1.5 border border-yellow-500 text-yellow-500 bg-white rounded-md hover:bg-yellow-500 hover:text-white transition-colors duration-200"
                         >
-                          Edit
-                        </button>
-                      )}
-                      {userRights.canDelete && (
-                        <button
-                          onClick={() => handleDelete(staff)}
-                          className="inline-flex items-center px-3 py-1.5 border border-red-500 text-red-500 bg-white rounded-md hover:bg-red-500 hover:text-white transition-colors duration-200"
-                        >
-                          Delete
-                        </button>
-                      )}
+                          User Rights
+                        </Link>
+                        {userRights.canEdit && (
+                          <button
+                            onClick={() => handleEdit(staff.id)}
+                            className="text-xs inline-flex items-center px-3 py-1.5 border border-green-500 text-green-500 bg-white rounded-md hover:bg-green-500 hover:text-white transition-colors duration-200"
+                          >
+                            Edit
+                          </button>
+                        )}
+                        {userRights.canDelete && (
+                          <button
+                            onClick={() => handleDelete(staff)}
+                            className="text-xs inline-flex items-center px-3 py-1.5 border border-red-500 text-red-500 bg-white rounded-md hover:bg-red-500 hover:text-white transition-colors duration-200"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}

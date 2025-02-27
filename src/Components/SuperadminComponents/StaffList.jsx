@@ -5,6 +5,7 @@ import { AiFillEdit } from 'react-icons/ai';
 import { MdDelete } from 'react-icons/md';
 import ConfirmationModal from '../Common/ConfirmationModal';
 import EditStaffModal from './EditStaffModal';
+import '../../../src/Pages/SuperAdmin/StaffList.css';
 
 const StaffList = () => {
   const [staffList, setStaffList] = useState([]);
@@ -70,7 +71,7 @@ const StaffList = () => {
     setShowEditModal(false);
     setSelectedStaff(null);
     if (wasUpdated) {
-      fetchStaffList(); 
+      fetchStaffList();
     }
   };
 
@@ -92,96 +93,94 @@ const StaffList = () => {
 
   return (
     <>
-      <div className="bg-white rounded-xl shadow-sm p-3">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Staff
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Role
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Abbreviation
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Contact
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Registration Date
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Actions
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {staffList.map((staff, index) => (
-                <tr
-                  key={staff.id}
-                  className="hover:bg-gray-50 transition-all duration-200"
-                  style={{
-                    animation: `fadeIn 0.5s ease-out ${index * 0.1}s`,
-                    opacity: 0,
-                    animationFillMode: 'forwards',
-                  }}
-                >
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex items-center">
-                      {staff.image ? (
-                        <img
-                          className="h-10 w-10 rounded-full object-cover transform hover:scale-110 transition-transform duration-200"
-                          src={`http://82.29.160.146${staff.image}`}
-                          alt={staff.staff_name}
-                        />
-                      ) : (
-                        <IoPersonCircleOutline className="h-10 w-10 text-gray-400" />
-                      )}
-                      <div className="ml-4">
-                        <div className="text-sm font-medium text-gray-900">
-                          {staff.staff_name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {staff.username}
-                        </div>
+      <div className="staff-list-container w-[73vw] overflow-x-auto rounded-lg shadow">
+        <table className="w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                Staff
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                Role
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                Abbreviation
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                Contact
+              </th>
+              <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                Registration Date
+              </th>
+              <th className="px-6 py-4 text-right text-xs font-semibold text-gray-600 uppercase">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {staffList.map((staff, index) => (
+              <tr
+                key={staff.id}
+                className="hover:bg-gray-50 transition-all duration-200"
+                style={{
+                  animation: `fadeIn 0.5s ease-out ${index * 0.1}s`,
+                  opacity: 0,
+                  animationFillMode: 'forwards',
+                }}
+              >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    {staff.image ? (
+                      <img
+                        className="h-10 w-10 rounded-full object-cover transform hover:scale-110 transition-transform duration-200"
+                        src={`http://82.29.160.146${staff.image}`}
+                        alt={staff.staff_name}
+                      />
+                    ) : (
+                      <IoPersonCircleOutline className="h-10 w-10 text-gray-400" />
+                    )}
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900">
+                        {staff.staff_name}
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        {staff.username}
                       </div>
                     </div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 transform hover:scale-105 transition-transform duration-200">
-                      {staff.role}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {staff.abbrevation}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {staff.number}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {staff.date_of_registration}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                    <button
-                      onClick={() => handleEditClick(staff)}
-                      className="text-blue-600 bg-blue-100 p-2 rounded-sm hover:text-blue-900 mr-4"
-                    >
-                      <AiFillEdit className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteClick(staff)}
-                      className="text-red-600 bg-red-100 p-2 rounded-sm hover:text-red-900"
-                    >
-                      <MdDelete className="h-4 w-4" />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full  text-blue-800 transform hover:scale-105 transition-transform duration-200 bg-blue-100">
+                    {staff.role}
+                  </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {staff.abbrevation}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {staff.number}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {staff.date_of_registration}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                  <button
+                    onClick={() => handleEditClick(staff)}
+                    className="text-blue-600 p-2 rounded-sm bg-blue-100 hover:text-blue-900 mr-4"
+                  >
+                    <AiFillEdit className="h-4 w-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteClick(staff)}
+                    className="text-red-600 bg-red-100 p-2 rounded-sm hover:text-red-900"
+                  >
+                    <MdDelete className="h-4 w-4" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
 
         {staffList.length === 0 && (
           <div

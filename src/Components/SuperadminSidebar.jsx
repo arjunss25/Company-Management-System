@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   AiOutlineDashboard,
@@ -21,6 +21,30 @@ const SuperAdminSidebar = () => {
     }
     return location.pathname === path;
   };
+
+  // Close sidebar when clicking outside on mobile
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const sidebar = document.getElementById('sidebar');
+      const menuButton = document.getElementById('menu-button');
+      if (
+        isOpen &&
+        sidebar &&
+        !sidebar.contains(event.target) &&
+        !menuButton.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  // Close sidebar when route changes on mobile
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location]);
 
   const menuItems = [
     {
@@ -47,22 +71,27 @@ const SuperAdminSidebar = () => {
 
   return (
     <>
+      {/* Menu Button - Only visible on mobile */}
       <button
-        className="lg:hidden fixed top-4 left-4 z-20 p-2 rounded-lg bg-white/10 backdrop-blur-md border border-white/20 text-white hover:bg-white/20 transition-colors"
+        id="menu-button"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors"
         onClick={() => setIsOpen(!isOpen)}
       >
         <AiOutlineMenu size={24} />
       </button>
 
-      <div
+      {/* Sidebar */}
+      <aside
+        id="sidebar"
         className={`
-          fixed lg:static
-          w-64 lg:w-[300px] h-screen 
+          fixed top-0 left-0
+          h-full w-[300px]
           bg-black text-white
-          transition-all duration-300 ease-in-out
+          transform transition-transform duration-300 ease-in-out
           lg:translate-x-0
           ${isOpen ? 'translate-x-0' : '-translate-x-full'}
-          z-10
+          lg:relative lg:block
+          z-40
         `}
       >
         <div className="flex flex-col items-center p-6 border-b border-gray-700">
@@ -86,7 +115,6 @@ const SuperAdminSidebar = () => {
                         ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black'
                         : ''
                     }`}
-                  onClick={() => setIsOpen(false)}
                 >
                   <span>{item.icon}</span>
                   <span>{item.name}</span>
@@ -95,11 +123,12 @@ const SuperAdminSidebar = () => {
             ))}
           </ul>
         </nav>
-      </div>
+      </aside>
 
+      {/* Overlay - Only visible on mobile when sidebar is open */}
       {isOpen && (
         <div
-          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-0 transition-opacity"
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30"
           onClick={() => setIsOpen(false)}
         />
       )}
