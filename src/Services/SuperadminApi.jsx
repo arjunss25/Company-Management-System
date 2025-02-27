@@ -185,6 +185,15 @@ export const SuperadminApi = {
       throw error;
     }
   },
+
+  getCompanyCount: async () => {
+    try {
+      const response = await axiosInstance.get('/company-count/');
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 export default SuperadminApi;

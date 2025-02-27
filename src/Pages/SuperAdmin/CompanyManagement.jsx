@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Building,
   List,
@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import AddCompany from './AddCompany';
 import CompanyListTable from './CompanyListTable';
+import { SuperadminApi } from '../../Services/SuperadminApi';
 
 const AccordionSection = ({
   title,
@@ -17,6 +18,7 @@ const AccordionSection = ({
   onToggle,
   children,
   accentColor,
+  companyCount,
 }) => (
   <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300">
     <button
@@ -36,9 +38,9 @@ const AccordionSection = ({
       <div className="flex items-center gap-3">
         {title === 'Company List' && (
           <div className="hidden sm:flex items-center gap-2 text-sm">
-            <span className="text-gray-500">12 Companies</span>
+            <span className="text-gray-500">{companyCount} Companies</span>
             <div className="h-4 w-[1px] bg-gray-300"></div>
-            <span className="text-gray-500">Last updated: Today</span>
+            {/* <span className="text-gray-500">Last updated: Today</span> */}
           </div>
         )}
         <ChevronDown
@@ -62,6 +64,26 @@ const AccordionSection = ({
 const CompanyManagement = () => {
   const [expandedSection, setExpandedSection] = useState('register');
   const [searchTerm, setSearchTerm] = useState('');
+  const [companyCount, setCompanyCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const fetchCompanyCount = async () => {
+    try {
+      const response = await SuperadminApi.getCompanyCount();
+      setCompanyCount(response.data);
+      setError(null);
+    } catch (err) {
+      console.error('Error fetching company count:', err);
+      setError('Failed to fetch company count');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCompanyCount();
+  }, []);
 
   const toggleSection = (section) => {
     setExpandedSection(expandedSection === section ? null : section);
@@ -78,8 +100,6 @@ const CompanyManagement = () => {
                 <div className="h-1 w-12 bg-blue-500 rounded-full mt-2"></div>
               </h1>
             </div>
-
-
           </div>
 
           <div className="space-y-4 flex flex-col items-cente w-fullr">
@@ -91,7 +111,7 @@ const CompanyManagement = () => {
               accentColor="bg-blue-500"
             >
               <div className="max-w-4xl mx-auto">
-                <AddCompany />
+                <AddCompany onSuccess={fetchCompanyCount} />
               </div>
             </AccordionSection>
 
@@ -101,9 +121,10 @@ const CompanyManagement = () => {
               isExpanded={expandedSection === 'list'}
               onToggle={() => toggleSection('list')}
               accentColor="bg-green-500"
+              companyCount={companyCount}
             >
               <div className="flex justify-center w-full">
-                <CompanyListTable />
+                <CompanyListTable onCompanyChange={fetchCompanyCount} />
               </div>
             </AccordionSection>
           </div>
