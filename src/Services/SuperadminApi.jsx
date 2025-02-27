@@ -107,6 +107,15 @@ export const SuperadminApi = {
     }
   },
 
+  getStaffListByCompany: async (companyId) => {
+    try {
+      const response = await axiosInstance.get(`/list-staffs-by-company/${companyId}/`);
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
+
   deleteStaff: async (staffId, companyId) => {
     try {
       const response = await axiosInstance.delete(
