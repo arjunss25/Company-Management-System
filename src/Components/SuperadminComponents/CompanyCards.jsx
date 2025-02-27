@@ -25,7 +25,7 @@ const CompanyCards = () => {
 
   if (companyList.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] p-8">
+      <div className="flex flex-col items-center justify-center w-full min-h-[400px] p-8">
         <div className="bg-gray-50 rounded-full p-8 mb-6">
           <svg 
             className="w-16 h-16 text-gray-400"

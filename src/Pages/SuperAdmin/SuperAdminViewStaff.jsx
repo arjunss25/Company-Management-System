@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { Link, useParams, useNavigate } from 'react-router-dom';
+import { TbArrowBackUp } from "react-icons/tb";
 import EditStaffProfile from '../../Components/SuperadminComponents/EditStaffProfile';
 import { SuperadminApi } from '../../Services/SuperadminApi';
 import Spinner from '../../Components/Common/Spinner';
 import Modal from '../../Components/Common/Modal';
+import { FaUsersRays } from "react-icons/fa6";
 
 const SuperAdminViewStaff = () => {
   const { companyId } = useParams();
+  const navigate = useNavigate();
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -58,33 +61,31 @@ const SuperAdminViewStaff = () => {
   if (!staffList || staffList.length === 0) {
     return (
       <div className="w-full h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
-        <div className="main-content w-full md:w-[calc(100%-300px)] h-full overflow-y-auto p-6">
-          <div className="max-w-4xl mx-auto">
+        <div className="main-content w-full h-full overflow-y-auto p-6">
+          <div className=" mx-auto">
             {/* Header Section */}
-            <div className="mb-8">
+            <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <h1 className="text-2xl font-bold text-gray-800">
                 Staff Management
                 <div className="h-1 w-12 bg-blue-500 rounded-full mt-2"></div>
               </h1>
+
+              <div className="flex items-center gap-4 mb-4 sm:mb-0">
+              <button
+                onClick={() => navigate('/superadmin/company-management')}
+                className="flex items-center gap-2 bg-blue-500 px-5 py-1 rounded-full text-white hover:shadow-sm transition-colors"
+              >
+                <TbArrowBackUp className="w-5 h-5" />
+                <span>Back</span>
+              </button>
+            </div>
             </div>
 
             {/* Empty State Message */}
-            <div className="bg-white rounded-xl shadow-sm p-8 text-center">
+            <div className="bg-white rounded-xl shadow-sm p-8 text-center w-full">
               <div className="flex flex-col items-center justify-center">
-                <div className="mb-4">
-                  <svg
-                    className="w-16 h-16 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"
-                    />
-                  </svg>
+                <div className="mb-4 p-8 rounded-full bg-[#DFDFDF]">
+                <FaUsersRays  className='text-[2rem]'/>
                 </div>
                 <h3 className="text-xl font-semibold text-gray-800 mb-2">
                   No Staff Members Found
@@ -159,83 +160,95 @@ const SuperAdminViewStaff = () => {
 
   return (
     <div className="w-full h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex">
-      <div className="main-content w-full md:w-[calc(100%-300px)] h-full overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto">
-          {/* Header Section */}
-          <div className="mb-8">
-            <h1 className="text-2xl font-bold text-gray-800">
-              Staff Management
+      <div className="main-content w-full h-full overflow-y-auto p-6">
+        {/* Back button and header */}
+        <div className="mb-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+              Staff List
               <div className="h-1 w-12 bg-blue-500 rounded-full mt-2"></div>
             </h1>
-          </div>
 
-          {/* Staff List Table */}
-          <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-6">
-            <div className="overflow-x-auto rounded-lg shadow">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Sl.No
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Staff Name
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Role
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Date Of Registration
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
-                      Action
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {staffList.map((staff, index) => (
-                    <tr key={staff.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {index + 1}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {staff.staff_name}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {staff.role}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                        {staff.date_of_registration}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
-                        <Link
-                          to=""
-                          className="inline-flex items-center px-3 py-1.5 border border-yellow-500 text-yellow-500 bg-white rounded-md hover:bg-yellow-500 hover:text-white transition-colors duration-200"
-                        >
-                          User Rights
-                        </Link>
-                        {userRights.canEdit && (
-                          <button
-                            onClick={() => handleEdit(staff.id)}
-                            className="inline-flex items-center px-3 py-1.5 border border-green-500 text-green-500 bg-white rounded-md hover:bg-green-500 hover:text-white transition-colors duration-200"
-                          >
-                            Edit
-                          </button>
-                        )}
-                        {userRights.canDelete && (
-                          <button
-                            onClick={() => handleDelete(staff)}
-                            className="inline-flex items-center px-3 py-1.5 border border-red-500 text-red-500 bg-white rounded-md hover:bg-red-500 hover:text-white transition-colors duration-200"
-                          >
-                            Delete
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="flex items-center gap-4 mb-4 sm:mb-0">
+              <button
+                onClick={() => navigate('/superadmin/company-management')}
+                className="flex items-center gap-2 bg-blue-500 px-5 py-1 rounded-full text-white hover:shadow-sm transition-colors"
+              >
+                <TbArrowBackUp className="w-5 h-5" />
+                <span>Back</span>
+              </button>
             </div>
+
+
+          </div>
+        </div>
+
+        {/* Staff List Table */}
+        <div className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 p-6">
+          <div className="overflow-x-auto rounded-lg shadow">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Sl.No
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Staff Name
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Role
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Date Of Registration
+                  </th>
+                  <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                    Action
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {staffList.map((staff, index) => (
+                  <tr key={staff.id} className="hover:bg-gray-50">
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {index + 1}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {staff.staff_name}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {staff.role}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {staff.date_of_registration}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
+                      <Link
+                        to=""
+                        className="inline-flex items-center px-3 py-1.5 border border-yellow-500 text-yellow-500 bg-white rounded-md hover:bg-yellow-500 hover:text-white transition-colors duration-200"
+                      >
+                        User Rights
+                      </Link>
+                      {userRights.canEdit && (
+                        <button
+                          onClick={() => handleEdit(staff.id)}
+                          className="inline-flex items-center px-3 py-1.5 border border-green-500 text-green-500 bg-white rounded-md hover:bg-green-500 hover:text-white transition-colors duration-200"
+                        >
+                          Edit
+                        </button>
+                      )}
+                      {userRights.canDelete && (
+                        <button
+                          onClick={() => handleDelete(staff)}
+                          className="inline-flex items-center px-3 py-1.5 border border-red-500 text-red-500 bg-white rounded-md hover:bg-red-500 hover:text-white transition-colors duration-200"
+                        >
+                          Delete
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         </div>
 

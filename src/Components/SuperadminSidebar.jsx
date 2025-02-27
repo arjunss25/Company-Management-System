@@ -15,7 +15,8 @@ const SuperAdminSidebar = () => {
     if (path === '/superadmin/company-management') {
       // Consider both company management and viewstaff routes as part of company management
       return (
-        location.pathname === path || location.pathname.startsWith('/viewstaff')
+        location.pathname === path ||
+        location.pathname.includes('/superadmin/viewstaff')
       );
     }
     return location.pathname === path;
