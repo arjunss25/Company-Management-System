@@ -109,7 +109,9 @@ export const SuperadminApi = {
 
   getStaffListByCompany: async (companyId) => {
     try {
-      const response = await axiosInstance.get(`/list-staffs-by-company/${companyId}/`);
+      const response = await axiosInstance.get(
+        `/list-staffs-by-company/${companyId}/`
+      );
       return response.data;
     } catch (error) {
       throw error;
@@ -168,6 +170,18 @@ export const SuperadminApi = {
         statusText: error.response?.statusText,
         fullError: error,
       });
+      throw error;
+    }
+  },
+
+  changeStaffPassword: async (passwordData) => {
+    try {
+      const response = await axiosInstance.patch(
+        '/staff-change-password/',
+        passwordData
+      );
+      return response.data;
+    } catch (error) {
       throw error;
     }
   },

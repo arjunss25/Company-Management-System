@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import EditStaffProfile from '../../Components/SuperadminComponents/EditStaffProfile';
 import { SuperadminApi } from '../../Services/SuperadminApi';
 import Spinner from '../../Components/Common/Spinner';
+import Modal from '../../Components/Common/Modal';
 
 const SuperAdminViewStaff = () => {
   const { companyId } = useParams();
@@ -14,23 +15,25 @@ const SuperAdminViewStaff = () => {
     canDelete: true,
   });
   const [selectedStaff, setSelectedStaff] = useState(null);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const fetchStaffList = async () => {
+    try {
+      setLoading(true);
+      const response = await SuperadminApi.getStaffListByCompany(companyId);
+      setStaffList(Array.isArray(response.data) ? response.data : []);
+      setError(null);
+    } catch (err) {
+      setError(err.message || 'Failed to fetch staff list');
+      setStaffList([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchStaffList = async () => {
-      try {
-        setLoading(true);
-        const response = await SuperadminApi.getStaffListByCompany(companyId);
-        // Update to use the data array from the response
-        setStaffList(Array.isArray(response.data) ? response.data : []);
-        setError(null);
-      } catch (err) {
-        setError(err.message || 'Failed to fetch staff list');
-        setStaffList([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     if (companyId) {
       fetchStaffList();
     }
@@ -87,8 +90,9 @@ const SuperAdminViewStaff = () => {
                   No Staff Members Found
                 </h3>
                 <p className="text-gray-600 max-w-md">
-                  There are currently no staff members registered for this company. 
-                  New staff members will appear here once they are added.
+                  There are currently no staff members registered for this
+                  company. New staff members will appear here once they are
+                  added.
                 </p>
               </div>
             </div>
@@ -100,23 +104,57 @@ const SuperAdminViewStaff = () => {
   const handleEdit = (staffId) => {
     const staff = staffList.find((s) => s.id === staffId);
     if (staff) {
-      // Transform the staff data to match the expected format
+      const convertDate = (dateString) => {
+        if (!dateString) return '';
+        const [day, month, year] = dateString.split('/');
+        return `${year}-${month}-${day}`;
+      };
+
       const formattedStaff = {
+        id: staff.id,
         staffName: staff.staff_name,
-        abbreviation: staff.abbreviation,
         companyName: staff.company_name,
+        abbreviation: staff.abbrevation,
         role: staff.role,
         username: staff.username,
-        dateOfRegistration: staff.date_of_registration,
-        phoneNumber: staff.phone_number,
-        photoPreview: staff.photo ? `http://82.29.160.146${staff.photo}` : null,
+        password: staff.password,
+        dateOfRegistration: convertDate(staff.date_of_registration),
+        phoneNumber: staff.number,
+        photo: staff.image,
+        photoPreview: staff.image ? `http://82.29.160.146${staff.image}` : null,
       };
       setSelectedStaff(formattedStaff);
     }
   };
 
-  const handleDelete = (staffId) => {
-    console.log(`Delete staff with ID: ${staffId}`);
+  const handleEditSuccess = () => {
+    // Refresh the staff list after successful edit
+    fetchStaffList();
+    setSelectedStaff(null); // Close the modal
+  };
+
+  const handleDelete = (staff) => {
+    setStaffToDelete(staff);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!staffToDelete) return;
+
+    try {
+      await SuperadminApi.deleteStaff(staffToDelete.id, companyId);
+      setSuccessMessage('Staff deleted successfully!');
+      await fetchStaffList(); // Refresh the list
+      // Show success message in modal for 2 seconds before closing
+      setTimeout(() => {
+        setIsDeleteModalOpen(false);
+        setStaffToDelete(null);
+        setSuccessMessage('');
+      }, 2000);
+    } catch (error) {
+      console.error('Error deleting staff:', error);
+      setError('Failed to delete staff. Please try again.');
+    }
   };
 
   return (
@@ -155,7 +193,6 @@ const SuperAdminViewStaff = () => {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  
                   {staffList.map((staff, index) => (
                     <tr key={staff.id} className="hover:bg-gray-50">
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -187,7 +224,7 @@ const SuperAdminViewStaff = () => {
                         )}
                         {userRights.canDelete && (
                           <button
-                            onClick={() => handleDelete(staff.id)}
+                            onClick={() => handleDelete(staff)}
                             className="inline-flex items-center px-3 py-1.5 border border-red-500 text-red-500 bg-white rounded-md hover:bg-red-500 hover:text-white transition-colors duration-200"
                           >
                             Delete
@@ -201,13 +238,126 @@ const SuperAdminViewStaff = () => {
             </div>
           </div>
         </div>
+
+        {/* Delete Confirmation Modal */}
+        <Modal
+          isOpen={isDeleteModalOpen}
+          onClose={() => {
+            setIsDeleteModalOpen(false);
+            setError(null);
+            setSuccessMessage('');
+          }}
+        >
+          <div className="p-6">
+            {!successMessage && !error && (
+              <>
+                <div className="w-16 h-16 rounded-full bg-red-100 mx-auto mb-4 flex items-center justify-center">
+                  <svg
+                    className="w-8 h-8 text-red-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-center text-gray-800 mb-2">
+                  Confirm Delete
+                </h3>
+                <p className="text-center text-gray-600 mb-2">
+                  Are you sure you want to delete staff member:
+                </p>
+                <p className="text-center font-semibold text-gray-800 mb-1">
+                  {staffToDelete?.staff_name}
+                </p>
+                <p className="text-center text-gray-600 mb-6">
+                  from company {staffToDelete?.company_name}?
+                </p>
+                <div className="flex space-x-4">
+                  <button
+                    onClick={confirmDelete}
+                    className="flex-1 bg-red-500 text-white py-2 px-4 rounded-lg hover:bg-red-600 transition-colors"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => setIsDeleteModalOpen(false)}
+                    className="flex-1 bg-gray-300 text-gray-700 py-2 px-4 rounded-lg hover:bg-gray-400 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </>
+            )}
+
+            {successMessage && (
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-green-100 mx-auto mb-4 flex items-center justify-center">
+                  <svg
+                    className="w-8 h-8 text-green-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M5 13l4 4L19 7"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-green-600 mb-2">
+                  {successMessage}
+                </h3>
+              </div>
+            )}
+
+            {error && (
+              <div className="text-center">
+                <div className="w-16 h-16 rounded-full bg-red-100 mx-auto mb-4 flex items-center justify-center">
+                  <svg
+                    className="w-8 h-8 text-red-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth="2"
+                      d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                    />
+                  </svg>
+                </div>
+                <h3 className="text-xl font-semibold text-red-600 mb-2">
+                  {error}
+                </h3>
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="mt-4 px-6 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
+        </Modal>
+
+        {/* Edit Staff Modal */}
+        {selectedStaff && (
+          <EditStaffProfile
+            staff={selectedStaff}
+            onClose={() => setSelectedStaff(null)}
+            onEditSuccess={handleEditSuccess}
+          />
+        )}
       </div>
-      {selectedStaff && (
-        <EditStaffProfile
-          staff={selectedStaff}
-          onClose={() => setSelectedStaff(null)}
-        />
-      )}
     </div>
   );
 };
