@@ -7,42 +7,37 @@ import {
 } from 'react-icons/ai';
 import { FaBuilding, FaFileContract, FaBoxOpen, FaUsers } from 'react-icons/fa';
 
-const GeneralSidebar = () => {
+const AdminSidebar = () => {
   const location = useLocation();
 
   const menuItems = [
     {
-      path: '/admin-dashboard',
+      path: '/admin/dashboard',
       icon: <AiOutlineDashboard size={22} />,
       label: 'Dashboard',
     },
     {
-      path: '/quotation-dashboard',
-      icon: <AiOutlineFileText size={22} />,
-      label: 'Quotation',
-    },
-    {
-      path: '/client-location',
+      path: '/admin/client-location',
       icon: <FaBuilding size={22} />,
       label: 'Client/Location',
     },
     {
-      path: '/contract-dashboard',
+      path: '/admin/contract-dashboard',
       icon: <FaFileContract size={22} />,
       label: 'Contract',
     },
     {
-      path: '/material-dashboard',
+      path: '/admin/material-dashboard',
       icon: <FaBoxOpen size={22} />,
       label: 'Material',
     },
     {
-      path: '/user-management-dashboard',
+      path: '/admin/user-management',
       icon: <FaUsers size={22} />,
       label: 'User Management',
     },
     {
-      path: '/terms-and-conditions-dashboard',
+      path: '/admin/terms-and-conditions',
       icon: <AiOutlineSetting size={22} />,
       label: 'Terms & Condition',
     },
@@ -66,7 +61,11 @@ const GeneralSidebar = () => {
               <Link
                 to={item.path}
                 className={`flex items-center gap-4 px-6 py-3 hover:bg-gray-800 text-[#8E8E8E] rounded-[2px] transition-colors
-                  ${location.pathname === item.path ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black' : ''}`}
+                  ${
+                    location.pathname === item.path
+                      ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black'
+                      : ''
+                  }`}
               >
                 <span>{item.icon}</span>
                 <span>{item.label}</span>
@@ -79,4 +78,4 @@ const GeneralSidebar = () => {
   );
 };
 
-export default GeneralSidebar;
+export default AdminSidebar;
