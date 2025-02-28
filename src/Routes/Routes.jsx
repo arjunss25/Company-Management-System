@@ -22,31 +22,28 @@ const AppRoutes = () => {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
-      {/* Protected Superadmin Routes */}
+      {/* Root redirect */}
+      <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
+
+      {/* Superadmin Routes */}
       <Route
+        path="/superadmin"
         element={
-          <ProtectedRoute allowedRoles={['superadmin', 'SuperAdmin']}>
-            <SuperadminLayout />
-          </ProtectedRoute>
+          <ProtectedRoute
+            allowedRoles={['superadmin', 'SuperAdmin']}
+            element={<SuperadminLayout />}
+          />
         }
       >
-        <Route path="/superadmin">
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<SuperAdminDashboard />} />
-          <Route path="company-management" element={<CompanyManagement />} />
-          <Route
-            path="user-management"
-            element={<SuperAdminUserManagement />}
-          />
-          <Route
-            path="viewstaff/:companyId"
-            element={<SuperAdminViewStaff />}
-          />
-        </Route>
+        <Route path="dashboard" element={<SuperAdminDashboard />} />
+        <Route path="company-management" element={<CompanyManagement />} />
+        <Route path="user-management" element={<SuperAdminUserManagement />} />
+        <Route path="view-staff" element={<SuperAdminViewStaff />} />
       </Route>
 
-      {/* Protected Admin Routes */}
+      {/* Admin Routes */}
       <Route
+        path="/admin"
         element={
           <ProtectedRoute
             allowedRoles={[
@@ -57,87 +54,50 @@ const AppRoutes = () => {
               'sales',
               'Sales',
             ]}
-          >
-            <AdminLayout />
-          </ProtectedRoute>
+            element={<AdminLayout />}
+          />
         }
       >
-        <Route path="/admin">
-          <Route index element={<Navigate to="dashboard" replace />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-
-          {/* Client/Location Routes */}
-          <Route
-            path="client-location"
-            element={
-              <ProtectedRoute
-                allowedRoles={[
-                  'admin',
-                  'Admin',
-                  'staff',
-                  'Staff',
-                  'sales',
-                  'Sales',
-                ]}
-                allowedPermissions={[
-                  PERMISSIONS.VIEW_CLIENTS,
-                  PERMISSIONS.VIEW_LOCATIONS,
-                ]}
-                element={<ClientLocationDashboard />}
-              />
-            }
-          />
-
-          {/* Client List Route */}
-          <Route
-            path="clients"
-            element={
-              <ProtectedRoute
-                allowedRoles={[
-                  'admin',
-                  'Admin',
-                  'staff',
-                  'Staff',
-                  'sales',
-                  'Sales',
-                ]}
-                allowedPermissions={[PERMISSIONS.VIEW_CLIENTS]}
-                element={<ClientTable />}
-              />
-            }
-          />
-
-          {/* Location List Route */}
-          <Route
-            path="locations"
-            element={
-              <ProtectedRoute
-                allowedRoles={[
-                  'admin',
-                  'Admin',
-                  'staff',
-                  'Staff',
-                  'sales',
-                  'Sales',
-                ]}
-                allowedPermissions={[PERMISSIONS.VIEW_LOCATIONS]}
-                element={<LocationTable />}
-              />
-            }
-          />
-
-          {/* Contract Routes */}
-          <Route
-            path="contract-dashboard"
-            element={<div>Contract Dashboard</div>}
-          />
-        </Route>
+        <Route
+          path="dashboard"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_dashboard']}
+              element={<AdminDashboard />}
+            />
+          }
+        />
+        <Route
+          path="client-location"
+          element={
+            <ProtectedRoute
+              allowedRoles={['admin']}
+              allowedPermissions={['view_clients', 'view_locations']}
+              element={<ClientLocationDashboard />}
+            />
+          }
+        />
+        <Route
+          path="clients"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_clients']}
+              element={<ClientTable />}
+            />
+          }
+        />
+        <Route
+          path="locations"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_locations']}
+              element={<LocationTable />}
+            />
+          }
+        />
       </Route>
 
-      {/* Redirect root to admin dashboard for admin users */}
-      <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
-
-      {/* Redirect unknown routes to login */}
+      {/* Catch all route */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );

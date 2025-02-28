@@ -1,17 +1,26 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import useAuth from '../../Hooks/useAuth';
+import TokenService from '../../Config/tokenService';
 
 const UnauthorizedPage = () => {
   const navigate = useNavigate();
   const { userRole } = useAuth();
 
   const handleGoBack = () => {
-    // Redirect based on user role
-    if (userRole === 'superadmin') {
+    const token = TokenService.getToken();
+    if (!token) {
+      navigate('/login');
+      return;
+    }
+
+    const role = TokenService.getUserRole()?.toLowerCase();
+    if (role === 'superadmin') {
       navigate('/superadmin/dashboard');
+    } else if (role === 'admin') {
+      navigate('/admin/dashboard');
     } else {
-      navigate('/');
+      navigate('/login');
     }
   };
 
@@ -27,7 +36,7 @@ const UnauthorizedPage = () => {
           onClick={handleGoBack}
           className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
         >
-          Go Back to Login
+          Go Back
         </button>
       </div>
     </div>

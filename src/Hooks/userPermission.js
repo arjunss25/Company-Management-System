@@ -80,64 +80,43 @@ const ROLE_PERMISSIONS = {
 const usePermissions = () => {
   const [userPermissions, setUserPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [userRole, setUserRole] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadPermissions = () => {
-      const currentRole = TokenService.getUserRole();
-      console.log('Loading permissions for role:', currentRole);
-
-      if (currentRole) {
-        // Get permissions for the exact role
-        const permissions = ROLE_PERMISSIONS[currentRole] || [];
-        console.log(
-          'Assigned permissions for role',
-          currentRole,
-          ':',
-          permissions
-        );
+      try {
+        setLoading(true);
+        // Get permissions from TokenService
+        const permissions = TokenService.getUserPermissions();
+        console.log('Loaded permissions from storage:', permissions);
         setUserPermissions(permissions);
-        setUserRole(currentRole);
-      } else {
-        console.log('No user role found');
+        setError(null);
+      } catch (err) {
+        console.error('Error loading permissions:', err);
+        setError(err.message);
         setUserPermissions([]);
-        setUserRole(null);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     loadPermissions();
 
-    // Set up an interval to check for role changes
-    const intervalId = setInterval(loadPermissions, 1000);
+    // Set up an interval to check for permission changes
+    const intervalId = setInterval(loadPermissions, 30000); // Check every 30 seconds
 
-    // Cleanup interval on unmount
     return () => clearInterval(intervalId);
   }, []);
 
   const hasPermission = (permission) => {
-    const currentRole = TokenService.getUserRole();
-
     // Log the permission check
     console.log('Checking permission:', {
       permission,
-      role: currentRole,
       userPermissions,
-      isSuperAdmin: currentRole?.toLowerCase() === 'superadmin',
+      hasPermission: userPermissions.includes(permission),
     });
 
-    // Superadmin has all permissions (case-insensitive check)
-    if (currentRole?.toLowerCase() === 'superadmin') {
-      return true;
-    }
-
-    // For other roles, check if the permission exists in their permissions array
-    const hasPermissionResult = userPermissions.includes(permission);
-    console.log(
-      `Permission check result for ${permission}:`,
-      hasPermissionResult
-    );
-    return hasPermissionResult;
+    return userPermissions.includes(permission);
   };
 
   const hasAnyPermission = (permissions) => {
@@ -160,13 +139,13 @@ const usePermissions = () => {
 
   return {
     loading,
+    error,
+    userPermissions,
     hasPermission,
     hasAnyPermission,
     hasAllPermissions,
     canAccessPage,
     canPerformAction,
-    userPermissions,
-    userRole,
   };
 };
 

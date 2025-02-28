@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import useAuth from '../../Hooks/useAuth';
+import { useDispatch } from 'react-redux';
 import axiosInstance from '../../Config/axiosInstance';
 import TokenService from '../../Config/tokenService';
 import { LuEye } from 'react-icons/lu';
-import usePermissions from '../../Hooks/userPermission';
-import { PERMISSIONS } from '../../Hooks/userPermission';
+import {
+  loginStart,
+  loginSuccess,
+  loginFailure,
+} from '../../store/slices/authSlice';
 
 const LoginPage = () => {
   const navigate = useNavigate();
-  const { login } = useAuth();
-  const { hasPermission } = usePermissions();
+  const dispatch = useDispatch();
   const [formData, setFormData] = useState({
     company: '',
     email: '',
@@ -28,8 +30,7 @@ const LoginPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-
-    TokenService.clearTokens();
+    dispatch(loginStart());
 
     try {
       const response = await axiosInstance.post('/user-login/', {
@@ -38,43 +39,64 @@ const LoginPage = () => {
         company_name: formData.company,
       });
 
-      if (!response.data?.data?.access_token) {
-        throw new Error('No access token received from server');
-      }
+      console.log('Login response:', response.data);
 
-      const userData = response.data.data;
+      if (response.data.status === 'Success') {
+        const userData = response.data.data;
 
-      // Use the login function from useAuth hook
-      login(
-        userData.access_token,
-        userData.refresh_token,
-        userData.role,
-        userData.id,
-        userData.company_id
-      );
+        // Store tokens
+        TokenService.setToken(userData.access_token);
+        TokenService.setRefreshToken(userData.refresh_token);
 
-      // Redirect based on role and permissions
-      const userRole = userData.role?.toLowerCase();
+        // Add view_dashboard permission to the permissions array
+        const permissions = [...(userData.permissions || []), 'view_dashboard'];
 
-      if (userRole === 'superadmin') {
-        navigate('/superadmin/dashboard');
-      } else if (['admin', 'staff', 'sales'].includes(userRole)) {
-        // Check if user has dashboard access permission
-        if (hasPermission(PERMISSIONS.VIEW_DASHBOARD)) {
+        // Get user display name
+        let displayName = 'User';
+        if (userData.name) {
+          displayName = userData.name;
+        } else if (userData.email) {
+          const emailParts = userData.email.split('@');
+          displayName = emailParts[0];
+        }
+
+        // Store user data including the added permission
+        TokenService.setUserRole(userData.role);
+        TokenService.setUserId(userData.id);
+        TokenService.setCompanyId(userData.company_id);
+        TokenService.setUserPermissions(permissions);
+        TokenService.setUserName(displayName);
+
+        // Dispatch success with user data
+        dispatch(
+          loginSuccess({
+            role: userData.role,
+            permissions,
+            id: userData.id,
+            company_id: userData.company_id,
+            name: displayName,
+          })
+        );
+
+        // Navigate based on role
+        const userRole = userData.role?.toLowerCase();
+        if (userRole === 'superadmin') {
+          navigate('/superadmin/dashboard');
+        } else if (userRole === 'admin') {
           navigate('/admin/dashboard');
         } else {
           navigate('/unauthorized');
         }
       } else {
-        navigate('/unauthorized');
+        dispatch(loginFailure(response.data.message || 'Invalid credentials'));
+        setError(response.data.message || 'Invalid credentials');
       }
-    } catch (error) {
-      console.error('Login failed:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-      });
-      setError('Login failed. Please check your credentials and try again.');
+    } catch (err) {
+      console.error('Login error:', err);
+      const errorMessage =
+        err.response?.data?.message || 'An error occurred during login';
+      dispatch(loginFailure(errorMessage));
+      setError(errorMessage);
     }
   };
 

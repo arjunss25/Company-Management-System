@@ -1,42 +1,28 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
-import TokenService from '../Config/tokenService';
-import usePermissions from '../Hooks/userPermission';
+import { useSelector } from 'react-redux';
+import {
+  selectIsAuthenticated,
+  selectUserRole,
+  selectPermissions,
+} from '../store/slices/authSlice';
 
-const ProtectedRoute = ({
-  allowedRoles,
-  allowedPermissions,
-  element: Element,
-  children,
-}) => {
-  const { loading, hasPermission } = usePermissions();
-  const token = TokenService.getToken();
-  const userRole = TokenService.getUserRole();
+const ProtectedRoute = ({ allowedRoles, allowedPermissions, element }) => {
+  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const userRole = useSelector(selectUserRole);
+  const userPermissions = useSelector(selectPermissions);
 
   console.log('ProtectedRoute - Checking access:', {
     userRole,
     allowedRoles,
     allowedPermissions,
-    hasToken: !!token,
-    loading,
+    userPermissions,
+    isAuthenticated,
   });
 
-  // Show loading state
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-50 p-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center py-12">
-            <div className="animate-pulse">Loading permissions...</div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   // Check if user is authenticated
-  if (!token) {
-    console.log('No token found, redirecting to login');
+  if (!isAuthenticated) {
+    console.log('Not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
@@ -48,9 +34,9 @@ const ProtectedRoute = ({
 
     if (!hasAllowedRole) {
       console.log(
-        'Unauthorized role, redirecting. Expected one of:',
+        'Unauthorized role, redirecting. Required one of:',
         allowedRoles,
-        'but got:',
+        'but has:',
         userRole
       );
       return <Navigate to="/unauthorized" replace />;
@@ -59,36 +45,30 @@ const ProtectedRoute = ({
 
   // If permissions are specified, check permission-based access
   if (Array.isArray(allowedPermissions) && allowedPermissions.length > 0) {
-    const hasRequiredPermission = allowedPermissions.some((permission) =>
-      hasPermission(permission)
+    // Check if user has ALL required permissions
+    const hasAllRequiredPermissions = allowedPermissions.every((permission) =>
+      userPermissions.includes(permission)
     );
 
     console.log('Checking permissions:', {
       required: allowedPermissions,
-      hasAccess: hasRequiredPermission,
+      userPermissions,
+      hasAccess: hasAllRequiredPermissions,
     });
 
-    if (!hasRequiredPermission) {
+    if (!hasAllRequiredPermissions) {
       console.log(
-        'Unauthorized permission, redirecting. Required one of:',
-        allowedPermissions
+        'Unauthorized permission, redirecting. Required ALL of:',
+        allowedPermissions,
+        'but has:',
+        userPermissions
       );
       return <Navigate to="/unauthorized" replace />;
     }
   }
 
-  // If element prop is provided, render it
-  if (Element) {
-    return (
-      <>
-        {Element}
-        {children && <Outlet />}
-      </>
-    );
-  }
-
-  // Otherwise render children
-  return children || <Outlet />;
+  // If all checks pass, render the protected content
+  return element ? element : <Outlet />;
 };
 
 export default ProtectedRoute;
