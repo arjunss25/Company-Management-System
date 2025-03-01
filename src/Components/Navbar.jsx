@@ -11,10 +11,13 @@ import { IoNotificationsOutline } from 'react-icons/io5';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdminApi } from '../Services/AdminApi';
 import ProfileModal from './ProfileModal';
+import ChangePasswordModal from './ChangePasswordModal';
 
 const Navbar = () => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+  const [isChangePasswordModalOpen, setIsChangePasswordModalOpen] =
+    useState(false);
   const [profileData, setProfileData] = useState({
     staffName: '',
     companyLogo: '',
@@ -46,17 +49,13 @@ const Navbar = () => {
   const handleViewProfile = async () => {
     try {
       const response = await AdminApi.getProfile();
-      console.log('Profile API Response:', response); // Debug log
+      console.log('Profile API Response:', response);
 
-      // Set the full response as is
       setFullProfileData(response);
-
-      // Always open the modal
       setIsProfileModalOpen(true);
       setIsProfileOpen(false);
     } catch (error) {
       console.error('Error fetching full profile data:', error);
-      // Even if there's an error, show the modal with available data
       setFullProfileData({
         status: 'Error',
         data: {
@@ -72,6 +71,21 @@ const Navbar = () => {
       setIsProfileModalOpen(true);
       setIsProfileOpen(false);
     }
+  };
+
+  const handleProfileUpdate = async (updatedData) => {
+    setFullProfileData(updatedData);
+    // Also update the navbar profile data
+    if (updatedData.status === 'Success') {
+      setProfileData({
+        staffName: updatedData.data.staff_name,
+        companyLogo: updatedData.data.image
+          ? `http://82.29.160.146${updatedData.data.image}`
+          : '',
+      });
+    }
+    // Fetch fresh company logo data
+    fetchProfileData();
   };
 
   const handleLogout = () => {
@@ -179,7 +193,7 @@ const Navbar = () => {
                   <button
                     onClick={() => {
                       setIsProfileOpen(false);
-                      navigate('/change-password');
+                      setIsChangePasswordModalOpen(true);
                     }}
                     className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
                   >
@@ -201,11 +215,18 @@ const Navbar = () => {
         </div>
       </div>
 
+      {/* ChangePasswordModal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordModalOpen}
+        onClose={() => setIsChangePasswordModalOpen(false)}
+      />
+
       {/* Profile Modal */}
       <ProfileModal
         isOpen={isProfileModalOpen}
         onClose={() => setIsProfileModalOpen(false)}
         profileData={fullProfileData || {}}
+        onProfileUpdate={handleProfileUpdate}
       />
     </div>
   );
