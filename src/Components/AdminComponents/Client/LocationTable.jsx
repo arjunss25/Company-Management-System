@@ -77,6 +77,11 @@ const LocationTable = () => {
   const navigate = useNavigate();
   const { hasPermission } = usePermissions();
 
+  // Reset scroll position immediately
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   const [locations, setLocations] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -96,8 +101,9 @@ const LocationTable = () => {
   const locationsPerPage = 10;
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     fetchLocations();
-  }, []);
+  }, [currentPage]);
 
   const fetchLocations = async () => {
     try {
@@ -239,8 +245,8 @@ const LocationTable = () => {
   }
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <div className="flex-1 md:w-[calc(100%-300px)] h-screen overflow-y-auto">
+    <div className="flex">
+      <div className="flex-1 md:w-[calc(100%-300px)]">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -251,7 +257,10 @@ const LocationTable = () => {
           <div className="flex items-center justify-between mb-12">
             <div className="flex items-center space-x-8">
               <button
-                onClick={() => navigate(-1)}
+                onClick={() => {
+                  window.scrollTo(0, 0);
+                  navigate(-1);
+                }}
                 className="group flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300"
               >
                 <IoArrowBack
