@@ -1,8 +1,15 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaTools, FaList, FaUsersCog, FaCheckCircle } from 'react-icons/fa';
 import { IoIosArrowDown, IoIosInformationCircle } from 'react-icons/io';
+import { IoArrowBack } from 'react-icons/io5';
+import { useNavigate } from 'react-router-dom';
+import { AdminApi } from '../../../Services/AdminApi';
+import AddToolModal from './AddToolModal';
+import EditToolModal from './EditToolModal';
+import SuccessModal from './SuccessModal';
 
 const StoreData = () => {
+  const navigate = useNavigate();
   const [expandedSection, setExpandedSection] = useState('addTools');
   const [toolName, setToolName] = useState('');
   const [description, setDescription] = useState('');
@@ -15,36 +22,17 @@ const StoreData = () => {
   const [isStaffDropdownOpen, setIsStaffDropdownOpen] = useState(false);
   const [staffSearchTerm, setStaffSearchTerm] = useState('');
   const [selectedStatus, setSelectedStatus] = useState({});
+  const [isAddToolModalOpen, setIsAddToolModalOpen] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [toolsList, setToolsList] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [listError, setListError] = useState(null);
+  const [selectedTool, setSelectedTool] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   // Dummy data for the table
-  const toolsList = [
-    {
-      id: 1,
-      name: 'Hammer',
-      description:
-        'Heavy duty construction hammer with reinforced handle and anti-slip grip. Suitable for professional use in construction and home improvement projects.',
-    },
-    {
-      id: 2,
-      name: 'Power Drill',
-      description:
-        'Cordless power drill with variable speed control and LED light. Includes 20V lithium-ion battery and quick-change chuck system.',
-    },
-    {
-      id: 3,
-      name: 'Measuring Tape',
-      description:
-        'Professional grade 25-foot measuring tape with magnetic hook and impact-resistant case. Features both metric and imperial measurements.',
-    },
-    {
-      id: 4,
-      name: 'Wrench Set',
-      description:
-        'Complete set of combination wrenches in various sizes. Made from chrome vanadium steel with mirror polish finish.',
-    },
-  ];
-
-  // Add dummy data for dropdowns
   const staffList = [
     { id: 1, name: 'John Smith' },
     { id: 2, name: 'Sarah Johnson' },
@@ -55,7 +43,7 @@ const StoreData = () => {
 
   // Add filter function for tools
   const filteredTools = toolsList.filter((tool) =>
-    tool.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (tool.tool_name || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredStaff = staffList.filter((staff) =>
@@ -93,6 +81,28 @@ const StoreData = () => {
     { value: 'permanent_return', label: 'Permanent Return' },
   ];
 
+  useEffect(() => {
+    fetchTools();
+  }, []);
+
+  const fetchTools = async () => {
+    setIsLoading(true);
+    setListError(null);
+    try {
+      const response = await AdminApi.listTools();
+      if (response.status === 'Success') {
+        setToolsList(response.data || []);
+      } else {
+        throw new Error(response.message || 'Failed to fetch tools');
+      }
+    } catch (error) {
+      console.error('Error fetching tools:', error);
+      setListError(error.message || 'Failed to fetch tools. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const validateForm = () => {
     const newErrors = {};
     if (!toolName.trim()) {
@@ -108,21 +118,49 @@ const StoreData = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      // Handle form submission
-      console.log('Form submitted:', { toolName, description });
-      // Reset form
-      setToolName('');
-      setDescription('');
-      setErrors({});
+      setLoading(true);
+      try {
+        const response = await AdminApi.addTool({
+          tool_name: toolName,
+          description: description,
+        });
+
+        if (response.status === 'Success') {
+          setSuccessMessage(response.message || 'Tool added successfully!');
+          setShowSuccess(true);
+          // Reset form
+          setToolName('');
+          setDescription('');
+          setErrors({});
+          // Refresh tools list
+          fetchTools();
+        } else {
+          throw new Error(response.message || 'Failed to add tool');
+        }
+      } catch (error) {
+        console.error('Error adding tool:', error);
+        setErrors({
+          submit: error.message || 'Failed to add tool. Please try again.',
+        });
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
+  const handleSuccessClose = () => {
+    setShowSuccess(false);
+  };
+
   const handleEdit = (id) => {
-    console.log('Edit tool:', id);
-    // Implement edit functionality
+    const tool = toolsList.find((t) => t.id === id);
+    if (tool) {
+      setSelectedTool(tool);
+      setIsEditModalOpen(true);
+    }
   };
 
   const handleDelete = (id) => {
@@ -144,13 +182,24 @@ const StoreData = () => {
   };
 
   return (
-    <div className="w-full h-screen bg-gray-50 flex">
-
-      <div className="main-content w-full md:w-[calc(100%-300px)] h-full overflow-y-scroll p-4">
-        <div className="title-sec w-full h-[12vh] flex items-center justify-center px-8">
-          <h1 className="text-[1.8rem] font-semibold text-gray-800 relative">
-            Store Management
-          </h1>
+    <div className="w-full h-screen flex">
+      <div className="main-content w-full h-full p-4">
+        <div className="title-sec w-full h-[12vh] flex items-center px-8">
+          <div className="flex items-center space-x-8 w-full">
+            <button
+              onClick={() => navigate('/admin/material-dashboard')}
+              className="group flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300"
+            >
+              <IoArrowBack
+                size={20}
+                className="group-hover:-translate-x-1 transition-transform duration-300"
+              />
+              <span className="text-sm font-medium">Dashboard</span>
+            </button>
+            <h1 className="text-[1.8rem] font-semibold text-gray-800">
+              Store Management
+            </h1>
+          </div>
         </div>
 
         <div className="accordion-container space-y-6 max-w-3xl mx-auto">
@@ -223,11 +272,19 @@ const StoreData = () => {
                   </div>
                   <button
                     type="submit"
-                    className="w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transform hover:scale-[1.02] transition-all duration-200 font-medium"
+                    disabled={loading}
+                    className={`w-full bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transform hover:scale-[1.02] transition-all duration-200 font-medium ${
+                      loading ? 'opacity-70 cursor-not-allowed' : ''
+                    }`}
                   >
-                    Save Tool
+                    {loading ? 'Adding Tool...' : 'Save Tool'}
                   </button>
                 </form>
+                {errors.submit && (
+                  <p className="text-red-500 text-sm mt-2 text-center">
+                    {errors.submit}
+                  </p>
+                )}
               </div>
             </div>
           </div>
@@ -258,129 +315,148 @@ const StoreData = () => {
               }`}
             >
               <div className="p-6 border-t">
-                <div className="overflow-x-auto rounded-lg shadow">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead>
-                      <tr className="bg-gray-50">
-                        <th
-                          scope="col"
-                          className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
-                        >
-                          Sl.No
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
-                        >
-                          Tool Name
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
-                        >
-                          Description
-                        </th>
-                        <th
-                          scope="col"
-                          className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
-                        >
-                          Action
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                      {toolsList.map((tool, index) => (
-                        <tr
-                          key={tool.id}
-                          className="hover:bg-gray-50 transition-colors duration-200"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
-                            <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
-                              {tool.id}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="h-10 w-10 flex-shrink-0 mr-4">
-                                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                  <FaTools className="h-5 w-5 text-blue-500" />
+                {isLoading ? (
+                  <div className="text-center py-12">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-600">Loading tools...</p>
+                  </div>
+                ) : listError ? (
+                  <div className="text-center py-12">
+                    <div className="text-red-500 mb-2">Error loading tools</div>
+                    <p className="text-gray-600">{listError}</p>
+                    <button
+                      onClick={fetchTools}
+                      className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                    >
+                      Try Again
+                    </button>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg shadow">
+                    <table className="min-w-full divide-y divide-gray-200">
+                      <thead>
+                        <tr className="bg-gray-50">
+                          <th
+                            scope="col"
+                            className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                          >
+                            Sl.No
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                          >
+                            Tool Name
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                          >
+                            Description
+                          </th>
+                          <th
+                            scope="col"
+                            className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider"
+                          >
+                            Action
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-white divide-y divide-gray-200">
+                        {toolsList.map((tool, index) => (
+                          <tr
+                            key={tool.id}
+                            className="hover:bg-gray-50 transition-colors duration-200"
+                          >
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-500">
+                              <span className="bg-gray-100 text-gray-700 px-2 py-1 rounded-full">
+                                {index + 1}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <div className="flex items-center">
+                                <div className="h-10 w-10 flex-shrink-0 mr-4">
+                                  <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
+                                    <FaTools className="h-5 w-5 text-blue-500" />
+                                  </div>
+                                </div>
+                                <div className="text-sm font-medium text-gray-900">
+                                  {tool.tool_name}
                                 </div>
                               </div>
-                              <div className="text-sm font-medium text-gray-900">
-                                {tool.name}
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4">
-                            <div className="text-sm text-gray-600 max-w-md">
-                              <div
-                                className={`${
-                                  expandedDescription === tool.id
-                                    ? ''
-                                    : 'line-clamp-2'
-                                }`}
-                              >
-                                {tool.description}
-                              </div>
-                              {tool.description.length > 100 && (
-                                <button
-                                  onClick={() =>
-                                    setExpandedDescription(
-                                      expandedDescription === tool.id
-                                        ? null
-                                        : tool.id
-                                    )
-                                  }
-                                  className="inline-flex items-center gap-1 mt-2 text-blue-500 hover:text-blue-700 transition-colors duration-200"
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="text-sm text-gray-600 max-w-md">
+                                <div
+                                  className={`${
+                                    expandedDescription === tool.id
+                                      ? ''
+                                      : 'line-clamp-2'
+                                  }`}
                                 >
-                                  <span className="text-sm">
-                                    {expandedDescription === tool.id
-                                      ? 'Show Less'
-                                      : 'Read More'}
-                                  </span>
-                                  <IoIosArrowDown
-                                    className={`text-blue-500 transition-transform duration-300 ${
-                                      expandedDescription === tool.id
-                                        ? 'rotate-180'
-                                        : 'rotate-0'
-                                    }`}
-                                  />
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
-                            <button
-                              onClick={() => handleEdit(tool.id)}
-                              className="inline-flex items-center px-3 py-1.5 border border-blue-500 text-blue-500 bg-white rounded-md hover:bg-blue-500 hover:text-white transition-colors duration-200"
-                            >
-                              <span className="text-sm">Edit</span>
-                            </button>
-                            <button
-                              onClick={() => handleDelete(tool.id)}
-                              className="inline-flex items-center px-3 py-1.5 border border-red-500 text-red-500 bg-white rounded-md hover:bg-red-500 hover:text-white transition-colors duration-200"
-                            >
-                              <span className="text-sm">Delete</span>
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                                  {tool.description}
+                                </div>
+                                {tool.description &&
+                                  tool.description.length > 100 && (
+                                    <button
+                                      onClick={() =>
+                                        setExpandedDescription(
+                                          expandedDescription === tool.id
+                                            ? null
+                                            : tool.id
+                                        )
+                                      }
+                                      className="inline-flex items-center gap-1 mt-2 text-blue-500 hover:text-blue-700 transition-colors duration-200"
+                                    >
+                                      <span className="text-sm">
+                                        {expandedDescription === tool.id
+                                          ? 'Show Less'
+                                          : 'Read More'}
+                                      </span>
+                                      <IoIosArrowDown
+                                        className={`text-blue-500 transition-transform duration-300 ${
+                                          expandedDescription === tool.id
+                                            ? 'rotate-180'
+                                            : 'rotate-0'
+                                        }`}
+                                      />
+                                    </button>
+                                  )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
+                              <button
+                                onClick={() => handleEdit(tool.id)}
+                                className="inline-flex items-center px-3 py-1.5 border border-blue-500 text-blue-500 bg-white rounded-md hover:bg-blue-500 hover:text-white transition-colors duration-200"
+                              >
+                                <span className="text-sm">Edit</span>
+                              </button>
+                              <button
+                                onClick={() => handleDelete(tool.id)}
+                                className="inline-flex items-center px-3 py-1.5 border border-red-500 text-red-500 bg-white rounded-md hover:bg-red-500 hover:text-white transition-colors duration-200"
+                              >
+                                <span className="text-sm">Delete</span>
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
 
-                  {/* Empty State */}
-                  {toolsList.length === 0 && (
-                    <div className="text-center py-12">
-                      <FaTools className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-medium text-gray-900">
-                        No tools
-                      </h3>
-                      <p className="mt-1 text-sm text-gray-500">
-                        Get started by creating a new tool.
-                      </p>
-                    </div>
-                  )}
-                </div>
+                    {/* Empty State */}
+                    {toolsList.length === 0 && (
+                      <div className="text-center py-12">
+                        <FaTools className="mx-auto h-12 w-12 text-gray-400" />
+                        <h3 className="mt-2 text-sm font-medium text-gray-900">
+                          No tools
+                        </h3>
+                        <p className="mt-1 text-sm text-gray-500">
+                          Get started by creating a new tool.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -503,7 +579,7 @@ const StoreData = () => {
                           {selectedTools.length > 0
                             ? toolsList.find(
                                 (t) => t.id === parseInt(selectedTools)
-                              )?.name
+                              )?.tool_name
                             : 'No tools selected'}
                         </span>
                         <svg
@@ -546,7 +622,7 @@ const StoreData = () => {
                                   setSearchTerm('');
                                 }}
                               >
-                                {tool.name}
+                                {tool.tool_name}
                               </div>
                             ))}
                             {filteredTools.length === 0 && (
@@ -628,7 +704,7 @@ const StoreData = () => {
                           <option value="">Select Tool</option>
                           {toolsList.map((tool) => (
                             <option key={tool.id} value={tool.id}>
-                              {tool.name}
+                              {tool.tool_name}
                             </option>
                           ))}
                         </select>
@@ -700,6 +776,35 @@ const StoreData = () => {
             </div>
           </div>
         </div>
+
+        <AddToolModal
+          isOpen={isAddToolModalOpen}
+          onClose={() => setIsAddToolModalOpen(false)}
+          onSuccess={() => {
+            // Refresh your tools list or update counts
+            fetchTools();
+          }}
+        />
+
+        <EditToolModal
+          isOpen={isEditModalOpen}
+          onClose={() => {
+            setIsEditModalOpen(false);
+            setSelectedTool(null);
+          }}
+          tool={selectedTool}
+          onSuccess={() => {
+            fetchTools();
+            setIsEditModalOpen(false);
+            setSelectedTool(null);
+          }}
+        />
+
+        <SuccessModal
+          isOpen={showSuccess}
+          message={successMessage}
+          onClose={handleSuccessClose}
+        />
       </div>
     </div>
   );

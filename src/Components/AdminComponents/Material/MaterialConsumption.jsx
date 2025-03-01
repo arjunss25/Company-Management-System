@@ -39,7 +39,7 @@ const MaterialConsumption = () => {
           <div className="flex items-center justify-between mb-12">
             <div className="flex items-center space-x-8">
               <button
-                onClick={() => navigate('/material-dashboard')}
+                onClick={() => navigate('/admin/material-dashboard')}
                 className="group flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300"
               >
                 <IoArrowBack

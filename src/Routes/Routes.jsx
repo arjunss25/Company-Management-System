@@ -14,6 +14,13 @@ import ClientLocationDashboard from '../Components/AdminComponents/Client/Client
 import ClientTable from '../Components/AdminComponents/Client/ClientTable';
 import LocationTable from '../Components/AdminComponents/Client/LocationTable';
 import { PERMISSIONS } from '../Hooks/userPermission';
+import MaterialDashboard from '../Components/AdminComponents/Material/MaterialDashboard';
+import ViewMaterial from '../Components/AdminComponents/Material/ViewMaterial';
+import MaterialRequest from '../Components/AdminComponents/Material/MaterialRequest';
+import MaterialRequestDetails from '../Components/AdminComponents/Material/MaterialRequestDetails';
+import PendingMaterialRequest from '../Components/AdminComponents/Material/PendingMaterialRequest';
+import MaterialConsumption from '../Components/AdminComponents/Material/MaterialConsumption';
+import StoreData from '../Components/AdminComponents/Material/StoreData';
 
 const AppRoutes = () => {
   return (
@@ -92,6 +99,69 @@ const AppRoutes = () => {
             <ProtectedRoute
               allowedPermissions={['view_locations']}
               element={<LocationTable />}
+            />
+          }
+        />
+        <Route
+          path="material-dashboard"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_materials']}
+              element={<MaterialDashboard />}
+            />
+          }
+        />
+        <Route
+          path="view-material"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_materials']}
+              element={<ViewMaterial />}
+            />
+          }
+        />
+        <Route
+          path="material-requests"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_material_requests']}
+              element={<MaterialRequest />}
+            />
+          }
+        />
+        <Route
+          path="material-request-details/:id"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_material_requests']}
+              element={<MaterialRequestDetails />}
+            />
+          }
+        />
+        <Route
+          path="pending-material-requests"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['manage_material_requests']}
+              element={<PendingMaterialRequest />}
+            />
+          }
+        />
+        <Route
+          path="material-consumption"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_material_consumption']}
+              element={<MaterialConsumption />}
+            />
+          }
+        />
+        <Route
+          path="store-data"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['manage_store']}
+              element={<StoreData />}
             />
           }
         />

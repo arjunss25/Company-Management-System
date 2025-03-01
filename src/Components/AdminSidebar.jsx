@@ -10,6 +10,19 @@ import { FaBuilding, FaFileContract, FaBoxOpen, FaUsers } from 'react-icons/fa';
 const AdminSidebar = () => {
   const location = useLocation();
 
+  // Function to check if a path is material-related
+  const isMaterialPath = (path) => {
+    const materialPaths = [
+      '/admin/material-dashboard',
+      '/admin/view-material',
+      '/admin/material-requests',
+      '/admin/pending-material-requests',
+      '/admin/material-consumption',
+      '/admin/store-data'
+    ];
+    return materialPaths.includes(path);
+  };
+
   const menuItems = [
     {
       path: '/admin/dashboard',
@@ -62,7 +75,8 @@ const AdminSidebar = () => {
                 to={item.path}
                 className={`flex items-center gap-4 px-6 py-3 hover:bg-gray-800 text-[#8E8E8E] rounded-[2px] transition-colors
                   ${
-                    location.pathname === item.path
+                    (location.pathname === item.path || 
+                    (item.path === '/admin/material-dashboard' && isMaterialPath(location.pathname)))
                       ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black'
                       : ''
                   }`}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MdAddCircle } from 'react-icons/md';
 import { FaEye } from 'react-icons/fa';
 import { IoDocumentText } from 'react-icons/io5';
@@ -7,10 +7,32 @@ import { TbReportAnalytics } from 'react-icons/tb';
 import { FaStore } from 'react-icons/fa';
 import AddMaterialModal from './AddMaterialModal';
 import { useNavigate } from 'react-router-dom';
+import { AdminApi } from '../../../Services/AdminApi';
 
 const MaterialDashboard = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [materialsCount, setMaterialsCount] = useState('...');
+  const [error, setError] = useState(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    fetchMaterialsCount();
+  }, []);
+
+  const fetchMaterialsCount = async () => {
+    try {
+      const response = await AdminApi.getMaterialsCount();
+      if (response.status === 'Success') {
+        setMaterialsCount(response.data.toString());
+      } else {
+        throw new Error(response.message || 'Failed to fetch materials count');
+      }
+    } catch (error) {
+      console.error('Error fetching materials count:', error);
+      setError(error.message);
+      setMaterialsCount('0');
+    }
+  };
 
   const cards = [
     {
@@ -21,7 +43,7 @@ const MaterialDashboard = () => {
     },
     {
       title: 'View Material',
-      count: '11',
+      count: materialsCount,
       icon: <FaEye size={30} />,
       iconColor: 'text-green-500',
     },
@@ -55,29 +77,37 @@ const MaterialDashboard = () => {
     if (title === 'Add New Material') {
       setIsModalOpen(true);
     } else if (title === 'View Material') {
-      navigate('/view-material');
+      navigate('/admin/view-material');
     } else if (title === 'Material Request') {
-      navigate('/material-requests');
+      navigate('/admin/material-requests');
     } else if (title === 'Pending Material Request') {
-      navigate('/pending-material-requests');
+      navigate('/admin/pending-material-requests');
     } else if (title === 'Material Consumption') {
-      navigate('/material-consumption');
+      navigate('/admin/material-consumption');
     } else if (title === 'Store') {
-      navigate('/store-data');
+      navigate('/admin/store-data');
     }
   };
 
   return (
-    <div className="w-full h-screen bg-gray-50 flex">
-
+    <div className="w-full h-screen flex">
       {/* main-content */}
-      <div className="main-content w-full md:w-[calc(100%-300px)] h-full overflow-y-scroll">
+      <div className="main-content w-full h-full overflow-y-scroll">
         {/* title */}
         <div className="title-sec w-full h-[12vh] flex items-center justify-center px-8 ">
           <h1 className="text-[1.8rem] font-semibold text-gray-800">
             Material Dashboard
           </h1>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div className="px-8 mb-4">
+            <div className="bg-red-50 text-red-600 px-4 py-3 rounded-lg">
+              {error}
+            </div>
+          </div>
+        )}
 
         {/* cards-section */}
         <div className="cards-sec w-full p-8">
@@ -103,7 +133,7 @@ const MaterialDashboard = () => {
                   </p>
                 </div>
 
-                <div className="title h-[50px]  flex items-center">
+                <div className="title h-[50px] flex items-center">
                   <h2 className="text-gray-500 text-base font-medium">
                     {card.title}
                   </h2>
@@ -122,6 +152,7 @@ const MaterialDashboard = () => {
         <AddMaterialModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
+          onSuccess={fetchMaterialsCount} // Refresh count after adding new material
         />
       </div>
     </div>
