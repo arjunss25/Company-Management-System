@@ -94,17 +94,7 @@ const Navbar = () => {
   };
 
   return (
-    <div className="w-full h-[70px] bg-white border-b border-gray-200 px-6 flex items-center justify-between">
-      {/* Left side - Company Logo */}
-      <div className="flex items-center">
-        {profileData.companyLogo && (
-          <img
-            src={profileData.companyLogo}
-            alt="Company Logo"
-            className="h-8 w-auto"
-          />
-        )}
-      </div>
+    <div className="w-full h-[70px] bg-white border-b border-gray-200 px-6 flex items-center justify-end">
 
       {/* Right side - Notifications & Profile */}
       <div className="flex items-center space-x-4">

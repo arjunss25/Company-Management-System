@@ -89,7 +89,6 @@ const ProfileModal = ({ isOpen, onClose, profileData, onProfileUpdate }) => {
       }
 
       if (editFormData.date_of_registration) {
-        // Convert from yyyy-mm-dd to dd-mm-yyyy
         const date = new Date(editFormData.date_of_registration);
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
