@@ -98,9 +98,9 @@ const ClientLocationDashboard = () => {
   }
 
   return (
-    <div className="w-full h-screen bg-gray-50 flex">
-      <div className="main-content w-full lg:w-[calc(100%-300px)] h-full">
-        <div className="title-sec w-full h-[12vh] flex items-center justify-center px-8">
+    <div className="w-full flex">
+      <div className="main-content w-full  h-full">
+        <div className="title-sec w-full h-[10vh] flex items-center justify-center px-8">
           <h1 className="text-[1.8rem] font-semibold text-gray-800">
             Client/Location Dashboard
           </h1>
