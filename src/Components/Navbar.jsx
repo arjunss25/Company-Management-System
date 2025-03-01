@@ -6,7 +6,7 @@ import {
   selectUserName,
   logout,
 } from '../store/slices/authSlice';
-import { FiUser, FiLogOut, FiKey } from 'react-icons/fi';
+import { FiUser, FiLogOut, FiKey, FiX } from 'react-icons/fi';
 import { IoNotificationsOutline } from 'react-icons/io5';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AdminApi } from '../Services/AdminApi';
@@ -95,7 +95,6 @@ const Navbar = () => {
 
   return (
     <div className="w-full h-[70px] bg-white border-b border-gray-200 px-6 flex items-center justify-end">
-
       {/* Right side - Notifications & Profile */}
       <div className="flex items-center space-x-4">
         {/* Notification Icon */}
@@ -144,30 +143,38 @@ const Navbar = () => {
                 className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50"
               >
                 <div className="px-4 py-2 border-b border-gray-100">
-                  <div className="flex items-center space-x-3 mb-2">
-                    <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100">
-                      {profileData.companyLogo ? (
-                        <img
-                          src={profileData.companyLogo}
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
-                          {profileData.staffName?.[0]?.toUpperCase() ||
-                            userName?.[0]?.toUpperCase() ||
-                            'U'}
-                        </div>
-                      )}
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100">
+                        {profileData.companyLogo ? (
+                          <img
+                            src={profileData.companyLogo}
+                            alt="Profile"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
+                            {profileData.staffName?.[0]?.toUpperCase() ||
+                              userName?.[0]?.toUpperCase() ||
+                              'U'}
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium text-gray-700">
+                          {profileData.staffName || userName}
+                        </p>
+                        <p className="text-xs text-gray-500 capitalize">
+                          {userRole || 'User'}
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium text-gray-700">
-                        {profileData.staffName || userName}
-                      </p>
-                      <p className="text-xs text-gray-500 capitalize">
-                        {userRole || 'User'}
-                      </p>
-                    </div>
+                    <button
+                      onClick={() => setIsProfileOpen(false)}
+                      className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                    >
+                      <FiX className="w-4 h-4 text-gray-500" />
+                    </button>
                   </div>
                 </div>
 
