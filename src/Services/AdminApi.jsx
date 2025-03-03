@@ -205,9 +205,9 @@ export const AdminApi = {
     }
   },
 
-  listAllStaffs: async () => {
+  listStaffRole: async () => {
     try {
-      const response = await axiosInstance.get('/list-all-staffs/');
+      const response = await axiosInstance.get('/list-staff-role/');
       return response.data;
     } catch (error) {
       console.error('Error fetching staff list:', error);
@@ -218,11 +218,61 @@ export const AdminApi = {
   searchStaffAssignments: async (searchTerm) => {
     try {
       const response = await axiosInstance.get(
-        `/search-staff-assignments/?search=${encodeURIComponent(searchTerm)}`
+        `/search-staff-assignments/${searchTerm}/`
       );
       return response.data;
     } catch (error) {
       console.error('Error searching staff assignments:', error);
+      throw error;
+    }
+  },
+
+  assignToolsToStaff: async (staffId, toolIds) => {
+    try {
+      const response = await axiosInstance.post('/assign-tools-to-staff/', {
+        staff_name: staffId,
+        tools: toolIds,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error assigning tools to staff:', error);
+      throw error;
+    }
+  },
+
+  listAssignedTools: async () => {
+    try {
+      const response = await axiosInstance.get('/assigned-tools-list/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching assigned tools list:', error);
+      throw error;
+    }
+  },
+
+  updateAssignStatus: async (assignmentId, status) => {
+    try {
+      const response = await axiosInstance.patch(
+        `/update-assign-status/${assignmentId}/`,
+        {
+          assign_status: status,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error updating assignment status:', error);
+      throw error;
+    }
+  },
+
+  searchToolAssignments: async (searchTerm) => {
+    try {
+      const response = await axiosInstance.get(
+        `http://82.29.160.146/api/v1/search-tool-assignments/${searchTerm}/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error searching tool assignments:', error);
       throw error;
     }
   },
