@@ -6,6 +6,7 @@ import {
   AiOutlineSetting,
 } from 'react-icons/ai';
 import { FaBuilding, FaFileContract, FaBoxOpen, FaUsers } from 'react-icons/fa';
+import { MdGavel } from 'react-icons/md';
 
 const AdminSidebar = () => {
   const location = useLocation();
@@ -18,9 +19,22 @@ const AdminSidebar = () => {
       '/admin/material-requests',
       '/admin/pending-material-requests',
       '/admin/material-consumption',
-      '/admin/store-data'
+      '/admin/store-data',
     ];
     return materialPaths.includes(path);
+  };
+
+  // Function to check if a path is terms-related
+  const isTermsPath = (path) => {
+    const termsPaths = [
+      '/admin/terms-and-conditions-dashboard',
+      '/admin/general-terms',
+      '/admin/payment-terms',
+      '/admin/completion-delivery',
+      '/admin/quotation-validity',
+      '/admin/warranty-terms',
+    ];
+    return termsPaths.includes(path);
   };
 
   const menuItems = [
@@ -50,9 +64,9 @@ const AdminSidebar = () => {
       label: 'User Management',
     },
     {
-      path: '/admin/terms-and-conditions',
-      icon: <AiOutlineSetting size={22} />,
-      label: 'Terms & Condition',
+      path: '/admin/terms-and-conditions-dashboard',
+      icon: <MdGavel size={22} />,
+      label: 'Terms & Conditions',
     },
   ];
 
@@ -75,8 +89,11 @@ const AdminSidebar = () => {
                 to={item.path}
                 className={`flex items-center gap-4 px-6 py-3 hover:bg-gray-800 text-[#8E8E8E] rounded-[2px] transition-colors
                   ${
-                    (location.pathname === item.path || 
-                    (item.path === '/admin/material-dashboard' && isMaterialPath(location.pathname)))
+                    location.pathname === item.path ||
+                    (item.path === '/admin/material-dashboard' &&
+                      isMaterialPath(location.pathname)) ||
+                    (item.path === '/admin/terms-and-conditions-dashboard' &&
+                      isTermsPath(location.pathname))
                       ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black'
                       : ''
                   }`}

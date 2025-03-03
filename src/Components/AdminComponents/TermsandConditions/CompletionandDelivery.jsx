@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Adminsidebar from '../../../Sidebar/Adminsidebar';
 import { IoArrowBack } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
@@ -36,7 +35,7 @@ const CompletionandDelivery = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-      <Adminsidebar />
+
 
       <div className="flex-1 md:w-[calc(100%-300px)] h-screen overflow-y-auto">
         <motion.div

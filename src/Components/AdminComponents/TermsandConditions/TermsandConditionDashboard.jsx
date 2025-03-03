@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import Adminsidebar from '../../../Sidebar/Adminsidebar';
 import { MdAddCircle, MdClose } from 'react-icons/md';
 import { FaEye } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
@@ -122,10 +121,9 @@ const TermsandConditionDashboard = () => {
   };
 
   return (
-    <div className="w-full h-screen bg-gray-50 flex">
-      <Adminsidebar />
+    <div className="w-full flex">
 
-      <div className="main-content w-full md:w-[calc(100%-300px)] h-full overflow-y-scroll">
+      <div className="main-content w-full h-full ">
         {/* Title Section */}
         <div className="w-full h-[12vh] flex items-center justify-center px-8">
           <h1 className="text-[2rem] font-bold text-gray-800">

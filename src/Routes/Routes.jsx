@@ -21,6 +21,12 @@ import MaterialRequestDetails from '../Components/AdminComponents/Material/Mater
 import PendingMaterialRequest from '../Components/AdminComponents/Material/PendingMaterialRequest';
 import MaterialConsumption from '../Components/AdminComponents/Material/MaterialConsumption';
 import StoreData from '../Components/AdminComponents/Material/StoreData';
+import TermsandConditionDashboard from '../Components/AdminComponents/TermsandConditions/TermsandConditionDashboard';
+import GeneralTermsandCondition from '../Components/AdminComponents/TermsandConditions/GeneralTermsandCondition';
+import Paymentterms from '../Components/AdminComponents/TermsandConditions/Paymentterms';
+import CompletionandDelivery from '../Components/AdminComponents/TermsandConditions/CompletionandDelivery';
+import Quotationvalidity from '../Components/AdminComponents/TermsandConditions/Quotationvalidity';
+import Warranty from '../Components/AdminComponents/TermsandConditions/Warranty';
 
 const AppRoutes = () => {
   return (
@@ -162,6 +168,62 @@ const AppRoutes = () => {
             <ProtectedRoute
               allowedPermissions={['manage_store']}
               element={<StoreData />}
+            />
+          }
+        />
+
+        {/* Terms and Conditions Routes */}
+        <Route
+          path="terms-and-conditions-dashboard"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_terms_and_conditions']}
+              element={<TermsandConditionDashboard />}
+            />
+          }
+        />
+        <Route
+          path="general-terms"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_general_terms']}
+              element={<GeneralTermsandCondition />}
+            />
+          }
+        />
+        <Route
+          path="payment-terms"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_payment_terms']}
+              element={<Paymentterms />}
+            />
+          }
+        />
+        <Route
+          path="completion-delivery"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_completion_terms']}
+              element={<CompletionandDelivery />}
+            />
+          }
+        />
+        <Route
+          path="quotation-validity"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_quotation_terms']}
+              element={<Quotationvalidity />}
+            />
+          }
+        />
+        <Route
+          path="warranty-terms"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_warranty_terms']}
+              element={<Warranty />}
             />
           }
         />

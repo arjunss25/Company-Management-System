@@ -27,6 +27,17 @@ export const PERMISSIONS = {
   MANAGE_MATERIAL_REQUESTS: 'manage_material_requests',
   VIEW_MATERIAL_CONSUMPTION: 'view_material_consumption',
   MANAGE_STORE: 'manage_store',
+
+  // Terms & Conditions permissions
+  VIEW_TERMS_AND_CONDITIONS: 'view_terms_and_conditions',
+  VIEW_GENERAL_TERMS: 'view_general_terms',
+  VIEW_PAYMENT_TERMS: 'view_payment_terms',
+  VIEW_COMPLETION_TERMS: 'view_completion_terms',
+  VIEW_QUOTATION_TERMS: 'view_quotation_terms',
+  VIEW_WARRANTY_TERMS: 'view_warranty_terms',
+  CREATE_TERMS: 'create_terms',
+  EDIT_TERMS: 'edit_terms',
+  DELETE_TERMS: 'delete_terms',
 };
 
 // Role-based permission mappings
@@ -51,6 +62,16 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.MANAGE_MATERIAL_REQUESTS,
     PERMISSIONS.VIEW_MATERIAL_CONSUMPTION,
     PERMISSIONS.MANAGE_STORE,
+    // Terms & Conditions permissions for admin
+    PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+    PERMISSIONS.VIEW_GENERAL_TERMS,
+    PERMISSIONS.VIEW_PAYMENT_TERMS,
+    PERMISSIONS.VIEW_COMPLETION_TERMS,
+    PERMISSIONS.VIEW_QUOTATION_TERMS,
+    PERMISSIONS.VIEW_WARRANTY_TERMS,
+    PERMISSIONS.CREATE_TERMS,
+    PERMISSIONS.EDIT_TERMS,
+    PERMISSIONS.DELETE_TERMS,
   ],
   Admin: [
     PERMISSIONS.VIEW_DASHBOARD,
@@ -70,6 +91,16 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.MANAGE_MATERIAL_REQUESTS,
     PERMISSIONS.VIEW_MATERIAL_CONSUMPTION,
     PERMISSIONS.MANAGE_STORE,
+    // Terms & Conditions permissions for Admin
+    PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+    PERMISSIONS.VIEW_GENERAL_TERMS,
+    PERMISSIONS.VIEW_PAYMENT_TERMS,
+    PERMISSIONS.VIEW_COMPLETION_TERMS,
+    PERMISSIONS.VIEW_QUOTATION_TERMS,
+    PERMISSIONS.VIEW_WARRANTY_TERMS,
+    PERMISSIONS.CREATE_TERMS,
+    PERMISSIONS.EDIT_TERMS,
+    PERMISSIONS.DELETE_TERMS,
   ],
   staff: [
     PERMISSIONS.VIEW_DASHBOARD,
@@ -82,6 +113,13 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.VIEW_MATERIALS,
     PERMISSIONS.VIEW_MATERIAL_REQUESTS,
     PERMISSIONS.VIEW_MATERIAL_CONSUMPTION,
+    // Limited Terms & Conditions permissions for staff
+    PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+    PERMISSIONS.VIEW_GENERAL_TERMS,
+    PERMISSIONS.VIEW_PAYMENT_TERMS,
+    PERMISSIONS.VIEW_COMPLETION_TERMS,
+    PERMISSIONS.VIEW_QUOTATION_TERMS,
+    PERMISSIONS.VIEW_WARRANTY_TERMS,
   ],
   Staff: [
     PERMISSIONS.VIEW_DASHBOARD,
@@ -94,6 +132,13 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.VIEW_MATERIALS,
     PERMISSIONS.VIEW_MATERIAL_REQUESTS,
     PERMISSIONS.VIEW_MATERIAL_CONSUMPTION,
+    // Limited Terms & Conditions permissions for Staff
+    PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+    PERMISSIONS.VIEW_GENERAL_TERMS,
+    PERMISSIONS.VIEW_PAYMENT_TERMS,
+    PERMISSIONS.VIEW_COMPLETION_TERMS,
+    PERMISSIONS.VIEW_QUOTATION_TERMS,
+    PERMISSIONS.VIEW_WARRANTY_TERMS,
   ],
   sales: [
     PERMISSIONS.VIEW_DASHBOARD,
@@ -101,6 +146,13 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.VIEW_LOCATIONS,
     PERMISSIONS.CREATE_CLIENT,
     PERMISSIONS.VIEW_MATERIALS,
+    // Read-only Terms & Conditions permissions for sales
+    PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+    PERMISSIONS.VIEW_GENERAL_TERMS,
+    PERMISSIONS.VIEW_PAYMENT_TERMS,
+    PERMISSIONS.VIEW_COMPLETION_TERMS,
+    PERMISSIONS.VIEW_QUOTATION_TERMS,
+    PERMISSIONS.VIEW_WARRANTY_TERMS,
   ],
   Sales: [
     PERMISSIONS.VIEW_DASHBOARD,
@@ -108,6 +160,13 @@ const ROLE_PERMISSIONS = {
     PERMISSIONS.VIEW_LOCATIONS,
     PERMISSIONS.CREATE_CLIENT,
     PERMISSIONS.VIEW_MATERIALS,
+    // Read-only Terms & Conditions permissions for Sales
+    PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+    PERMISSIONS.VIEW_GENERAL_TERMS,
+    PERMISSIONS.VIEW_PAYMENT_TERMS,
+    PERMISSIONS.VIEW_COMPLETION_TERMS,
+    PERMISSIONS.VIEW_QUOTATION_TERMS,
+    PERMISSIONS.VIEW_WARRANTY_TERMS,
   ],
 };
 
@@ -136,7 +195,7 @@ const usePermissions = () => {
 
     loadPermissions();
 
-  // permission check after 30 sec
+    // permission check after 30 sec
     const intervalId = setInterval(loadPermissions, 30000);
 
     return () => clearInterval(intervalId);
@@ -154,12 +213,12 @@ const usePermissions = () => {
     return permissions.every((permission) => hasPermission(permission));
   };
 
-// page access
+  // page access
   const canAccessPage = (pagePermission) => {
     return hasPermission(pagePermission);
   };
 
-// action check
+  // action check
   const canPerformAction = (actionPermission) => {
     return hasPermission(actionPermission);
   };
