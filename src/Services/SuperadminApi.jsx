@@ -134,31 +134,22 @@ export const SuperadminApi = {
 
   editStaff: async (staffId, formData) => {
     try {
-      console.log('========================');
       console.log('API Call Details:');
-      console.log(
-        'Endpoint:',
-        `http://82.29.160.146/api/v1/edit-delete-staff/${staffId}/`
-      );
       console.log('Staff ID:', staffId);
-      console.log('Request Headers:', {
-        'Content-Type': 'multipart/form-data',
-      });
-
       console.log('FormData contents:');
       for (let [key, value] of formData.entries()) {
         console.log(`${key}: ${value}`);
       }
-      console.log('========================');
 
-      const response = await axiosInstance({
-        method: 'patch',
-        url: `http://82.29.160.146/api/v1/edit-delete-staff/${staffId}/`,
-        data: formData,
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
+      const response = await axiosInstance.patch(
+        `/edit-delete-staff/${staffId}/`,
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+        }
+      );
 
       console.log('API Response:', response.data);
       return response.data;
@@ -168,7 +159,6 @@ export const SuperadminApi = {
         response: error.response?.data,
         status: error.response?.status,
         statusText: error.response?.statusText,
-        fullError: error,
       });
       throw error;
     }

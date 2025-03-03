@@ -192,4 +192,16 @@ export const AdminApi = {
       throw error;
     }
   },
+
+  deleteTool: async (toolId) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/edit-delete-tool/${toolId}/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting tool:', error);
+      throw error;
+    }
+  },
 };

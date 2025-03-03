@@ -123,9 +123,12 @@ const StaffList = () => {
                 key={staff.id}
                 className="hover:bg-gray-50 transition-all duration-200"
                 style={{
-                  animation: `fadeIn 0.5s ease-out ${index * 0.1}s`,
-                  opacity: 0,
+                  animationName: 'fadeIn',
+                  animationDuration: '0.5s',
+                  animationTimingFunction: 'ease-out',
+                  animationDelay: `${index * 0.1}s`,
                   animationFillMode: 'forwards',
+                  opacity: 0,
                 }}
               >
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -186,7 +189,10 @@ const StaffList = () => {
           <div
             className="text-center py-12"
             style={{
-              animation: 'fadeIn 0.5s ease-out',
+              animationName: 'fadeIn',
+              animationDuration: '0.5s',
+              animationTimingFunction: 'ease-out',
+              animationFillMode: 'forwards',
             }}
           >
             <IoPersonCircleOutline className="mx-auto h-12 w-12 text-gray-400" />

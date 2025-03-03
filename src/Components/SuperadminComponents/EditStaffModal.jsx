@@ -15,14 +15,16 @@ const EditStaffModal = ({ isOpen, staffData, onClose }) => {
     imagePreview: '',
     user: '',
     id: '',
-    company_id: '',
   });
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
+  const isSuperAdmin = staffData?.role?.toLowerCase() === 'superadmin';
+
   useEffect(() => {
     if (staffData) {
+      console.log('Received staffData:', staffData);
       const formatDateForInput = (dateString) => {
         if (!dateString) return '';
         const [day, month, year] = dateString.split('/');
@@ -34,13 +36,15 @@ const EditStaffModal = ({ isOpen, staffData, onClose }) => {
         abbrevation: staffData.abbrevation || '',
         role: staffData.role || '',
         username: staffData.username || '',
-        password: '', 
-        date_of_registration: formatDateForInput(staffData.date_of_registration) || '',
+        password: '',
+        date_of_registration:
+          formatDateForInput(staffData.date_of_registration) || '',
         number: staffData.number || '',
-        imagePreview: staffData.image ? `http://82.29.160.146${staffData.image}` : '',
+        imagePreview: staffData.image
+          ? `http://82.29.160.146${staffData.image}`
+          : '',
         user: staffData.user || '',
         id: staffData.id || '',
-        company_id: '',
       });
     }
   }, [staffData]);
@@ -95,43 +99,35 @@ const EditStaffModal = ({ isOpen, staffData, onClose }) => {
       };
 
       const staffFormData = new FormData();
-      
+
       staffFormData.append('staff_name', formData.staff_name);
       staffFormData.append('abbrevation', formData.abbrevation);
       staffFormData.append('role', formData.role);
       staffFormData.append('username', formData.username);
-      staffFormData.append('date_of_registration', formatDateForApi(formData.date_of_registration));
+      staffFormData.append(
+        'date_of_registration',
+        formatDateForApi(formData.date_of_registration)
+      );
       staffFormData.append('number', formData.number);
       staffFormData.append('user', formData.user);
-      staffFormData.append('company_id', '2');
 
       if (formData.image instanceof File) {
         staffFormData.append('image', formData.image);
       }
 
-      console.log('========================');
-      console.log('Staff ID being used:', formData.id);
-      console.log('Full FormData payload:');
-      for (let [key, value] of staffFormData.entries()) {
-        console.log(`${key}: ${value}`);
-      }
-      console.log('========================');
+      const response = await SuperadminApi.editStaff(
+        formData.id,
+        staffFormData
+      );
 
-      const response = await SuperadminApi.editStaff(formData.id, staffFormData);
-      console.log('API Response:', response);
-      
-      if (response.status === "Success") {
+      if (response.status === 'Success') {
         onClose(true);
       }
     } catch (error) {
-      console.error('Error details:', {
-        message: error.message,
-        response: error.response?.data,
-        status: error.response?.status,
-        fullError: error
-      });
+      console.error('Error details:', error);
       setErrors({
-        submit: error.response?.data?.message || 'Failed to update staff member'
+        submit:
+          error.response?.data?.message || 'Failed to update staff member',
       });
     } finally {
       setLoading(false);
@@ -178,18 +174,42 @@ const EditStaffModal = ({ isOpen, staffData, onClose }) => {
                       </div>
                     )}
                   </div>
+                  <label
+                    htmlFor="image-upload"
+                    className="absolute bottom-0 right-0 bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full cursor-pointer shadow-lg transition-all duration-200 transform hover:scale-110"
+                  >
+                    <svg
+                      className="w-4 h-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                      />
+                    </svg>
+                  </label>
                   <input
+                    id="image-upload"
                     type="file"
                     name="image"
                     onChange={handleChange}
-                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                    className="hidden"
                     accept="image/*"
                   />
                   <div className="absolute inset-0 bg-black/20 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                    <span className="text-white text-sm">Change Photo</span>
+                    <span className="text-white text-sm font-medium">
+                      Change Photo
+                    </span>
                   </div>
                 </div>
               </div>
+              <p className="text-center text-sm text-gray-500 mt-2">
+                Click the plus icon to upload a new photo
+              </p>
             </div>
 
             {/* Form fields */}

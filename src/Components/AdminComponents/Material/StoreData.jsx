@@ -31,6 +31,8 @@ const StoreData = () => {
   const [listError, setListError] = useState(null);
   const [selectedTool, setSelectedTool] = useState(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [selectedToolForDelete, setSelectedToolForDelete] = useState(null);
 
   // Dummy data for the table
   const staffList = [
@@ -163,9 +165,32 @@ const StoreData = () => {
     }
   };
 
-  const handleDelete = (id) => {
-    console.log('Delete tool:', id);
-    // Implement delete functionality
+  const handleDelete = async (tool) => {
+    setSelectedToolForDelete(tool);
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    setLoading(true);
+    try {
+      const response = await AdminApi.deleteTool(selectedToolForDelete.id);
+      if (response.status === 'Success') {
+        setSuccessMessage(response.message || 'Tool deleted successfully!');
+        setShowSuccess(true);
+        fetchTools(); // Refresh the tools list
+      } else {
+        throw new Error(response.message || 'Failed to delete tool');
+      }
+    } catch (error) {
+      console.error('Error deleting tool:', error);
+      setErrors({
+        delete: error.message || 'Failed to delete tool. Please try again.',
+      });
+    } finally {
+      setLoading(false);
+      setShowDeleteConfirm(false);
+      setSelectedToolForDelete(null);
+    }
   };
 
   const toggleSection = (section) => {
@@ -182,7 +207,7 @@ const StoreData = () => {
   };
 
   return (
-    <div className="w-full h-screen flex">
+    <div className="w-full flex">
       <div className="main-content w-full h-full p-4">
         <div className="title-sec w-full h-[12vh] flex items-center px-8">
           <div className="flex items-center space-x-8 w-full">
@@ -432,7 +457,7 @@ const StoreData = () => {
                                 <span className="text-sm">Edit</span>
                               </button>
                               <button
-                                onClick={() => handleDelete(tool.id)}
+                                onClick={() => handleDelete(tool)}
                                 className="inline-flex items-center px-3 py-1.5 border border-red-500 text-red-500 bg-white rounded-md hover:bg-red-500 hover:text-white transition-colors duration-200"
                               >
                                 <span className="text-sm">Delete</span>
@@ -799,6 +824,44 @@ const StoreData = () => {
             setSelectedTool(null);
           }}
         />
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-[60]">
+            <div className="bg-white rounded-3xl w-[400px] p-6 shadow-xl">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                Confirm Delete
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to delete "
+                {selectedToolForDelete?.tool_name}"? This action cannot be
+                undone.
+              </p>
+              {errors.delete && (
+                <p className="text-red-500 text-sm mb-4">{errors.delete}</p>
+              )}
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setSelectedToolForDelete(null);
+                    setErrors({});
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  disabled={loading}
+                  className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
+                >
+                  {loading ? 'Deleting...' : 'Delete'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         <SuccessModal
           isOpen={showSuccess}

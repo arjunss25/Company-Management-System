@@ -27,10 +27,13 @@ const Navbar = () => {
   const userName = useSelector(selectUserName);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const isSuperAdmin = userRole?.toLowerCase() === 'superadmin';
 
   useEffect(() => {
-    fetchProfileData();
-  }, []);
+    if (!isSuperAdmin) {
+      fetchProfileData();
+    }
+  }, [isSuperAdmin]);
 
   const fetchProfileData = async () => {
     try {
@@ -47,6 +50,8 @@ const Navbar = () => {
   };
 
   const handleViewProfile = async () => {
+    if (isSuperAdmin) return;
+
     try {
       const response = await AdminApi.getProfile();
       console.log('Profile API Response:', response);
@@ -74,8 +79,9 @@ const Navbar = () => {
   };
 
   const handleProfileUpdate = async (updatedData) => {
+    if (isSuperAdmin) return;
+
     setFullProfileData(updatedData);
-    // Also update the navbar profile data
     if (updatedData.status === 'Success') {
       setProfileData({
         staffName: updatedData.data.staff_name,
@@ -84,7 +90,6 @@ const Navbar = () => {
           : '',
       });
     }
-    // Fetch fresh company logo data
     fetchProfileData();
   };
 
@@ -108,24 +113,26 @@ const Navbar = () => {
             onClick={() => setIsProfileOpen(!isProfileOpen)}
             className="flex items-center space-x-3 p-2 hover:bg-gray-100 rounded-xl transition-colors"
           >
-            <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-gray-100">
-              {profileData.companyLogo ? (
-                <img
-                  src={profileData.companyLogo}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
-                  {profileData.staffName?.[0]?.toUpperCase() ||
-                    userName?.[0]?.toUpperCase() ||
-                    'U'}
-                </div>
-              )}
-            </div>
+            {!isSuperAdmin && (
+              <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden bg-gray-100">
+                {profileData.companyLogo ? (
+                  <img
+                    src={profileData.companyLogo}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
+                    {profileData.staffName?.[0]?.toUpperCase() ||
+                      userName?.[0]?.toUpperCase() ||
+                      'U'}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="hidden md:block text-left">
               <p className="text-sm font-medium text-gray-700">
-                {profileData.staffName || userName}
+                {isSuperAdmin ? userName : profileData.staffName || userName}
               </p>
               <p className="text-xs text-gray-500 capitalize">
                 {userRole || 'User'}
@@ -142,89 +149,95 @@ const Navbar = () => {
                 transition={{ duration: 0.2 }}
                 className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50"
               >
-                <div className="px-4 py-2 border-b border-gray-100">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100">
-                        {profileData.companyLogo ? (
-                          <img
-                            src={profileData.companyLogo}
-                            alt="Profile"
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
-                            {profileData.staffName?.[0]?.toUpperCase() ||
-                              userName?.[0]?.toUpperCase() ||
-                              'U'}
+                {!isSuperAdmin && (
+                  <>
+                    <div className="px-4 py-2 border-b border-gray-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 rounded-full overflow-hidden bg-gray-100">
+                            {profileData.companyLogo ? (
+                              <img
+                                src={profileData.companyLogo}
+                                alt="Profile"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-500 flex items-center justify-center text-white font-medium">
+                                {profileData.staffName?.[0]?.toUpperCase() ||
+                                  userName?.[0]?.toUpperCase() ||
+                                  'U'}
+                              </div>
+                            )}
                           </div>
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-700">
-                          {profileData.staffName || userName}
-                        </p>
-                        <p className="text-xs text-gray-500 capitalize">
-                          {userRole || 'User'}
-                        </p>
+                          <div>
+                            <p className="text-sm font-medium text-gray-700">
+                              {profileData.staffName || userName}
+                            </p>
+                            <p className="text-xs text-gray-500 capitalize">
+                              {userRole || 'User'}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setIsProfileOpen(false)}
+                          className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                        >
+                          <FiX className="w-4 h-4 text-gray-500" />
+                        </button>
                       </div>
                     </div>
+
                     <button
-                      onClick={() => setIsProfileOpen(false)}
-                      className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+                      onClick={handleViewProfile}
+                      className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
                     >
-                      <FiX className="w-4 h-4 text-gray-500" />
+                      <FiUser className="w-4 h-4" />
+                      <span>View Profile</span>
                     </button>
-                  </div>
-                </div>
 
-                <div className="py-1">
-                  <button
-                    onClick={handleViewProfile}
-                    className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                  >
-                    <FiUser className="w-4 h-4" />
-                    <span>View Profile</span>
-                  </button>
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        setIsChangePasswordModalOpen(true);
+                      }}
+                      className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
+                    >
+                      <FiKey className="w-4 h-4" />
+                      <span>Change Password</span>
+                    </button>
+                  </>
+                )}
 
-                  <button
-                    onClick={() => {
-                      setIsProfileOpen(false);
-                      setIsChangePasswordModalOpen(true);
-                    }}
-                    className="w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center space-x-2"
-                  >
-                    <FiKey className="w-4 h-4" />
-                    <span>Change Password</span>
-                  </button>
-
-                  <button
-                    onClick={handleLogout}
-                    className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
-                  >
-                    <FiLogOut className="w-4 h-4" />
-                    <span>Logout</span>
-                  </button>
-                </div>
+                <button
+                  onClick={handleLogout}
+                  className="w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 flex items-center space-x-2"
+                >
+                  <FiLogOut className="w-4 h-4" />
+                  <span>Logout</span>
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* ChangePasswordModal */}
-      <ChangePasswordModal
-        isOpen={isChangePasswordModalOpen}
-        onClose={() => setIsChangePasswordModalOpen(false)}
-      />
+      {/* ChangePasswordModal - Only show for non-superadmin users */}
+      {!isSuperAdmin && (
+        <>
+          <ChangePasswordModal
+            isOpen={isChangePasswordModalOpen}
+            onClose={() => setIsChangePasswordModalOpen(false)}
+          />
 
-      {/* Profile Modal */}
-      <ProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        profileData={fullProfileData || {}}
-        onProfileUpdate={handleProfileUpdate}
-      />
+          {/* Profile Modal */}
+          <ProfileModal
+            isOpen={isProfileModalOpen}
+            onClose={() => setIsProfileModalOpen(false)}
+            profileData={fullProfileData || {}}
+            onProfileUpdate={handleProfileUpdate}
+          />
+        </>
+      )}
     </div>
   );
 };
