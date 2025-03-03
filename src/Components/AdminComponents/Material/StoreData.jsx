@@ -48,6 +48,10 @@ const StoreData = () => {
   const [newStatus, setNewStatus] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const [searchError, setSearchError] = useState(null);
+  const [deletingAssignment, setDeletingAssignment] = useState(null);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [selectedAssignmentForDelete, setSelectedAssignmentForDelete] =
+    useState(null);
 
   // Add fetchStaffList function
   const fetchStaffList = async () => {
@@ -424,9 +428,13 @@ const StoreData = () => {
       const response = await AdminApi.searchToolAssignments(searchTerm);
       console.log('API response:', response); // Debug log
 
-      if (response.status === 'Success') {
+      if (
+        response.status === 'Success' &&
+        response.data &&
+        response.data.length > 0
+      ) {
         // Update the table with search results
-        setAssignedToolsList(response.data || []);
+        setAssignedToolsList(response.data);
 
         // Initialize selected status from search results
         const initialStatus = {};
@@ -435,12 +443,12 @@ const StoreData = () => {
         });
         setSelectedStatus(initialStatus);
       } else {
-        throw new Error(response.message || 'Failed to search assignments');
+        // Clear the list only when search returns no results
+        setAssignedToolsList([]);
       }
     } catch (error) {
       console.error('Error searching assignments:', error);
-      setSearchError(error.message || 'Failed to search assignments');
-      // Clear the list on error
+      // Clear the list only when search fails
       setAssignedToolsList([]);
     } finally {
       setSearchLoading(false);
@@ -452,8 +460,7 @@ const StoreData = () => {
     const staffName = e.target.value;
     console.log('Selected staff:', staffName); // Debug log
     setSelectedStaff(staffName);
-    // Clear previous results when selection changes
-    setAssignedToolsList([]);
+    // Remove the table clearing from here
     setSearchError(null);
   };
 
@@ -461,9 +468,48 @@ const StoreData = () => {
     const toolName = e.target.value;
     console.log('Selected tool:', toolName); // Debug log
     setSelectedTool(toolName);
-    // Clear previous results when selection changes
-    setAssignedToolsList([]);
+    // Remove the table clearing from here
     setSearchError(null);
+  };
+
+  // Add handleDeleteAssignment function
+  const handleDeleteAssignment = async (assignmentId) => {
+    setSelectedAssignmentForDelete(assignmentId);
+    setShowDeleteConfirmModal(true);
+  };
+
+  // Add handleDeleteAssignmentConfirm function
+  const handleDeleteAssignmentConfirm = async () => {
+    if (!selectedAssignmentForDelete) return;
+
+    setDeletingAssignment(selectedAssignmentForDelete);
+    try {
+      const response = await AdminApi.deleteAssignment(
+        selectedAssignmentForDelete
+      );
+      if (response.status === 'Success') {
+        setModalMessage('Assignment removed successfully');
+        setIsError(false);
+        setShowModal(true);
+        // Refresh the assignments list
+        if (selectedStaff && selectedTool) {
+          handleSearch();
+        } else {
+          fetchAssignedTools();
+        }
+      } else {
+        throw new Error(response.message || 'Failed to remove assignment');
+      }
+    } catch (error) {
+      console.error('Error removing assignment:', error);
+      setModalMessage(error.message || 'Failed to remove assignment');
+      setIsError(true);
+      setShowModal(true);
+    } finally {
+      setDeletingAssignment(null);
+      setSelectedAssignmentForDelete(null);
+      setShowDeleteConfirmModal(false);
+    }
   };
 
   return (
@@ -1360,11 +1406,6 @@ const StoreData = () => {
                       </button>
                     </div>
                   </div>
-                  {searchError && (
-                    <div className="text-red-500 text-sm mt-2">
-                      {searchError}
-                    </div>
-                  )}
                 </div>
 
                 <div className="overflow-x-auto rounded-lg shadow">
@@ -1382,6 +1423,9 @@ const StoreData = () => {
                         </th>
                         <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
                           Status
+                        </th>
+                        <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">
+                          Action
                         </th>
                       </tr>
                     </thead>
@@ -1434,7 +1478,9 @@ const StoreData = () => {
                             colSpan="5"
                             className="px-6 py-4 text-center text-gray-500"
                           >
-                            No assigned tools found
+                            {selectedStaff && selectedTool
+                              ? 'No assignments found for the provided search criteria'
+                              : 'No assigned tools found'}
                           </td>
                         </tr>
                       ) : (
@@ -1473,6 +1519,40 @@ const StoreData = () => {
                                   Permanent Return
                                 </option>
                               </select>
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <button
+                                onClick={() => handleDeleteAssignment(item.id)}
+                                disabled={deletingAssignment === item.id}
+                                className="inline-flex items-center px-3 py-1.5 border border-red-500 text-red-500 bg-white rounded-md hover:bg-red-500 hover:text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                              >
+                                {deletingAssignment === item.id ? (
+                                  <>
+                                    <svg
+                                      className="animate-spin h-4 w-4 mr-2"
+                                      viewBox="0 0 24 24"
+                                    >
+                                      <circle
+                                        className="opacity-25"
+                                        cx="12"
+                                        cy="12"
+                                        r="10"
+                                        stroke="currentColor"
+                                        strokeWidth="4"
+                                        fill="none"
+                                      />
+                                      <path
+                                        className="opacity-75"
+                                        fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                      />
+                                    </svg>
+                                    Removing...
+                                  </>
+                                ) : (
+                                  'Remove'
+                                )}
+                              </button>
                             </td>
                           </tr>
                         ))
@@ -1543,13 +1623,6 @@ const StoreData = () => {
           </div>
         )}
 
-        <SuccessModal
-          isOpen={showModal}
-          message={modalMessage}
-          isError={isError}
-          onClose={handleModalClose}
-        />
-
         {/* Status Change Confirmation Modal */}
         {showStatusConfirmModal && (
           <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-[60]">
@@ -1611,6 +1684,39 @@ const StoreData = () => {
                   ) : (
                     'Confirm'
                   )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirmModal && (
+          <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-[60]">
+            <div className="bg-white rounded-3xl w-[400px] p-6 shadow-xl">
+              <h3 className="text-xl font-semibold text-gray-800 mb-4">
+                Confirm Remove Assignment
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Are you sure you want to remove this assignment? This action
+                cannot be undone.
+              </p>
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirmModal(false);
+                    setSelectedAssignmentForDelete(null);
+                  }}
+                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteAssignmentConfirm}
+                  disabled={deletingAssignment}
+                  className="px-4 py-2 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors disabled:opacity-50"
+                >
+                  {deletingAssignment ? 'Removing...' : 'Remove'}
                 </button>
               </div>
             </div>

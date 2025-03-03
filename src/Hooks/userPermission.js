@@ -136,20 +136,13 @@ const usePermissions = () => {
 
     loadPermissions();
 
-    // Set up an interval to check for permission changes
-    const intervalId = setInterval(loadPermissions, 30000); // Check every 30 seconds
+  // permission check after 30 sec
+    const intervalId = setInterval(loadPermissions, 30000);
 
     return () => clearInterval(intervalId);
   }, []);
 
   const hasPermission = (permission) => {
-    // Log the permission check
-    console.log('Checking permission:', {
-      permission,
-      userPermissions,
-      hasPermission: userPermissions.includes(permission),
-    });
-
     return userPermissions.includes(permission);
   };
 
@@ -161,12 +154,12 @@ const usePermissions = () => {
     return permissions.every((permission) => hasPermission(permission));
   };
 
-  // Check if user has access to a specific page
+// page access
   const canAccessPage = (pagePermission) => {
     return hasPermission(pagePermission);
   };
 
-  // Check if user can perform a specific action
+// action check
   const canPerformAction = (actionPermission) => {
     return hasPermission(actionPermission);
   };

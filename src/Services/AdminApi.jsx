@@ -268,11 +268,27 @@ export const AdminApi = {
   searchToolAssignments: async (searchTerm) => {
     try {
       const response = await axiosInstance.get(
-        `http://82.29.160.146/api/v1/search-tool-assignments/${searchTerm}/`
+        `/search-tool-assignments/${searchTerm}/`
       );
       return response.data;
     } catch (error) {
       console.error('Error searching tool assignments:', error);
+      return {
+        status: 'Failed',
+        message: 'No assignments found',
+        data: [],
+      };
+    }
+  },
+
+  deleteAssignment: async (assignmentId) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/delete-assignment/${assignmentId}/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting assignment:', error);
       throw error;
     }
   },
