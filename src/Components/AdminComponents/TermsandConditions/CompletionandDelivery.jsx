@@ -12,14 +12,26 @@ const CompletionandDelivery = () => {
 
   // Sample completion and delivery terms
   const termsData = [
-    { id: 1, terms: 'Standard delivery time is 7-10 working days' },
+    {
+      id: 1,
+      terms: 'Project completion within agreed timeline',
+    },
     {
       id: 2,
-      terms: 'Installation will be completed within 48 hours of delivery',
+      terms: 'Delivery schedule to be confirmed after order confirmation',
     },
-    { id: 3, terms: 'Customer sign-off required upon completion' },
-    { id: 4, terms: 'Delivery charges applicable outside city limits' },
-    { id: 5, terms: 'Weekend installation subject to additional charges' },
+    {
+      id: 3,
+      terms: 'Installation within 7 working days of delivery',
+    },
+    {
+      id: 4,
+      terms: 'Site preparation requirements to be met before delivery',
+    },
+    {
+      id: 5,
+      terms: 'Completion certificate to be signed upon successful installation',
+    },
   ];
 
   const handleEdit = (term) => {
@@ -35,8 +47,6 @@ const CompletionandDelivery = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-
-
       <div className="flex-1 md:w-[calc(100%-300px)] h-screen overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -48,7 +58,9 @@ const CompletionandDelivery = () => {
           <div className="flex items-center justify-between mb-12">
             <div className="flex items-center space-x-8">
               <button
-                onClick={() => navigate('/terms-and-conditions-dashboard')}
+                onClick={() =>
+                  navigate('/admin/terms-and-conditions-dashboard')
+                }
                 className="group flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300"
               >
                 <IoArrowBack

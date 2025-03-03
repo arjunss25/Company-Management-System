@@ -292,4 +292,55 @@ export const AdminApi = {
       throw error;
     }
   },
+
+  // terms & conditions
+
+  addTermsAndConditions: async (termsData) => {
+    try {
+      const response = await axiosInstance.post('/add-termsandconditions/', {
+        title: termsData.title,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding terms and conditions:', error);
+      throw error;
+    }
+  },
+
+  listTermsAndConditions: async () => {
+    try {
+      const response = await axiosInstance.get('/list-termsandcondition/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching terms and conditions:', error);
+      throw error;
+    }
+  },
+
+  editTermsAndConditions: async (termId, title) => {
+    try {
+      const response = await axiosInstance.patch(
+        `/edit-delete-terms/${termId}/`,
+        {
+          title: title,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error updating terms and conditions:', error);
+      throw error;
+    }
+  },
+
+  deleteTermsAndConditions: async (termId) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/edit-delete-terms/${termId}/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting terms and conditions:', error);
+      throw error;
+    }
+  },
 };
