@@ -204,4 +204,26 @@ export const AdminApi = {
       throw error;
     }
   },
+
+  listAllStaffs: async () => {
+    try {
+      const response = await axiosInstance.get('/list-all-staffs/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching staff list:', error);
+      throw error;
+    }
+  },
+
+  searchStaffAssignments: async (searchTerm) => {
+    try {
+      const response = await axiosInstance.get(
+        `/search-staff-assignments/?search=${encodeURIComponent(searchTerm)}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error searching staff assignments:', error);
+      throw error;
+    }
+  },
 };

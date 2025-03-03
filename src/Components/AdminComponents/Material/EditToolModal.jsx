@@ -4,52 +4,75 @@ import { FaTrash } from 'react-icons/fa';
 import { AdminApi } from '../../../Services/AdminApi';
 import SuccessModal from './SuccessModal';
 
-const EditToolModal = ({ isOpen, onClose, tool, onSuccess }) => {
-  const [toolData, setToolData] = useState({
-    tool_name: '',
-    description: '',
-  });
+const EditToolModal = ({ isOpen, onClose, tool, onSuccess, onError }) => {
+  const [toolName, setToolName] = useState('');
+  const [description, setDescription] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
     if (tool) {
-      setToolData({
-        tool_name: tool.tool_name || '',
-        description: tool.description || '',
-      });
+      setToolName(tool.tool_name || '');
+      setDescription(tool.description || '');
     }
   }, [tool]);
 
   if (!isOpen) return null;
 
+  const validateForm = () => {
+    if (!toolName.trim()) {
+      setError('Tool name is required');
+      return false;
+    }
+    if (!description.trim()) {
+      setError('Description is required');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    // Validation
-    if (!toolData.tool_name.trim()) {
-      setError('Tool name is required');
-      return;
-    }
+    if (!validateForm()) return;
 
     setLoading(true);
     try {
-      const response = await AdminApi.editTool(tool.id, toolData);
+      // Create payload with only changed fields
+      const payload = {};
+      if (toolName !== tool.tool_name) {
+        payload.tool_name = toolName;
+      }
+      if (description !== tool.description) {
+        payload.description = description;
+      }
 
-      if (response.status === 'Success') {
-        setSuccessMessage(response.message || 'Tool updated successfully!');
-        setShowSuccess(true);
-        if (onSuccess) onSuccess();
-      } else {
+      // Only make API call if there are changes
+      if (Object.keys(payload).length === 0) {
+        onClose();
+        onSuccess('No changes were made');
+        return;
+      }
+
+      const response = await AdminApi.editTool(tool.id, payload);
+
+      if (response.status !== 'Success') {
         throw new Error(response.message || 'Failed to update tool');
       }
+
+      // Close the modal first
+      onClose();
+
+      // Then trigger success callback with message
+      onSuccess(response.message || 'Tool updated successfully!');
     } catch (error) {
       console.error('Error updating tool:', error);
-      setError(error.message || 'Failed to update tool. Please try again.');
+      onError(error.message || 'Failed to update tool. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -62,8 +85,9 @@ const EditToolModal = ({ isOpen, onClose, tool, onSuccess }) => {
       const response = await AdminApi.deleteTool(tool.id);
 
       if (response.status === 'Success') {
-        setSuccessMessage(response.message || 'Tool deleted successfully!');
-        setShowSuccess(true);
+        setModalMessage(response.message || 'Tool deleted successfully!');
+        setIsError(false);
+        setShowModal(true);
         if (onSuccess) onSuccess();
       } else {
         throw new Error(response.message || 'Failed to delete tool');
@@ -77,9 +101,10 @@ const EditToolModal = ({ isOpen, onClose, tool, onSuccess }) => {
     }
   };
 
-  const handleSuccessClose = () => {
-    setShowSuccess(false);
-    onClose();
+  const handleModalClose = () => {
+    setShowModal(false);
+    setModalMessage('');
+    setIsError(false);
   };
 
   return (
@@ -106,9 +131,9 @@ const EditToolModal = ({ isOpen, onClose, tool, onSuccess }) => {
                 </label>
                 <input
                   type="text"
-                  value={toolData.tool_name}
+                  value={toolName}
                   onChange={(e) => {
-                    setToolData({ ...toolData, tool_name: e.target.value });
+                    setToolName(e.target.value);
                     setError('');
                   }}
                   placeholder="Enter tool name"
@@ -125,13 +150,14 @@ const EditToolModal = ({ isOpen, onClose, tool, onSuccess }) => {
 
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">
-                  Description
+                  Description <span className="text-red-500">*</span>
                 </label>
                 <textarea
-                  value={toolData.description}
-                  onChange={(e) =>
-                    setToolData({ ...toolData, description: e.target.value })
-                  }
+                  value={description}
+                  onChange={(e) => {
+                    setDescription(e.target.value);
+                    setError('');
+                  }}
                   placeholder="Enter tool description"
                   rows={4}
                   className="w-full px-4 py-3 border rounded-xl
@@ -216,9 +242,10 @@ const EditToolModal = ({ isOpen, onClose, tool, onSuccess }) => {
       )}
 
       <SuccessModal
-        isOpen={showSuccess}
-        message={successMessage}
-        onClose={handleSuccessClose}
+        isOpen={showModal}
+        message={modalMessage}
+        isError={isError}
+        onClose={handleModalClose}
       />
     </>
   );

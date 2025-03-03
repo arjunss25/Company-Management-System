@@ -33,6 +33,9 @@ const StoreData = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [selectedToolForDelete, setSelectedToolForDelete] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [isError, setIsError] = useState(false);
 
   // Dummy data for the table
   const staffList = [
@@ -165,31 +168,49 @@ const StoreData = () => {
     }
   };
 
+  const handleEditSuccess = (message) => {
+    setModalMessage(message);
+    setIsError(false);
+    setShowModal(true);
+    fetchTools();
+  };
+
+  const handleEditError = (message) => {
+    setModalMessage(message);
+    setIsError(true);
+    setShowModal(true);
+  };
+
   const handleDelete = async (tool) => {
     setSelectedToolForDelete(tool);
     setShowDeleteConfirm(true);
   };
 
   const handleDeleteConfirm = async () => {
+    if (!selectedToolForDelete) return;
+
     setLoading(true);
+    setErrors({});
     try {
       const response = await AdminApi.deleteTool(selectedToolForDelete.id);
+      setShowDeleteConfirm(false);
+      setSelectedToolForDelete(null);
+
       if (response.status === 'Success') {
         setSuccessMessage(response.message || 'Tool deleted successfully!');
         setShowSuccess(true);
-        fetchTools(); // Refresh the tools list
+        await fetchTools(); // Refresh the tools list
       } else {
         throw new Error(response.message || 'Failed to delete tool');
       }
     } catch (error) {
       console.error('Error deleting tool:', error);
-      setErrors({
-        delete: error.message || 'Failed to delete tool. Please try again.',
-      });
+      setSuccessMessage(
+        error.message || 'Failed to delete tool. Please try again.'
+      );
+      setShowSuccess(true);
     } finally {
       setLoading(false);
-      setShowDeleteConfirm(false);
-      setSelectedToolForDelete(null);
     }
   };
 
@@ -818,11 +839,8 @@ const StoreData = () => {
             setSelectedTool(null);
           }}
           tool={selectedTool}
-          onSuccess={() => {
-            fetchTools();
-            setIsEditModalOpen(false);
-            setSelectedTool(null);
-          }}
+          onSuccess={handleEditSuccess}
+          onError={handleEditError}
         />
 
         {/* Delete Confirmation Modal */}
@@ -864,9 +882,14 @@ const StoreData = () => {
         )}
 
         <SuccessModal
-          isOpen={showSuccess}
-          message={successMessage}
-          onClose={handleSuccessClose}
+          isOpen={showModal}
+          message={modalMessage}
+          isError={isError}
+          onClose={() => {
+            setShowModal(false);
+            setModalMessage('');
+            setIsError(false);
+          }}
         />
       </div>
     </div>
