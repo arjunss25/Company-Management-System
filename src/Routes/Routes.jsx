@@ -27,6 +27,12 @@ import Paymentterms from '../Components/AdminComponents/TermsandConditions/Payme
 import CompletionandDelivery from '../Components/AdminComponents/TermsandConditions/CompletionandDelivery';
 import Quotationvalidity from '../Components/AdminComponents/TermsandConditions/Quotationvalidity';
 import Warranty from '../Components/AdminComponents/TermsandConditions/Warranty';
+import ContractDashboard from '../Components/AdminComponents/Contract/ContractDashboard';
+import ViewRateCard from '../Components/AdminComponents/Contract/ViewRateCard';
+import ViewRateCardItems from '../Components/AdminComponents/Contract/ViewRateCardItems';
+import ExpiringSoon from '../Components/AdminComponents/Contract/ExpiringSoon';
+import ExpiredContracts from '../Components/AdminComponents/Contract/ExpiredContracts';
+import ActiveContract from '../Components/AdminComponents/Contract/ActiveContract';
 
 const AppRoutes = () => {
   return (
@@ -224,6 +230,62 @@ const AppRoutes = () => {
             <ProtectedRoute
               allowedPermissions={['view_warranty_terms']}
               element={<Warranty />}
+            />
+          }
+        />
+
+        {/* Contract Routes */}
+        <Route
+          path="contract-dashboard"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_contracts']}
+              element={<ContractDashboard />}
+            />
+          }
+        />
+        <Route
+          path="active-contracts"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_contracts']}
+              element={<ActiveContract />}
+            />
+          }
+        />
+        <Route
+          path="view-rate-card"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_rate_cards']}
+              element={<ViewRateCard />}
+            />
+          }
+        />
+        <Route
+          path="view-rate-card-items/:id"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_rate_cards']}
+              element={<ViewRateCardItems />}
+            />
+          }
+        />
+        <Route
+          path="expiring-contracts"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_expiring_contracts']}
+              element={<ExpiringSoon />}
+            />
+          }
+        />
+        <Route
+          path="expired-contracts"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_expired_contracts']}
+              element={<ExpiredContracts />}
             />
           }
         />

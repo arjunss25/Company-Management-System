@@ -1,69 +1,107 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { AdminApi } from '../../../Services/AdminApi';
 
-const EditModal = ({ client, onClose, onSave }) => {
+const ClientEditModal = ({ client, onClose, onSave }) => {
   const [formData, setFormData] = useState({
+    company_id: client.company_id,
     clientName: client.clientName,
     address: client.address,
-    termsAndConditions: client.termsAndConditions,
-    paymentTerms: client.paymentTerms,
-    attention: Array.isArray(client.attention)
-      ? client.attention
-      : [client.attention],
+    terms: client.terms,
+    payment: client.payment,
+    attentions: client.attentions || [],
   });
-  const [errors, setErrors] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [termsOptions, setTermsOptions] = useState([]);
+  const [paymentOptions, setPaymentOptions] = useState([]);
 
-  const handleChange = (e) => {
+  // Fetch terms and payment options on mount
+  useEffect(() => {
+    const fetchOptions = async () => {
+      try {
+        const [termsResponse, paymentResponse] = await Promise.all([
+          AdminApi.listTermsAndConditions(),
+          AdminApi.listPaymentTerms(),
+        ]);
+        setTermsOptions(termsResponse.data || []);
+        setPaymentOptions(paymentResponse.data || []);
+      } catch (error) {
+        console.error('Error fetching options:', error);
+        setError('Failed to load form options');
+      }
+    };
+    fetchOptions();
+  }, []);
+
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
+    setFormData((prev) => ({
+      ...prev,
       [name]: value,
-    });
+    }));
   };
 
-  const handleSubmit = (e) => {
+  const handleAttentionChange = (index, value) => {
+    const newAttentions = [...formData.attentions];
+    newAttentions[index] = { ...newAttentions[index], name: value };
+    setFormData((prev) => ({
+      ...prev,
+      attentions: newAttentions,
+    }));
+  };
+
+  const addAttention = () => {
+    setFormData((prev) => ({
+      ...prev,
+      attentions: [...prev.attentions, { name: '' }],
+    }));
+  };
+
+  const removeAttention = (index) => {
+    setFormData((prev) => ({
+      ...prev,
+      attentions: prev.attentions.filter((_, i) => i !== index),
+    }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSave(formData); // Save the updated data
-  };
+    setIsLoading(true);
+    setError(null);
 
-  const addAttentionField = () => {
-    setFormData((prevData) => ({
-      ...prevData,
-      attention: [...prevData.attention, ''],
-    }));
-  };
-
-  const removeAttentionField = (index) => {
-    setFormData((prevData) => ({
-      ...prevData,
-      attention: prevData.attention.filter((_, i) => i !== index),
-    }));
+    try {
+      const response = await AdminApi.updateClient(client.id, formData);
+      if (response.status === 'Success') {
+        onSave(response.data);
+      } else {
+        setError('Failed to update client');
+      }
+    } catch (error) {
+      setError('Error updating client: ' + error.message);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white p-8 rounded-xl shadow-2xl w-full max-w-3xl transform transition-all">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
-          <span className="bg-blue-100 p-2 rounded-lg mr-3">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-6 w-6 text-blue-600"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
-              />
-            </svg>
-          </span>
-          Edit Client
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
+    <div className="fixed inset-0 bg-black/30 backdrop-blur-[2px] flex items-center justify-center z-50">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
+        className="bg-white rounded-2xl shadow-xl w-full max-w-2xl mx-4 overflow-hidden h-[80vh] overflow-y-auto"
+      >
+        <div className="p-6 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-900">Edit Client</h2>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {error && (
+            <div className="bg-red-50 text-red-500 p-4 rounded-lg">{error}</div>
+          )}
+
           <div className="space-y-4">
-            {/* Client Name Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Client Name
@@ -72,42 +110,44 @@ const EditModal = ({ client, onClose, onSave }) => {
                 type="text"
                 name="clientName"
                 value={formData.clientName}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                placeholder="Enter client name"
+                onChange={handleInputChange}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
               />
             </div>
 
-            {/* Address Input */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Address
               </label>
-              <input
-                type="text"
+              <textarea
                 name="address"
                 value={formData.address}
-                onChange={handleChange}
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                placeholder="Enter address"
+                onChange={handleInputChange}
+                rows={3}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                required
               />
             </div>
 
-            {/* Terms and Payment Terms Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Terms & Conditions
                 </label>
                 <select
-                  name="termsAndConditions"
-                  value={formData.termsAndConditions}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  name="terms"
+                  value={formData.terms}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
                 >
                   <option value="">Select Terms</option>
-                  <option value="Terms1">Terms 1</option>
-                  <option value="Terms2">Terms 2</option>
+                  {termsOptions.map((term) => (
+                    <option key={term.id} value={term.id}>
+                      {term.title}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -116,100 +156,79 @@ const EditModal = ({ client, onClose, onSave }) => {
                   Payment Terms
                 </label>
                 <select
-                  name="paymentTerms"
-                  value={formData.paymentTerms}
-                  onChange={handleChange}
-                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                  name="payment"
+                  value={formData.payment}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  required
                 >
                   <option value="">Select Payment Terms</option>
-                  <option value="Net30">Net 30</option>
-                  <option value="Net60">Net 60</option>
+                  {paymentOptions.map((term) => (
+                    <option key={term.id} value={term.id}>
+                      {term.name}
+                    </option>
+                  ))}
                 </select>
               </div>
             </div>
 
-            {/* Attention Fields */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Attention
               </label>
-              {formData.attention.map((value, index) => (
-                <div key={index} className="flex items-center gap-3 mb-3">
-                  <input
-                    type="text"
-                    name="attention"
-                    value={value}
-                    onChange={(e) => handleChange(e, index)}
-                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-                    placeholder="Enter contact name"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeAttentionField(index)}
-                    disabled={formData.attention.length === 1}
-                    className={`p-2 rounded-full transition-colors w-10 h-10 flex-shrink-0 ${
-                      formData.attention.length === 1
-                        ? 'text-gray-300 cursor-not-allowed'
-                        : 'text-red-500 hover:text-red-700 hover:bg-red-50'
-                    }`}
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="h-5 w-5"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
+              <div className="space-y-3">
+                {formData.attentions.map((attention, index) => (
+                  <div key={index} className="flex gap-2">
+                    <input
+                      type="text"
+                      value={attention.name}
+                      onChange={(e) =>
+                        handleAttentionChange(index, e.target.value)
+                      }
+                      className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Contact person name"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeAttention(index)}
+                      className="px-3 py-2 text-red-500 hover:text-red-700"
                     >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 000 2h6a1 1 0 100-2H7z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={addAttentionField}
-                className="inline-flex items-center text-sm text-blue-600 hover:text-blue-700 mt-2"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 mr-1"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+                      Remove
+                    </button>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addAttention}
+                  className="text-blue-500 hover:text-blue-700 text-sm font-medium"
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v2H7a1 1 0 100 2h2v2a1 1 0 102 0v-2h2a1 1 0 100-2h-2V7z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-                Add Another Contact
-              </button>
+                  + Add Contact Person
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex gap-4 pt-6 mt-6 border-t border-gray-200">
-            <button
-              type="submit"
-              className="flex-1 bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-500/50 transition-all text-sm font-medium"
-            >
-              Save Changes
-            </button>
+          <div className="flex justify-end gap-4 mt-8">
             <button
               type="button"
               onClick={onClose}
-              className="px-6 py-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-all text-sm font-medium text-gray-600"
+              className="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
             >
               Cancel
             </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
+            >
+              {isLoading ? 'Saving...' : 'Save Changes'}
+            </button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
   );
 };
 
-export default EditModal;
+export default ClientEditModal;

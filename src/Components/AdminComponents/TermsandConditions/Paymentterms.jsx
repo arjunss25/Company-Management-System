@@ -193,7 +193,7 @@ const Paymentterms = () => {
         type: 'error',
         message: error.message || 'Failed to delete payment terms',
       });
-      setIsDeleteModalOpen(false); // Close the modal on error
+      setIsDeleteModalOpen(false); 
     } finally {
       setIsSubmitting(false);
     }
@@ -242,8 +242,8 @@ const Paymentterms = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <div className="flex-1 md:w-[calc(100%-300px)] h-screen overflow-y-auto">
+    <div className="flex">
+      <div className="flex-1 md:w-[calc(100%-300px)]">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

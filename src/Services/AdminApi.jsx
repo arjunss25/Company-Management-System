@@ -586,4 +586,99 @@ export const AdminApi = {
       throw error;
     }
   },
+
+  // Client Management APIs
+  getClientList: async () => {
+    try {
+      const response = await axiosInstance.get('/clientGet/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching clients:', error);
+      throw error;
+    }
+  },
+
+  updateClient: async (clientId, clientData) => {
+    try {
+      const response = await axiosInstance.patch(
+        `/client-update/${clientId}/`,
+        {
+          company_id: clientData.company_id,
+          clientName: clientData.clientName,
+          address: clientData.address,
+          terms: clientData.terms,
+          payment: clientData.payment,
+          attentions: clientData.attentions.map((att) => ({
+            id: att.id,
+            name: att.name,
+          })),
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error updating client:', error);
+      throw error;
+    }
+  },
+
+  createClient: async (clientData) => {
+    try {
+      const response = await axiosInstance.post('/clientCreate/', {
+        clientName: clientData.clientName,
+        address: clientData.address,
+        terms: clientData.termsAndConditions,
+        payment: clientData.paymentTerms,
+        attentions: clientData.attention.map((name) => ({ name })),
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error creating client:', error);
+      throw error;
+    }
+  },
+
+  deleteClient: async (clientId) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/client-delete/${clientId}/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting client:', error);
+      throw error;
+    }
+  },
+
+  // Add searchTerms function
+  searchTerms: async (searchTerm) => {
+    try {
+      const response = await axiosInstance.get(`/search-terms/${searchTerm}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error searching terms:', error);
+      throw error;
+    }
+  },
+
+  // Add searchPaymentTerms function
+  searchPaymentTerms: async (searchTerm) => {
+    try {
+      const response = await axiosInstance.get(
+        `/search-payment/${searchTerm}/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error searching payment terms:', error);
+      throw error;
+    }
+  },
 };
+
+// const isClientLocationPath = (path) => {
+//   const clientLocationPaths = [
+//     '/admin/client-location',
+//     '/admin/clients',
+//     '/admin/locations',
+//   ];
+//   return clientLocationPaths.includes(path);
+// };

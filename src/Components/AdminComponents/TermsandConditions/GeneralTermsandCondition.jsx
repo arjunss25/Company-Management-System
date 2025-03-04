@@ -240,15 +240,14 @@ const GeneralTermsandCondition = () => {
     if (endPage < totalPages - 1) {
       pages.push('...');
     }
-
     pages.push(totalPages);
 
     return pages;
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-      <div className="flex-1 md:w-[calc(100%-300px)] h-screen overflow-y-auto">
+    <div className="flex">
+      <div className="flex-1 md:w-[calc(100%-300px)]">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}

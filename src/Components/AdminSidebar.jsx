@@ -24,6 +24,16 @@ const AdminSidebar = () => {
     return materialPaths.includes(path);
   };
 
+  // Function to check if a path is client/location-related
+  const isClientLocationPath = (path) => {
+    const clientLocationPaths = [
+      '/admin/client-location',
+      '/admin/clients',
+      '/admin/locations',
+    ];
+    return clientLocationPaths.includes(path);
+  };
+
   // Function to check if a path is terms-related
   const isTermsPath = (path) => {
     const termsPaths = [
@@ -92,6 +102,8 @@ const AdminSidebar = () => {
                     location.pathname === item.path ||
                     (item.path === '/admin/material-dashboard' &&
                       isMaterialPath(location.pathname)) ||
+                    (item.path === '/admin/client-location' &&
+                      isClientLocationPath(location.pathname)) ||
                     (item.path === '/admin/terms-and-conditions-dashboard' &&
                       isTermsPath(location.pathname))
                       ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black'
