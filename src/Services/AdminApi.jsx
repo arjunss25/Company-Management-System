@@ -343,4 +343,146 @@ export const AdminApi = {
       throw error;
     }
   },
+
+  // Payment Terms API endpoints
+  addPaymentTerms: async (termsData) => {
+    try {
+      const response = await axiosInstance.post('/paymentCreate/', {
+        name: termsData.title,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding payment terms:', error);
+      throw error;
+    }
+  },
+
+  listPaymentTerms: async () => {
+    try {
+      const response = await axiosInstance.get('/paymentGet/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching payment terms:', error);
+      throw error;
+    }
+  },
+
+  editPaymentTerms: async (termId, title) => {
+    try {
+      const response = await axiosInstance.patch(`/payment-edit/${termId}/`, {
+        name: title,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating payment terms:', error);
+      throw error;
+    }
+  },
+
+  deletePaymentTerms: async (termId) => {
+    try {
+      const response = await axiosInstance.delete(`/payment-delete/${termId}/`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting payment terms:', error);
+      throw error;
+    }
+  },
+
+  // Completion and Delivery Terms API endpoints
+  addCompletionTerms: async (termsData) => {
+    try {
+      const response = await axiosInstance.post('/completioncreateget/', {
+        delivery: termsData.title,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding completion terms:', error);
+      throw error;
+    }
+  },
+
+  listCompletionTerms: async () => {
+    try {
+      const response = await axiosInstance.get('/completioncreateget/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching completion terms:', error);
+      throw error;
+    }
+  },
+
+  editCompletionTerms: async (termId, title) => {
+    try {
+      const response = await axiosInstance.patch(`/completionedit/${termId}/`, {
+        delivery: title,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error updating completion terms:', error);
+      throw error;
+    }
+  },
+
+  deleteCompletionTerms: async (termId) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/completiondelete/${termId}/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting completion terms:', error);
+      throw error;
+    }
+  },
+
+  // Quotation Validity Terms API endpoints
+  addQuotationTerms: async (termsData) => {
+    try {
+      const response = await axiosInstance.post('/quotationpostget/', {
+        validity: termsData.title,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding quotation validity terms:', error);
+      throw error;
+    }
+  },
+
+  listQuotationTerms: async () => {
+    try {
+      const response = await axiosInstance.get('/quotationpostget/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching quotation validity terms:', error);
+      throw error;
+    }
+  },
+
+  editQuotationTerms: async (termId, title) => {
+    try {
+      const response = await axiosInstance.patch(
+        `/quotation-edit-delete/${termId}/`,
+        {
+          validity: title,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error updating quotation validity terms:', error);
+      throw error;
+    }
+  },
+
+  deleteQuotationTerms: async (termId) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/quotation-edit-delete/${termId}/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting quotation validity terms:', error);
+      throw error;
+    }
+  },
 };

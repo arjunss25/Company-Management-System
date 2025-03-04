@@ -75,24 +75,52 @@ const TermsModal = ({ isOpen, onClose, title }) => {
 
     setIsSubmitting(true);
     try {
-      await AdminApi.addTermsAndConditions({
-        title: terms,
-      });
-      setNotification({
-        isOpen: true,
-        type: 'success',
-        message: 'Terms and conditions added successfully',
-      });
-      setTerms('');
-      setTimeout(() => {
-        handleClose();
-      }, 1500);
+      let response;
+      if (title === 'Payment Terms') {
+        response = await AdminApi.addPaymentTerms({
+          title: terms,
+        });
+      } else if (title === 'Completion & Delivery') {
+        response = await AdminApi.addCompletionTerms({
+          title: terms,
+        });
+      } else if (title === 'Quotation Validity') {
+        response = await AdminApi.addQuotationTerms({
+          title: terms,
+        });
+      } else {
+        response = await AdminApi.addTermsAndConditions({
+          title: terms,
+        });
+      }
+
+      if (response.status === 'Success') {
+        setNotification({
+          isOpen: true,
+          type: 'success',
+          message: `${title} added successfully`,
+        });
+        setTerms('');
+        setTimeout(() => {
+          handleClose();
+        }, 1500);
+      } else {
+        throw new Error(
+          response.message || `Failed to add ${title.toLowerCase()}`
+        );
+      }
     } catch (error) {
+      let errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        `Failed to add ${title.toLowerCase()}`;
+      if (typeof errorMessage === 'object') {
+        errorMessage = Object.values(errorMessage).join(', ');
+      }
       setNotification({
         isOpen: true,
         type: 'error',
-        message:
-          error.response?.data?.message || 'Failed to add terms and conditions',
+        message: errorMessage,
       });
     } finally {
       setIsSubmitting(false);

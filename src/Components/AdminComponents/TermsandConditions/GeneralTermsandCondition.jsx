@@ -87,6 +87,14 @@ const GeneralTermsandCondition = () => {
     message: '',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+
+  // Calculate pagination values
+  const totalPages = Math.ceil(termsData.data.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentItems = termsData.data.slice(startIndex, endIndex);
 
   const fetchTermsAndConditions = async () => {
     try {
@@ -179,7 +187,7 @@ const GeneralTermsandCondition = () => {
           message: 'Terms and conditions deleted successfully',
         });
         setIsDeleteModalOpen(false);
-        fetchTermsAndConditions(); // Refresh the list
+        fetchTermsAndConditions(); 
       } else {
         throw new Error(
           response.message || 'Failed to delete terms and conditions'
@@ -198,6 +206,44 @@ const GeneralTermsandCondition = () => {
 
   const closeNotification = () => {
     setNotification((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const getPageNumbers = () => {
+    const maxVisiblePages = 5;
+    const pages = [];
+
+    if (totalPages <= maxVisiblePages) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+
+    pages.push(1);
+
+    let startPage = Math.max(2, currentPage - 1);
+    let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+    if (currentPage <= 3) {
+      startPage = 2;
+      endPage = 4;
+    }
+
+    if (currentPage >= totalPages - 2) {
+      startPage = totalPages - 3;
+      endPage = totalPages - 1;
+    }
+
+    if (startPage > 2) {
+      pages.push('...');
+    }
+    for (let i = startPage; i <= endPage; i++) {
+      pages.push(i);
+    }
+    if (endPage < totalPages - 1) {
+      pages.push('...');
+    }
+
+    pages.push(totalPages);
+
+    return pages;
   };
 
   return (
@@ -269,7 +315,7 @@ const GeneralTermsandCondition = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {termsData.data.map((term, index) => (
+                    {currentItems.map((term, index) => (
                       <motion.tr
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
@@ -279,7 +325,7 @@ const GeneralTermsandCondition = () => {
                       >
                         <td className="px-8 py-5 w-24">
                           <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium">
-                            {index + 1}
+                            {startIndex + index + 1}
                           </span>
                         </td>
                         <td className="px-8 py-5">
@@ -322,6 +368,67 @@ const GeneralTermsandCondition = () => {
                   </tbody>
                 </table>
               </div>
+
+              {/* Pagination */}
+              {termsData.data.length > 0 && (
+                <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+                  <div className="text-sm text-gray-500">
+                    Showing {startIndex + 1} to{' '}
+                    {Math.min(endIndex, termsData.data.length)} of{' '}
+                    {termsData.data.length} entries
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                      disabled={currentPage === 1}
+                      className={`px-4 py-2 rounded-lg border ${
+                        currentPage === 1
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                      } transition-all duration-300`}
+                    >
+                      Previous
+                    </button>
+                    {getPageNumbers().map((pageNumber, index) =>
+                      pageNumber === '...' ? (
+                        <span
+                          key={`ellipsis-${index}`}
+                          className="px-2 text-gray-500"
+                        >
+                          ...
+                        </span>
+                      ) : (
+                        <button
+                          key={pageNumber}
+                          onClick={() => setCurrentPage(pageNumber)}
+                          className={`px-4 py-2 rounded-lg ${
+                            currentPage === pageNumber
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                          } transition-all duration-300`}
+                        >
+                          {pageNumber}
+                        </button>
+                      )
+                    )}
+                    <button
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                      disabled={currentPage === totalPages}
+                      className={`px-4 py-2 rounded-lg border ${
+                        currentPage === totalPages
+                          ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                          : 'bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                      } transition-all duration-300`}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </motion.div>
@@ -329,7 +436,7 @@ const GeneralTermsandCondition = () => {
 
       {/* Edit Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -382,7 +489,7 @@ const GeneralTermsandCondition = () => {
 
       {/* Delete Confirmation Modal */}
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-[100]">
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}

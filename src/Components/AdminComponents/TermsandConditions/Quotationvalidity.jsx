@@ -1,7 +1,70 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoArrowBack } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { AdminApi } from '../../../Services/AdminApi';
+
+const NotificationModal = ({ isOpen, onClose, type, message }) => {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-xl">
+        <div className="flex flex-col items-center text-center">
+          {type === 'success' ? (
+            <svg
+              className="w-16 h-16 text-green-500 mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          ) : (
+            <svg
+              className="w-16 h-16 text-red-500 mb-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          )}
+          <h3
+            className={`text-xl font-semibold mb-2 ${
+              type === 'success' ? 'text-green-600' : 'text-red-600'
+            }`}
+          >
+            {type === 'success' ? 'Success!' : 'Error!'}
+          </h3>
+          <p className="text-gray-600 mb-6">{message}</p>
+          <button
+            onClick={onClose}
+            className={`px-6 py-2 rounded-lg text-white font-medium
+              ${
+                type === 'success'
+                  ? 'bg-green-500 hover:bg-green-600'
+                  : 'bg-red-500 hover:bg-red-600'
+              }
+              transition-colors duration-200`}
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const Quotationvalidity = () => {
   const navigate = useNavigate();
@@ -9,19 +72,45 @@ const Quotationvalidity = () => {
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [selectedTerm, setSelectedTerm] = useState(null);
   const [editTermText, setEditTermText] = useState('');
+  const [terms, setTerms] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [notification, setNotification] = useState({
+    isOpen: false,
+    type: '',
+    message: '',
+  });
+  const [currentPage, setCurrentPage] = useState(1);
+  const termsPerPage = 10;
 
-  // Sample quotation validity terms
-  const termsData = [
-    { id: 1, terms: 'Quotation valid for 30 days from date of issue' },
-    { id: 2, terms: 'Prices subject to change after validity period' },
-    { id: 3, terms: 'Written confirmation required for price guarantee' },
-    { id: 4, terms: 'Validity extension subject to market conditions' },
-    { id: 5, terms: 'Re-quotation required after expiry date' },
-  ];
+  useEffect(() => {
+    fetchQuotationTerms();
+  }, []);
+
+  const fetchQuotationTerms = async () => {
+    try {
+      setIsLoading(true);
+      const response = await AdminApi.listQuotationTerms();
+      if (response.status === 'Success') {
+        setTerms(response.data || []);
+      } else {
+        throw new Error(response.message || 'Failed to fetch quotation terms');
+      }
+    } catch (error) {
+      setError(error.message || 'Failed to fetch quotation terms');
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        message: error.message || 'Failed to fetch quotation terms',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleEdit = (term) => {
     setSelectedTerm(term);
-    setEditTermText(term.terms);
+    setEditTermText(term.validity);
     setIsEditModalOpen(true);
   };
 
@@ -29,6 +118,88 @@ const Quotationvalidity = () => {
     setSelectedTerm(term);
     setIsDeleteModalOpen(true);
   };
+
+  const handleEditSubmit = async () => {
+    try {
+      const response = await AdminApi.editQuotationTerms(
+        selectedTerm.id,
+        editTermText
+      );
+      if (response.status === 'Success') {
+        setTerms(
+          terms.map((term) =>
+            term.id === selectedTerm.id
+              ? { ...term, validity: editTermText }
+              : term
+          )
+        );
+        setNotification({
+          isOpen: true,
+          type: 'success',
+          message: 'Quotation validity term updated successfully',
+        });
+        setIsEditModalOpen(false);
+      } else {
+        throw new Error(response.message || 'Failed to update quotation term');
+      }
+    } catch (error) {
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        message: error.message || 'Failed to update quotation term',
+      });
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      const response = await AdminApi.deleteQuotationTerms(selectedTerm.id);
+      if (response.status === 'Success') {
+        setTerms(terms.filter((term) => term.id !== selectedTerm.id));
+        setIsDeleteModalOpen(false);
+        setNotification({
+          isOpen: true,
+          type: 'success',
+          message: 'Quotation validity term deleted successfully',
+        });
+      } else {
+        throw new Error(response.message || 'Failed to delete quotation term');
+      }
+    } catch (error) {
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        message: error.message || 'Failed to delete quotation term',
+      });
+    }
+  };
+
+  const closeNotification = () => {
+    setNotification({ isOpen: false, type: '', message: '' });
+  };
+
+  // Pagination logic
+  const indexOfLastTerm = currentPage * termsPerPage;
+  const indexOfFirstTerm = indexOfLastTerm - termsPerPage;
+  const currentTerms = terms.slice(indexOfFirstTerm, indexOfLastTerm);
+  const totalPages = Math.ceil(terms.length / termsPerPage);
+
+  // Update the getPageNumbers function
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    for (let i = 1; i <= totalPages; i++) {
+      pageNumbers.push(i);
+    }
+    return pageNumbers;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -78,7 +249,7 @@ const Quotationvalidity = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {termsData.map((term, index) => (
+                  {currentTerms.map((term, index) => (
                     <motion.tr
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -88,12 +259,12 @@ const Quotationvalidity = () => {
                     >
                       <td className="px-8 py-5 w-24">
                         <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium">
-                          {term.id}
+                          {indexOfFirstTerm + index + 1}
                         </span>
                       </td>
                       <td className="px-8 py-5">
                         <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors duration-300">
-                          {term.terms}
+                          {term.validity}
                         </span>
                       </td>
                       <td className="px-8 py-5">
@@ -122,13 +293,55 @@ const Quotationvalidity = () => {
               </table>
             </div>
 
+            {terms.length === 0 && (
+              <div className="text-center py-12">
+                <p className="text-gray-500">
+                  No quotation validity terms found
+                </p>
+              </div>
+            )}
+
             {/* Pagination */}
-            <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-end">
+            <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                Showing {indexOfFirstTerm + 1} to{' '}
+                {Math.min(indexOfLastTerm, terms.length)} of {terms.length}{' '}
+                entries
+              </div>
               <div className="flex items-center space-x-2">
-                <button className="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300">
+                <button
+                  onClick={() => setCurrentPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-4 py-2 rounded-lg border ${
+                    currentPage === 1
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                  } transition-all duration-300`}
+                >
                   Previous
                 </button>
-                <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300">
+                {getPageNumbers().map((pageNumber) => (
+                  <button
+                    key={pageNumber}
+                    onClick={() => setCurrentPage(pageNumber)}
+                    className={`px-4 py-2 rounded-lg ${
+                      currentPage === pageNumber
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                    } transition-all duration-300`}
+                  >
+                    {pageNumber}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setCurrentPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-4 py-2 rounded-lg border ${
+                    currentPage === totalPages
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                  } transition-all duration-300`}
+                >
                   Next
                 </button>
               </div>
@@ -139,7 +352,7 @@ const Quotationvalidity = () => {
 
       {/* Edit Modal */}
       {isEditModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -176,10 +389,7 @@ const Quotationvalidity = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    // Handle update logic here
-                    setIsEditModalOpen(false);
-                  }}
+                  onClick={handleEditSubmit}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                 >
                   Update
@@ -192,7 +402,7 @@ const Quotationvalidity = () => {
 
       {/* Delete Modal */}
       {isDeleteModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <motion.div
             initial={{ scale: 0.95, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
@@ -218,7 +428,7 @@ const Quotationvalidity = () => {
                 Delete Quotation Validity Term
               </h3>
               <p className="text-sm text-gray-500 mb-6">
-                Are you sure you want to delete this item? This action cannot be
+                Are you sure you want to delete this term? This action cannot be
                 undone.
               </p>
               <div className="flex justify-center space-x-3">
@@ -229,10 +439,7 @@ const Quotationvalidity = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    // Handle delete logic here
-                    setIsDeleteModalOpen(false);
-                  }}
+                  onClick={handleDeleteConfirm}
                   className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                 >
                   Delete
@@ -242,6 +449,14 @@ const Quotationvalidity = () => {
           </motion.div>
         </div>
       )}
+
+      {/* Notification Modal */}
+      <NotificationModal
+        isOpen={notification.isOpen}
+        onClose={closeNotification}
+        type={notification.type}
+        message={notification.message}
+      />
     </div>
   );
 };
