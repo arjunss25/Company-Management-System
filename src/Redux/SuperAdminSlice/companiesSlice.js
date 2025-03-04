@@ -60,7 +60,7 @@ const companiesSlice = createSlice({
   name: 'companies',
   initialState: {
     items: [],
-    status: 'idle', // 'idle' | 'loading' | 'succeeded' | 'failed'
+    status: 'idle', 
     error: null,
     selectedCompany: null,
   },

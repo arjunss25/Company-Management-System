@@ -20,13 +20,13 @@ const ProtectedRoute = ({ allowedRoles, allowedPermissions, element }) => {
     isAuthenticated,
   });
 
-  // Check if user is authenticated
+  // user authentication check
   if (!isAuthenticated) {
     console.log('Not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
-  // If roles are specified, check role-based access
+  // If roles are specified, role-based access check
   if (Array.isArray(allowedRoles) && allowedRoles.length > 0) {
     const hasAllowedRole = allowedRoles.some(
       (role) => role.toLowerCase() === userRole?.toLowerCase()

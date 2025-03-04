@@ -179,7 +179,7 @@ const usePermissions = () => {
     const loadPermissions = () => {
       try {
         setLoading(true);
-        // Get permissions from TokenService
+        //permissions from TokenService
         const permissions = TokenService.getUserPermissions();
         console.log('Loaded permissions from storage:', permissions);
         setUserPermissions(permissions);
