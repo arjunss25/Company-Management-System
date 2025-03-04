@@ -485,4 +485,105 @@ export const AdminApi = {
       throw error;
     }
   },
+
+  // Warranty Terms API endpoints
+  addWarrantyTerms: async (termsData) => {
+    try {
+      const response = await axiosInstance.post('/warrantypost/', {
+        warranty: termsData.title,
+      });
+      return response.data;
+    } catch (error) {
+      console.error('Error adding warranty terms:', error);
+      throw error;
+    }
+  },
+
+  listWarrantyTerms: async () => {
+    try {
+      const response = await axiosInstance.get('/warrantypost/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching warranty terms:', error);
+      throw error;
+    }
+  },
+
+  editWarrantyTerms: async (termId, title) => {
+    try {
+      const response = await axiosInstance.patch(
+        `/warrantyeditdelete/${termId}/`,
+        {
+          warranty: title,
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error updating warranty terms:', error);
+      throw error;
+    }
+  },
+
+  deleteWarrantyTerms: async (termId) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/warrantyeditdelete/${termId}/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting warranty terms:', error);
+      throw error;
+    }
+  },
+
+  // Terms and Conditions Count APIs
+  getGeneralTermsCount: async () => {
+    try {
+      const response = await axiosInstance.get('/count-termsandcondition/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching general terms count:', error);
+      throw error;
+    }
+  },
+
+  getPaymentTermsCount: async () => {
+    try {
+      const response = await axiosInstance.get('/payment-count/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching payment terms count:', error);
+      throw error;
+    }
+  },
+
+  getWarrantyTermsCount: async () => {
+    try {
+      const response = await axiosInstance.get('/warranty-count/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching warranty terms count:', error);
+      throw error;
+    }
+  },
+
+  getQuotationTermsCount: async () => {
+    try {
+      const response = await axiosInstance.get('/quotation-count/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching quotation terms count:', error);
+      throw error;
+    }
+  },
+
+  getCompletionTermsCount: async () => {
+    try {
+      const response = await axiosInstance.get('/completion-count/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching completion terms count:', error);
+      throw error;
+    }
+  },
 };

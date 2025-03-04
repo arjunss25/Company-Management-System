@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MdAddCircle, MdClose } from 'react-icons/md';
 import { FaEye, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
@@ -86,6 +86,10 @@ const TermsModal = ({ isOpen, onClose, title }) => {
         });
       } else if (title === 'Quotation Validity') {
         response = await AdminApi.addQuotationTerms({
+          title: terms,
+        });
+      } else if (title === 'Warranty') {
+        response = await AdminApi.addWarrantyTerms({
           title: terms,
         });
       } else {
@@ -227,31 +231,75 @@ const TermsandConditionDashboard = () => {
     isOpen: false,
     title: '',
   });
+  const [counts, setCounts] = useState({
+    generalTerms: 0,
+    paymentTerms: 0,
+    completionTerms: 0,
+    quotationTerms: 0,
+    warrantyTerms: 0,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetchCounts();
+  }, []);
+
+  const fetchCounts = async () => {
+    try {
+      setIsLoading(true);
+      const [
+        generalTermsCount,
+        paymentTermsCount,
+        completionTermsCount,
+        quotationTermsCount,
+        warrantyTermsCount,
+      ] = await Promise.all([
+        AdminApi.getGeneralTermsCount(),
+        AdminApi.getPaymentTermsCount(),
+        AdminApi.getCompletionTermsCount(),
+        AdminApi.getQuotationTermsCount(),
+        AdminApi.getWarrantyTermsCount(),
+      ]);
+
+      setCounts({
+        generalTerms: generalTermsCount.data || 0,
+        paymentTerms: paymentTermsCount.data || 0,
+        completionTerms: completionTermsCount.data || 0,
+        quotationTerms: quotationTermsCount.data || 0,
+        warrantyTerms: warrantyTermsCount.data || 0,
+      });
+    } catch (error) {
+      setError(error.message || 'Failed to fetch counts');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const sections = [
     {
       title: 'General Terms & Conditions',
-      addCount: '44',
+      addCount: counts.generalTerms,
       viewPath: '/admin/general-terms',
     },
     {
       title: 'Payment Terms',
-      addCount: '33',
+      addCount: counts.paymentTerms,
       viewPath: '/admin/payment-terms',
     },
     {
       title: 'Completion & Delivery',
-      addCount: '50',
+      addCount: counts.completionTerms,
       viewPath: '/admin/completion-delivery',
     },
     {
       title: 'Quotation Validity',
-      addCount: '43',
+      addCount: counts.quotationTerms,
       viewPath: '/admin/quotation-validity',
     },
     {
       title: 'Warranty',
-      addCount: '50',
+      addCount: counts.warrantyTerms,
       viewPath: '/admin/warranty-terms',
     },
   ];
@@ -262,6 +310,30 @@ const TermsandConditionDashboard = () => {
       title: title,
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <p className="text-red-500 text-lg mb-4">{error}</p>
+          <button
+            onClick={fetchCounts}
+            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full flex">
