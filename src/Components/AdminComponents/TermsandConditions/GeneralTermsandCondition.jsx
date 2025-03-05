@@ -159,7 +159,7 @@ const GeneralTermsandCondition = () => {
           message: 'Terms and conditions updated successfully',
         });
         setIsEditModalOpen(false);
-        fetchTermsAndConditions(); // Refresh the list
+        fetchTermsAndConditions(); 
       } else {
         throw new Error(
           response.message || 'Failed to update terms and conditions'
