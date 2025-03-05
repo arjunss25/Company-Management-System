@@ -1,39 +1,57 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import axiosInstance from '../../../Config/axiosInstance';
-import { toast } from 'react-hot-toast';
+import { AdminApi } from '../../../Services/AdminApi';
+import { IoChevronDown } from 'react-icons/io5';
 
 const AddRateCardModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
     rateCardName: '',
     client: '',
     location: '',
-    opexCapex: '',
+    opexCapex: 'Applicable',
   });
+
   const [clients, setClients] = useState([]);
   const [locations, setLocations] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [searchClient, setSearchClient] = useState('');
+  const [searchLocation, setSearchLocation] = useState('');
+  const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
+  const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [notification, setNotification] = useState({
+    isOpen: false,
+    type: '',
+    message: '',
+  });
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchClientsAndLocations = async () => {
       try {
-        // Fetch clients
-        const clientsResponse = await axiosInstance.get('/clientGet/');
-        setClients(clientsResponse.data.data || []);
+        const clientResponse = await AdminApi.getClientList();
+        const locationResponse = await AdminApi.listLocations();
 
-        // Fetch locations
-        const locationsResponse = await axiosInstance.get('/list-locations/');
-        setLocations(locationsResponse.data.data || []);
+        if (Array.isArray(clientResponse.data)) {
+          setClients(clientResponse.data);
+        } else {
+          console.error('Client list is not an array:', clientResponse);
+          setClients([]);
+        }
+
+        if (Array.isArray(locationResponse.data)) {
+          setLocations(locationResponse.data);
+        } else {
+          console.error('Location list is not an array:', locationResponse);
+          setLocations([]);
+        }
       } catch (error) {
-        console.error('Error fetching data:', error);
-        toast.error('Failed to load form data');
+        console.error('Error fetching clients or locations:', error);
+        setClients([]);
+        setLocations([]);
       }
     };
 
-    if (isOpen) {
-      fetchData();
-    }
-  }, [isOpen]);
+    fetchClientsAndLocations();
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -43,41 +61,66 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
     }));
   };
 
+  const filteredClients = clients.filter((client) =>
+    client.clientName.toLowerCase().includes(searchClient.toLowerCase())
+  );
+
+  const filteredLocations = locations.filter((location) =>
+    location.location_name.toLowerCase().includes(searchLocation.toLowerCase())
+  );
+
+  const toggleClientDropdown = () => {
+    setIsClientDropdownOpen(!isClientDropdownOpen);
+    if (isLocationDropdownOpen) setIsLocationDropdownOpen(false);
+  };
+
+  const toggleLocationDropdown = () => {
+    setIsLocationDropdownOpen(!isLocationDropdownOpen);
+    if (isClientDropdownOpen) setIsClientDropdownOpen(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
+    const payload = {
+      card_name: formData.rateCardName,
+      client: formData.client,
+      location: formData.location,
+      opex_capex: formData.opexCapex,
+    };
 
-    // Validate form
-    if (
-      !formData.rateCardName ||
-      !formData.client ||
-      !formData.location ||
-      !formData.opexCapex
-    ) {
-      toast.error('Please fill in all fields');
-      return;
-    }
-
-    setLoading(true);
     try {
-      const response = await axiosInstance.post('/add-rate-card/', {
-        name: formData.rateCardName,
-        client_id: formData.client,
-        location_id: formData.location,
-        opex_capex: formData.opexCapex,
-      });
-
-      if (response.data.status === 'Success') {
-        toast.success('Rate card added successfully');
-        handleReset();
-        onClose();
+      const response = await AdminApi.addRateCard(payload);
+      if (response.status === 'Success') {
+        setNotification({
+          isOpen: true,
+          type: 'success',
+          message: 'Rate card added successfully',
+        });
+        setFormData({
+          rateCardName: '',
+          client: '',
+          location: '',
+          opexCapex: 'Applicable',
+        });
+        setTimeout(() => {
+          onClose();
+        }, 2000);
       } else {
-        toast.error(response.data.message || 'Failed to add rate card');
+        throw new Error(response.message || 'Failed to add rate card');
       }
     } catch (error) {
-      console.error('Error adding rate card:', error);
-      toast.error(error.response?.data?.message || 'Failed to add rate card');
+      const errorMessage =
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to add rate card';
+      setNotification({
+        isOpen: true,
+        type: 'error',
+        message: errorMessage,
+      });
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
@@ -86,7 +129,7 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
       rateCardName: '',
       client: '',
       location: '',
-      opexCapex: '',
+      opexCapex: 'Applicable',
     });
   };
 
@@ -99,7 +142,7 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm"
           onClick={onClose}
         />
 
@@ -110,7 +153,7 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
           className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md relative z-50"
         >
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Add Rate Card</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Rate Card</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -142,66 +185,130 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
                 value={formData.rateCardName}
                 onChange={handleInputChange}
                 className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                placeholder="Enter rate card name"
-                required
+                placeholder="Rate Card Name"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">
+                Opex/Capex:
+              </label>
+              <select
+                name="opexCapex"
+                value={formData.opexCapex}
+                onChange={handleInputChange}
+                className="w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              >
+                <option value="Applicable">Applicable</option>
+                <option value="Not Applicable">Not Applicable</option>
+              </select>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
                 Client:
               </label>
-              <select
-                name="client"
-                value={formData.client}
-                onChange={handleInputChange}
-                className="w-full p-3 pr-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                required
-              >
-                <option value="">Select Client</option>
-                {clients.map((client) => (
-                  <option key={client.id} value={client.id}>
-                    {client.clientName}
-                  </option>
-                ))}
-              </select>
+              <div className="relative">
+                <div
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer flex justify-between items-center"
+                  onClick={toggleClientDropdown}
+                >
+                  <span>
+                    {clients.find((client) => client.id === formData.client)
+                      ?.clientName || 'Select Client'}
+                  </span>
+                  <IoChevronDown
+                    className={`transform transition-transform ${
+                      isClientDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </div>
+                {isClientDropdownOpen && (
+                  <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
+                    <div className="p-2 border-b">
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Search clients..."
+                        value={searchClient}
+                        onChange={(e) => setSearchClient(e.target.value)}
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredClients.map((client) => (
+                        <div
+                          key={client.id}
+                          onClick={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              client: client.id,
+                            }));
+                            setSearchClient('');
+                            setIsClientDropdownOpen(false);
+                          }}
+                          className="px-4 py-2 cursor-pointer hover:bg-blue-100"
+                        >
+                          {client.clientName}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="space-y-2">
               <label className="text-sm font-medium text-gray-700">
                 Location:
               </label>
-              <select
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                className="w-full p-3 pr-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                required
-              >
-                <option value="">Select Location</option>
-                {locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.location_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700">
-                Opex & Capex:
-              </label>
-              <select
-                name="opexCapex"
-                value={formData.opexCapex}
-                onChange={handleInputChange}
-                className="w-full p-3 pr-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                required
-              >
-                <option value="">Select Option</option>
-                <option value="opex">Applicable</option>
-                <option value="capex">Not Applicable</option>
-              </select>
+              <div className="relative">
+                <div
+                  className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all cursor-pointer flex justify-between items-center"
+                  onClick={toggleLocationDropdown}
+                >
+                  <span>
+                    {locations.find(
+                      (location) => location.id === formData.location
+                    )?.location_name || 'Select Location'}
+                  </span>
+                  <IoChevronDown
+                    className={`transform transition-transform ${
+                      isLocationDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </div>
+                {isLocationDropdownOpen && (
+                  <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
+                    <div className="p-2 border-b">
+                      <input
+                        type="text"
+                        className="w-full px-3 py-2 border border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Search locations..."
+                        value={searchLocation}
+                        onChange={(e) => setSearchLocation(e.target.value)}
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredLocations.map((location) => (
+                        <div
+                          key={location.id}
+                          onClick={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              location: location.id,
+                            }));
+                            setSearchLocation('');
+                            setIsLocationDropdownOpen(false);
+                          }}
+                          className="px-4 py-2 cursor-pointer hover:bg-blue-100"
+                        >
+                          {location.location_name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex justify-end space-x-4 pt-4">
@@ -214,13 +321,78 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
               </button>
               <button
                 type="submit"
-                disabled={loading}
-                className="px-6 py-2.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-6 py-2.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300"
               >
-                {loading ? 'Submitting...' : 'Submit'}
+                Submit
               </button>
             </div>
           </form>
+
+          {/* Notification Modal */}
+          {notification.isOpen && (
+            <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+              <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-xl">
+                <div className="flex flex-col items-center text-center">
+                  {notification.type === 'success' ? (
+                    <svg
+                      className="w-16 h-16 text-green-500 mb-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M5 13l4 4L19 7"
+                      />
+                    </svg>
+                  ) : (
+                    <svg
+                      className="w-16 h-16 text-red-500 mb-4"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M6 18L18 6M6 6l12 12"
+                      />
+                    </svg>
+                  )}
+                  <h3
+                    className={`text-xl font-semibold mb-2 ${
+                      notification.type === 'success'
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                    }`}
+                  >
+                    {notification.type === 'success' ? 'Success!' : 'Error!'}
+                  </h3>
+                  <p className="text-gray-600 mb-6">{notification.message}</p>
+                  <button
+                    onClick={() => {
+                      setNotification({ ...notification, isOpen: false });
+                      if (notification.type === 'success') {
+                        onClose();
+                      }
+                    }}
+                    className={`px-6 py-2 rounded-lg text-white font-medium
+                      ${
+                        notification.type === 'success'
+                          ? 'bg-green-500 hover:bg-green-600'
+                          : 'bg-red-500 hover:bg-red-600'
+                      }
+                      transition-colors duration-200`}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </motion.div>
       </div>
     </AnimatePresence>

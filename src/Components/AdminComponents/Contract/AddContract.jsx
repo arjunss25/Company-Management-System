@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { IoIosArrowDown } from 'react-icons/io';
 import { FiEdit } from 'react-icons/fi';
 import { RiDeleteBin6Line } from 'react-icons/ri';
@@ -7,7 +7,6 @@ import UpdateContractModal from './UpdateContractModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { useNavigate } from 'react-router-dom';
 import { IoArrowBack } from 'react-icons/io5';
-import axiosInstance from '../../../Config/axiosInstance';
 
 const AddContract = () => {
   const navigate = useNavigate();
@@ -26,37 +25,18 @@ const AddContract = () => {
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [contractToDelete, setContractToDelete] = useState(null);
-  const [loading, setLoading] = useState(false);
-  const [clients, setClients] = useState([]);
-  const [locations, setLocations] = useState([]);
-  const [rateCards, setRateCards] = useState([]);
-  const [contracts, setContracts] = useState([]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        // Fetch clients
-        const clientsResponse = await axiosInstance.get('/clientGet/');
-        setClients(clientsResponse.data.data || []);
-
-        // Fetch locations
-        const locationsResponse = await axiosInstance.get('/list-locations/');
-        setLocations(locationsResponse.data.data || []);
-
-        // Fetch rate cards
-        const rateCardsResponse = await axiosInstance.get('/list-rate-cards/');
-        setRateCards(rateCardsResponse.data.data || []);
-
-        // Fetch contracts
-        const contractsResponse = await axiosInstance.get('/list-contracts/');
-        setContracts(contractsResponse.data.data || []);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-
-    fetchData();
-  }, []);
+  // Dummy data for contracts list
+  const contracts = [
+    { id: 1, contractNo: '30', client: 'Divya M', location: 'asdsa' },
+    { id: 2, contractNo: '28', client: 'Adwaith K', location: 'asdsa' },
+    { id: 3, contractNo: 'saS', client: 'Divya M', location: 'asdsa' },
+    { id: 4, contractNo: '122', client: 'Divya M', location: 'asdsa' },
+    { id: 5, contractNo: '15', client: 'Divya M', location: 'asdsa' },
+    { id: 6, contractNo: '13', client: 'Adwaith K', location: 'Djnjs' },
+    { id: 7, contractNo: '56', client: 'Divya M', location: 'Djnjs' },
+    { id: 8, contractNo: '19', client: 'Adwaith K', location: 'Djnjs' },
+  ];
 
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -89,60 +69,14 @@ const AddContract = () => {
       }
     });
 
-    // Validate dates
-    if (formData.validFrom && formData.validTill) {
-      const fromDate = new Date(formData.validFrom);
-      const tillDate = new Date(formData.validTill);
-      if (fromDate > tillDate) {
-        newErrors.validTill = 'Valid till date must be after valid from date';
-      }
-    }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-
-    setLoading(true);
-    try {
-      const formDataToSend = new FormData();
-      Object.keys(formData).forEach((key) => {
-        if (key === 'attachment' && formData[key]) {
-          formDataToSend.append('attachment', formData[key]);
-        } else {
-          formDataToSend.append(key, formData[key]);
-        }
-      });
-
-      const response = await axiosInstance.post(
-        '/add-contract/',
-        formDataToSend,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
-        }
-      );
-
-      if (response.data.status === 'Success') {
-        setFormData({
-          client: '',
-          location: '',
-          rateCard: '',
-          contractNo: '',
-          validFrom: '',
-          validTill: '',
-          attachment: null,
-        });
-        // Refresh contracts list if needed
-      }
-    } catch (error) {
-      console.error('Error adding contract:', error);
-    } finally {
-      setLoading(false);
+    if (validateForm()) {
+      console.log('Form submitted:', formData);
     }
   };
 
@@ -157,27 +91,23 @@ const AddContract = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = async () => {
-    if (!contractToDelete) return;
-
-    try {
-      const response = await axiosInstance.delete(
-        `/delete-contract/${contractToDelete}/`
-      );
-      if (response.data.status === 'Success') {
-        // Refresh contracts list if needed
-      }
-    } catch (error) {
-      console.error('Error deleting contract:', error);
-    } finally {
-      setContractToDelete(null);
-      setIsDeleteModalOpen(false);
+  const handleConfirmDelete = () => {
+    if (contractToDelete) {
+      console.log('Deleting contract:', contractToDelete);
+      // Add your delete logic here
+      // After successful deletion, you might want to refresh your contracts list
     }
+    setContractToDelete(null);
+  };
+
+  const handleBack = () => {
+    navigate('/contract-dashboard');
   };
 
   return (
-    <div className="w-full flex">
-      <div className="main-content w-full">
+    <div className="w-full h-screen bg-gray-50 flex">
+
+      <div className="main-content w-full md:w-[calc(100%-300px)] h-full overflow-y-scroll">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -188,7 +118,7 @@ const AddContract = () => {
           <div className="flex items-center justify-between mb-12">
             <div className="flex items-center space-x-8">
               <button
-                onClick={() => navigate('/admin/contract-dashboard')}
+                onClick={() => navigate('/contract-dashboard')}
                 className="group flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300"
               >
                 <IoArrowBack
@@ -248,11 +178,7 @@ const AddContract = () => {
                           } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all`}
                         >
                           <option value="">Select client</option>
-                          {clients.map((client) => (
-                            <option key={client.id} value={client.id}>
-                              {client.clientName}
-                            </option>
-                          ))}
+                          {/* Add your client options here */}
                         </select>
                         {errors.client && (
                           <p className="text-red-500 text-xs mt-1">
@@ -276,11 +202,7 @@ const AddContract = () => {
                           } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all`}
                         >
                           <option value="">Select location</option>
-                          {locations.map((location) => (
-                            <option key={location.id} value={location.id}>
-                              {location.location_name}
-                            </option>
-                          ))}
+                          {/* Add your location options here */}
                         </select>
                         {errors.location && (
                           <p className="text-red-500 text-xs mt-1">
@@ -304,11 +226,7 @@ const AddContract = () => {
                           } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all`}
                         >
                           <option value="">Select rate card</option>
-                          {rateCards.map((card) => (
-                            <option key={card.id} value={card.id}>
-                              {card.name}
-                            </option>
-                          ))}
+                          {/* Add your rate card options here */}
                         </select>
                         {errors.rateCard && (
                           <p className="text-red-500 text-xs mt-1">
@@ -384,44 +302,44 @@ const AddContract = () => {
                         )}
                       </div>
 
-                      <div className="space-y-2 md:col-span-2">
+                      <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">
                           Attachment
                         </label>
-                        <input
-                          type="file"
-                          name="attachment"
-                          onChange={handleInputChange}
-                          className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                        />
+                        <div className="flex items-center space-x-2">
+                          <label className="w-full flex items-center px-4 py-2 bg-white rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-500 transition-all">
+                            <span className="text-sm text-gray-500">
+                              Choose file
+                            </span>
+                            <input
+                              type="file"
+                              name="attachment"
+                              onChange={handleInputChange}
+                              className="hidden"
+                            />
+                          </label>
+                          <button
+                            type="button"
+                            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                          >
+                            +
+                          </button>
+                          <button
+                            type="button"
+                            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                          >
+                            -
+                          </button>
+                        </div>
                       </div>
                     </div>
 
-                    <div className="flex justify-end space-x-4 pt-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setFormData({
-                            client: '',
-                            location: '',
-                            rateCard: '',
-                            contractNo: '',
-                            validFrom: '',
-                            validTill: '',
-                            attachment: null,
-                          });
-                          setErrors({});
-                        }}
-                        className="px-6 py-2.5 rounded-lg border border-red-500 text-red-500 hover:bg-red-50 transition-colors duration-300"
-                      >
-                        Reset
-                      </button>
+                    <div className="flex justify-end pt-6">
                       <button
                         type="submit"
-                        disabled={loading}
-                        className="px-6 py-2.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="bg-blue-500 text-white px-6 py-2.5 rounded-lg hover:bg-blue-600 transition-all duration-200 font-medium"
                       >
-                        {loading ? 'Submitting...' : 'Submit'}
+                        Submit
                       </button>
                     </div>
                   </form>
@@ -429,84 +347,112 @@ const AddContract = () => {
               </div>
             </div>
 
-            {/* Contracts List Section */}
+            {/* List Contract Section */}
             <div className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
               <button
                 className={`w-full p-5 text-left font-medium flex justify-between items-center ${
-                  expandedSection === 'contractsList'
+                  expandedSection === 'listContract'
                     ? 'bg-blue-50 rounded-t-xl'
                     : 'rounded-xl'
                 }`}
                 onClick={() =>
                   setExpandedSection(
-                    expandedSection === 'contractsList' ? null : 'contractsList'
+                    expandedSection === 'listContract' ? null : 'listContract'
                   )
                 }
               >
-                <span className="text-gray-700 text-lg">Contracts List</span>
+                <span className="text-gray-700 text-lg">List Contract</span>
                 <IoIosArrowDown
                   className={`text-gray-400 text-xl transition-transform duration-300 ${
-                    expandedSection === 'contractsList' ? 'rotate-180' : ''
+                    expandedSection === 'listContract' ? 'rotate-180' : ''
                   }`}
                 />
               </button>
 
               <div
                 className={`transition-all duration-300 ease-in-out ${
-                  expandedSection === 'contractsList' ? 'block' : 'hidden'
+                  expandedSection === 'listContract' ? 'block' : 'hidden'
                 }`}
               >
-                <div className="p-6 border-t">
+                <div className="relative bg-white rounded-b-xl overflow-hidden">
                   <div className="overflow-x-auto">
-                    <table className="w-full">
+                    <table className="w-full min-w-[600px]">
                       <thead>
-                        <tr className="bg-gray-50">
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <tr className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
+                          <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600 w-24">
                             Contract No
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600">
                             Client
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600">
                             Location
                           </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                          <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600 w-32">
                             Actions
                           </th>
                         </tr>
                       </thead>
-                      <tbody className="bg-white divide-y divide-gray-200">
-                        {contracts.map((contract) => (
-                          <tr key={contract.id}>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {contract.contractNo}
+                      <tbody>
+                        {contracts.map((contract, index) => (
+                          <motion.tr
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3, delay: index * 0.1 }}
+                            key={contract.id}
+                            className="group hover:bg-blue-50/50 transition-colors duration-300"
+                          >
+                            <td className="px-8 py-5">
+                              <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors duration-300">
+                                {contract.contractNo}
+                              </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {contract.client}
+                            <td className="px-8 py-5">
+                              <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors duration-300">
+                                {contract.client}
+                              </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              {contract.location}
+                            <td className="px-8 py-5">
+                              <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors duration-300">
+                                {contract.location}
+                              </span>
                             </td>
-                            <td className="px-6 py-4 whitespace-nowrap">
-                              <div className="flex space-x-3">
-                                <button
+                            <td className="px-8 py-5">
+                              <div className="flex items-center space-x-4">
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.95 }}
                                   onClick={() => handleEdit(contract.id)}
-                                  className="text-blue-600 hover:text-blue-900"
+                                  className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-300"
                                 >
                                   <FiEdit size={18} />
-                                </button>
-                                <button
+                                </motion.button>
+                                <motion.button
+                                  whileHover={{ scale: 1.1 }}
+                                  whileTap={{ scale: 0.95 }}
                                   onClick={() => handleDelete(contract.id)}
-                                  className="text-red-600 hover:text-red-900"
+                                  className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-300"
                                 >
                                   <RiDeleteBin6Line size={18} />
-                                </button>
+                                </motion.button>
                               </div>
                             </td>
-                          </tr>
+                          </motion.tr>
                         ))}
                       </tbody>
                     </table>
+                  </div>
+
+                  {/* Pagination */}
+                  <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-end">
+                    <div className="flex items-center space-x-2">
+                      <button className="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300">
+                        Previous
+                      </button>
+                      <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300">
+                        Next
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -515,27 +461,25 @@ const AddContract = () => {
         </motion.div>
       </div>
 
-      {/* Update Modal */}
-      {isUpdateModalOpen && (
-        <UpdateContractModal
-          contract={selectedContract}
-          onClose={() => {
-            setIsUpdateModalOpen(false);
-            setSelectedContract(null);
-          }}
-        />
-      )}
+      <UpdateContractModal
+        isOpen={isUpdateModalOpen}
+        onClose={() => {
+          setIsUpdateModalOpen(false);
+          setSelectedContract(null);
+        }}
+        contract={selectedContract}
+      />
 
-      {/* Delete Confirmation Modal */}
-      {isDeleteModalOpen && (
-        <DeleteConfirmationModal
-          onClose={() => {
-            setIsDeleteModalOpen(false);
-            setContractToDelete(null);
-          }}
-          onConfirm={handleConfirmDelete}
-        />
-      )}
+      <DeleteConfirmationModal
+        isOpen={isDeleteModalOpen}
+        onClose={() => {
+          setIsDeleteModalOpen(false);
+          setContractToDelete(null);
+        }}
+        onConfirm={handleConfirmDelete}
+        title="Delete Contract"
+        message="Are you sure you want to delete this contract? This action cannot be undone."
+      />
     </div>
   );
 };

@@ -672,5 +672,52 @@ export const AdminApi = {
       throw error;
     }
   },
-};
 
+  // Rate Card APIs
+  addRateCard: async (rateCardData) => {
+    try {
+      const response = await axiosInstance.post('/add-ratecard/', rateCardData);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding rate card:', error);
+      throw error;
+    }
+  },
+
+  listRateCards: async () => {
+    try {
+      const response = await axiosInstance.get(
+        '/list-ratecard/'
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching rate cards:', error);
+      throw error;
+    }
+  },
+
+  editRateCard: async (id, data) => {
+    try {
+      const response = await axiosInstance.put(
+        `/edit-delete-ratecard/${id}/`,
+        data
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error editing rate card:', error);
+      throw error;
+    }
+  },
+
+  deleteRateCard: async (id) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/edit-delete-ratecard/${id}/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting rate card:', error);
+      throw error;
+    }
+  },
+};

@@ -1,18 +1,44 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoClose } from 'react-icons/io5';
+import { AdminApi } from '../../../Services/AdminApi';
 
 const UpdateRateCardModal = ({ isOpen, onClose, rateCard }) => {
   const [formData, setFormData] = useState({
-    name: rateCard?.name || '',
+    name: '',
     client: '',
+    clientName: '',
     location: '',
+    locationName: '',
     type: '',
   });
 
-  const handleSubmit = (e) => {
+  useEffect(() => {
+    if (rateCard) {
+      setFormData({
+        name: rateCard.card_name,
+        client: rateCard.client,
+        clientName: rateCard.client_name,
+        location: rateCard.location,
+        locationName: rateCard.location_name,
+        type: rateCard.opex_capex,
+      });
+    }
+  }, [rateCard]);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onClose();
+    try {
+      await AdminApi.editRateCard(rateCard.id, {
+        card_name: formData.name,
+        client: formData.client,
+        location: formData.location,
+        opex_capex: formData.type,
+      });
+      onClose();
+    } catch (error) {
+      console.error('Error updating rate card:', error);
+    }
   };
 
   return (
@@ -63,10 +89,8 @@ const UpdateRateCardModal = ({ isOpen, onClose, rateCard }) => {
                 </label>
                 <input
                   type="text"
-                  value={formData.client}
-                  onChange={(e) =>
-                    setFormData({ ...formData, client: e.target.value })
-                  }
+                  value={formData.clientName}
+                  readOnly
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
@@ -76,16 +100,12 @@ const UpdateRateCardModal = ({ isOpen, onClose, rateCard }) => {
                 <label className="text-sm font-medium text-gray-700">
                   Location :
                 </label>
-                <select
-                  value={formData.location}
-                  onChange={(e) =>
-                    setFormData({ ...formData, location: e.target.value })
-                  }
+                <input
+                  type="text"
+                  value={formData.locationName}
+                  readOnly
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="demo">demo</option>
-                  
-                </select>
+                />
               </div>
 
               {/* Opex & Capex */}
@@ -100,9 +120,8 @@ const UpdateRateCardModal = ({ isOpen, onClose, rateCard }) => {
                   }
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
-                    <option value="OPEX">Applicable</option>
+                  <option value="OPEX">Applicable</option>
                   <option value="Not Applicable">Not Applicable</option>
-                  
                 </select>
               </div>
 

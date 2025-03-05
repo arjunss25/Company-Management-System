@@ -34,6 +34,7 @@ const ExpiringSoon = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
+
       <div className="flex-1 md:w-[calc(100%-300px)] h-screen overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -45,7 +46,7 @@ const ExpiringSoon = () => {
           <div className="flex items-center justify-between mb-12">
             <div className="flex items-center space-x-8">
               <button
-                onClick={() => navigate('/admin/contract-dashboard')}
+                onClick={() => navigate('/contract-dashboard')}
                 className="group flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300"
               >
                 <IoArrowBack

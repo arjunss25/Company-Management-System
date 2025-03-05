@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiEdit } from 'react-icons/fi';
 import { RiDeleteBin6Line } from 'react-icons/ri';
 import { IoArrowBack } from 'react-icons/io5';
@@ -6,19 +6,30 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import UpdateRateCardModal from './UpdateRateCardModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
+import { AdminApi } from '../../../Services/AdminApi';
 
 const ViewRateCard = () => {
   const navigate = useNavigate();
-  const [rateCards] = useState([
-    { id: 1, name: 'Rate Card 1', type: 'Applicable' },
-    { id: 2, name: 'Rate Card 2', type: 'Not Applicable' },
-  ]);
+  const [rateCards, setRateCards] = useState([]);
   const [selectedRateCard, setSelectedRateCard] = useState(null);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [rateCardToDelete, setRateCardToDelete] = useState(null);
 
-  const handleEdit = (rateCard) => {
+  useEffect(() => {
+    const fetchRateCards = async () => {
+      try {
+        const response = await AdminApi.listRateCards();
+        setRateCards(response.data);
+      } catch (error) {
+        console.error('Error fetching rate cards:', error);
+      }
+    };
+
+    fetchRateCards();
+  }, []);
+
+  const handleEdit = async (rateCard) => {
     setSelectedRateCard(rateCard);
     setIsUpdateModalOpen(true);
   };
@@ -28,15 +39,22 @@ const ViewRateCard = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    // Add your delete logic here
-    console.log('Deleting rate card:', rateCardToDelete);
+  const handleConfirmDelete = async () => {
+    try {
+      await AdminApi.deleteRateCard(rateCardToDelete.id);
+      setRateCards((prev) =>
+        prev.filter((card) => card.id !== rateCardToDelete.id)
+      );
+      setIsDeleteModalOpen(false);
+      setRateCardToDelete(null);
+    } catch (error) {
+      console.error('Error deleting rate card:', error);
+    }
   };
 
   return (
-    <div className="flex h-screen bg-gray-50">
-
-      <div className="flex-1 md:w-[calc(100%-300px)] h-screen overflow-y-auto">
+    <div className="flex">
+      <div className="flex-1 ">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -47,7 +65,7 @@ const ViewRateCard = () => {
           <div className="flex items-center justify-between mb-12">
             <div className="flex items-center space-x-8">
               <button
-                onClick={() => navigate('/contract-dashboard')}
+                onClick={() => navigate('/admin/contract-dashboard')}
                 className="group flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300"
               >
                 <IoArrowBack
@@ -78,6 +96,12 @@ const ViewRateCard = () => {
                       Opex Or Capex
                     </th>
                     <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600">
+                      Client Name
+                    </th>
+                    <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600">
+                      Location Name
+                    </th>
+                    <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600">
                       Action
                     </th>
                   </tr>
@@ -98,12 +122,22 @@ const ViewRateCard = () => {
                       </td>
                       <td className="px-8 py-5">
                         <span className="text-gray-700 font-medium">
-                          {rateCard.name}
+                          {rateCard.card_name}
                         </span>
                       </td>
                       <td className="px-8 py-5">
                         <span className="text-gray-700 font-medium">
-                          {rateCard.type}
+                          {rateCard.opex_capex}
+                        </span>
+                      </td>
+                      <td className="px-8 py-5">
+                        <span className="text-gray-700 font-medium">
+                          {rateCard.client_name}
+                        </span>
+                      </td>
+                      <td className="px-8 py-5">
+                        <span className="text-gray-700 font-medium">
+                          {rateCard.location_name}
                         </span>
                       </td>
                       <td className="px-8 py-5">

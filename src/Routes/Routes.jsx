@@ -37,6 +37,8 @@ import AddContract from '../Components/AdminComponents/Contract/AddContract';
 import UsermanagementDashboard from '../Components/AdminComponents/UserManagement/UsermanagementDashboard';
 import Staffdetails from '../Components/AdminComponents/UserManagement/Staffdetails';
 import Userrights from '../Components/AdminComponents/UserManagement/Userrights';
+import AddRateCardModal from '../Components/AdminComponents/Contract/AddRateCardModal';
+import UpdateRateCardModal from '../Components/AdminComponents/Contract/UpdateRateCardModal';
 
 const AppRoutes = () => {
   return (
@@ -249,6 +251,33 @@ const AppRoutes = () => {
           }
         />
         <Route
+          path="add-rate-card"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['create_rate_card']}
+              element={<AddRateCardModal />}
+            />
+          }
+        />
+        <Route
+          path="view-rate-card"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_rate_cards']}
+              element={<ViewRateCard />}
+            />
+          }
+        />
+        <Route
+          path="update-rate-card/:id"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['edit_rate_card']}
+              element={<UpdateRateCardModal />}
+            />
+          }
+        />
+        <Route
           path="add-contract"
           element={
             <ProtectedRoute
@@ -281,15 +310,6 @@ const AppRoutes = () => {
             <ProtectedRoute
               allowedPermissions={['view_contracts']}
               element={<ExpiringSoon />}
-            />
-          }
-        />
-        <Route
-          path="view-rate-card"
-          element={
-            <ProtectedRoute
-              allowedPermissions={['view_rate_cards']}
-              element={<ViewRateCard />}
             />
           }
         />

@@ -35,6 +35,7 @@ const ViewRateCardItems = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
+      <Adminsidebar />
 
       <div className="flex-1 md:w-[calc(100%-300px)] h-screen overflow-y-auto">
         <motion.div
