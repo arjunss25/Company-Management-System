@@ -34,6 +34,9 @@ import ExpiringSoon from '../Components/AdminComponents/Contract/ExpiringSoon';
 import ExpiredContracts from '../Components/AdminComponents/Contract/ExpiredContracts';
 import ActiveContract from '../Components/AdminComponents/Contract/ActiveContract';
 import AddContract from '../Components/AdminComponents/Contract/AddContract';
+import UsermanagementDashboard from '../Components/AdminComponents/UserManagement/UsermanagementDashboard';
+import Staffdetails from '../Components/AdminComponents/UserManagement/Staffdetails';
+import Userrights from '../Components/AdminComponents/UserManagement/Userrights';
 
 const AppRoutes = () => {
   return (
@@ -296,6 +299,35 @@ const AppRoutes = () => {
             <ProtectedRoute
               allowedPermissions={['view_rate_cards']}
               element={<ViewRateCardItems />}
+            />
+          }
+        />
+
+        {/* User Management Routes */}
+        <Route
+          path="user-management"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_user_management']}
+              element={<UsermanagementDashboard />}
+            />
+          }
+        />
+        <Route
+          path="staff-details"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_user_details']}
+              element={<Staffdetails />}
+            />
+          }
+        />
+        <Route
+          path="user-rights"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['manage_user_permissions']}
+              element={<Userrights />}
             />
           }
         />
