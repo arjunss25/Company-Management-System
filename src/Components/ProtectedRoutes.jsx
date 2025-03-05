@@ -13,6 +13,16 @@ const ProtectedRoute = ({
   const token = TokenService.getToken();
   const userRole = TokenService.getUserRole()?.toLowerCase();
 
+  // Add detailed logging
+  console.log('ProtectedRoute Debug:', {
+    token: token ? 'Token exists' : 'No token',
+    userRole,
+    allowedRoles,
+    allowedPermissions,
+    loading,
+    hasPermission: (permission) => hasPermission(permission),
+  });
+
   // Show loading state
   if (loading) {
     return <div>Loading...</div>;
@@ -20,6 +30,7 @@ const ProtectedRoute = ({
 
   // Check if user is authenticated
   if (!token) {
+    console.log('No token found, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
@@ -28,6 +39,12 @@ const ProtectedRoute = ({
     const hasAllowedRole = allowedRoles.some(
       (role) => role.toLowerCase() === userRole
     );
+
+    console.log('Role check:', {
+      userRole,
+      allowedRoles,
+      hasAllowedRole,
+    });
 
     if (!hasAllowedRole) {
       console.log(
@@ -45,6 +62,11 @@ const ProtectedRoute = ({
     const hasRequiredPermission = allowedPermissions.some((permission) =>
       hasPermission(permission)
     );
+
+    console.log('Permission check:', {
+      requiredPermissions: allowedPermissions,
+      hasRequiredPermission,
+    });
 
     if (!hasRequiredPermission) {
       console.log(

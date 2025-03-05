@@ -11,9 +11,10 @@ const USER_NAME_KEY = 'userName';
 const TokenService = {
   getToken: () => {
     const token = localStorage.getItem(TOKEN_KEY);
-    console.log('Getting token from localStorage:', {
+    console.log('TokenService - Getting token:', {
       exists: !!token,
-      token: token?.substring(0, 20) + '...',
+      token: token ? token.substring(0, 20) + '...' : null,
+      localStorageKeys: Object.keys(localStorage),
     });
     return token;
   },
@@ -60,11 +61,18 @@ const TokenService = {
   },
 
   setToken: (token) => {
-    console.log('Setting token in localStorage:', {
+    console.log('TokenService - Setting token:', {
       exists: !!token,
-      token: token?.substring(0, 20) + '...',
+      token: token ? token.substring(0, 20) + '...' : null,
     });
     localStorage.setItem(TOKEN_KEY, token);
+
+    // Verify token was set
+    const storedToken = localStorage.getItem(TOKEN_KEY);
+    console.log('TokenService - Token verification:', {
+      wasSet: !!storedToken,
+      matches: storedToken === token,
+    });
   },
 
   setRefreshToken: (refreshToken) => {

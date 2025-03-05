@@ -73,19 +73,19 @@ const ContractDashboard = () => {
   const handleCardClick = (title) => {
     switch (title) {
       case 'Add Contract':
-        navigate('/add-contract');
+        navigate('/admin/add-contract');
         break;
       case 'Active':
-        navigate('/active-contracts');
+        navigate('/admin/active-contracts');
         break;
       case 'Expired':
-        navigate('/expired-contracts');
+        navigate('/admin/expired-contracts');
         break;
       case 'Expiring Soon':
-        navigate('/expiring-soon-contracts');
+        navigate('/admin/expiring-contracts');
         break;
       case 'View Ratecard':
-        navigate('/view-ratecard');
+        navigate('/admin/view-rate-card');
         break;
       case 'Add Ratecard':
         setIsRateCardModalOpen(true);
@@ -93,8 +93,8 @@ const ContractDashboard = () => {
       case 'Add Rate card Item':
         setIsRateCardItemModalOpen(true);
         break;
-      case 'View Rate card Item': // Corrected title
-        navigate('/view-ratecard-items');
+      case 'View Rate card Item':
+        navigate('/admin/view-rate-card-items');
         break;
       default:
         break;
@@ -102,9 +102,8 @@ const ContractDashboard = () => {
   };
 
   return (
-    <div className="w-full h-screen bg-gray-50 flex">
-
-      <div className="main-content w-full lg:w-[calc(100%-300px)]  h-full overflow-y-scroll">
+    <div className="w-full flex">
+      <div className="main-content w-full">
         <div className="title-sec w-full h-[12vh] flex items-center justify-center px-8">
           <h1 className="text-[1.8rem] font-semibold text-gray-800">
             Contract Dashboard

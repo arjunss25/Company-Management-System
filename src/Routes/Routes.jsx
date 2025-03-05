@@ -33,6 +33,7 @@ import ViewRateCardItems from '../Components/AdminComponents/Contract/ViewRateCa
 import ExpiringSoon from '../Components/AdminComponents/Contract/ExpiringSoon';
 import ExpiredContracts from '../Components/AdminComponents/Contract/ExpiredContracts';
 import ActiveContract from '../Components/AdminComponents/Contract/ActiveContract';
+import AddContract from '../Components/AdminComponents/Contract/AddContract';
 
 const AppRoutes = () => {
   return (
@@ -245,11 +246,38 @@ const AppRoutes = () => {
           }
         />
         <Route
+          path="add-contract"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['create_contract']}
+              element={<AddContract />}
+            />
+          }
+        />
+        <Route
           path="active-contracts"
           element={
             <ProtectedRoute
               allowedPermissions={['view_contracts']}
               element={<ActiveContract />}
+            />
+          }
+        />
+        <Route
+          path="expired-contracts"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_contracts']}
+              element={<ExpiredContracts />}
+            />
+          }
+        />
+        <Route
+          path="expiring-contracts"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['view_contracts']}
+              element={<ExpiringSoon />}
             />
           }
         />
@@ -263,29 +291,11 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="view-rate-card-items/:id"
+          path="view-rate-card-items"
           element={
             <ProtectedRoute
               allowedPermissions={['view_rate_cards']}
               element={<ViewRateCardItems />}
-            />
-          }
-        />
-        <Route
-          path="expiring-contracts"
-          element={
-            <ProtectedRoute
-              allowedPermissions={['view_expiring_contracts']}
-              element={<ExpiringSoon />}
-            />
-          }
-        />
-        <Route
-          path="expired-contracts"
-          element={
-            <ProtectedRoute
-              allowedPermissions={['view_expired_contracts']}
-              element={<ExpiredContracts />}
             />
           }
         />

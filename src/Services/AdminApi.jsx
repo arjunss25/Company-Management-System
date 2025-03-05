@@ -674,11 +674,3 @@ export const AdminApi = {
   },
 };
 
-// const isClientLocationPath = (path) => {
-//   const clientLocationPaths = [
-//     '/admin/client-location',
-//     '/admin/clients',
-//     '/admin/locations',
-//   ];
-//   return clientLocationPaths.includes(path);
-// };

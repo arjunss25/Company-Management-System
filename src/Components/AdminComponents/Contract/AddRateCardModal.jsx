@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import axiosInstance from '../../../Config/axiosInstance';
+import { toast } from 'react-hot-toast';
 
 const AddRateCardModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
@@ -8,6 +10,30 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
     location: '',
     opexCapex: '',
   });
+  const [clients, setClients] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch clients
+        const clientsResponse = await axiosInstance.get('/clientGet/');
+        setClients(clientsResponse.data.data || []);
+
+        // Fetch locations
+        const locationsResponse = await axiosInstance.get('/list-locations/');
+        setLocations(locationsResponse.data.data || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        toast.error('Failed to load form data');
+      }
+    };
+
+    if (isOpen) {
+      fetchData();
+    }
+  }, [isOpen]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -17,11 +43,42 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
 
-    onClose();
+    // Validate form
+    if (
+      !formData.rateCardName ||
+      !formData.client ||
+      !formData.location ||
+      !formData.opexCapex
+    ) {
+      toast.error('Please fill in all fields');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await axiosInstance.post('/add-rate-card/', {
+        name: formData.rateCardName,
+        client_id: formData.client,
+        location_id: formData.location,
+        opex_capex: formData.opexCapex,
+      });
+
+      if (response.data.status === 'Success') {
+        toast.success('Rate card added successfully');
+        handleReset();
+        onClose();
+      } else {
+        toast.error(response.data.message || 'Failed to add rate card');
+      }
+    } catch (error) {
+      console.error('Error adding rate card:', error);
+      toast.error(error.response?.data?.message || 'Failed to add rate card');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleReset = () => {
@@ -53,7 +110,7 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
           className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md relative z-50"
         >
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Rate Card</h2>
+            <h2 className="text-2xl font-bold text-gray-900">Add Rate Card</h2>
             <button
               onClick={onClose}
               className="text-gray-400 hover:text-gray-600 transition-colors"
@@ -85,7 +142,8 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
                 value={formData.rateCardName}
                 onChange={handleInputChange}
                 className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                placeholder="Rate Card Name"
+                placeholder="Enter rate card name"
+                required
               />
             </div>
 
@@ -93,14 +151,20 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
               <label className="text-sm font-medium text-gray-700">
                 Client:
               </label>
-              <input
-                type="text"
+              <select
                 name="client"
                 value={formData.client}
                 onChange={handleInputChange}
-                className="w-full p-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-                placeholder="Client"
-              />
+                className="w-full p-3 pr-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                required
+              >
+                <option value="">Select Client</option>
+                {clients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.clientName}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="space-y-2">
@@ -112,10 +176,14 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
                 value={formData.location}
                 onChange={handleInputChange}
                 className="w-full p-3 pr-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                required
               >
-                <option value="">Select</option>
-                <option value="location1">Location 1</option>
-                <option value="location2">Location 2</option>
+                <option value="">Select Location</option>
+                {locations.map((location) => (
+                  <option key={location.id} value={location.id}>
+                    {location.location_name}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -128,8 +196,9 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
                 value={formData.opexCapex}
                 onChange={handleInputChange}
                 className="w-full p-3 pr-10 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
+                required
               >
-                <option value="">Select</option>
+                <option value="">Select Option</option>
                 <option value="opex">Applicable</option>
                 <option value="capex">Not Applicable</option>
               </select>
@@ -145,9 +214,10 @@ const AddRateCardModal = ({ isOpen, onClose }) => {
               </button>
               <button
                 type="submit"
-                className="px-6 py-2.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300"
+                disabled={loading}
+                className="px-6 py-2.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Submit
+                {loading ? 'Submitting...' : 'Submit'}
               </button>
             </div>
           </form>
