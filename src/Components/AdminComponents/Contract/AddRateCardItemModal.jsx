@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MdKeyboardArrowDown } from 'react-icons/md';
-import { MdOutlineRemoveCircleOutline } from "react-icons/md";
-import { IoMdAdd } from "react-icons/io";
+import { MdOutlineRemoveCircleOutline } from 'react-icons/md';
+import { IoMdAdd } from 'react-icons/io';
 
 const AddRateCardItemModal = ({ isOpen, onClose }) => {
   const [formData, setFormData] = useState({
@@ -252,9 +252,10 @@ const AddRateCardItemModal = ({ isOpen, onClose }) => {
                       <button
                         type="button"
                         onClick={() => removeMaterial(index)}
-                        className="absolute top-4 right-5 text-[0.8rem] text-white  transition-colors flex items-center border-[1px] border-red-500 rounded-full px-[5px] py-[1px] bg-red-500"
+                        className="absolute top-4 right-5 text-[0.8rem] text-white transition-colors flex items-center border-[1px] border-red-500 rounded-full px-[5px] py-[1px] bg-red-500"
                       >
-                        <MdOutlineRemoveCircleOutline /> <span className='mx-1'>Remove</span>
+                        <MdOutlineRemoveCircleOutline />{' '}
+                        <span className="mx-1">Remove</span>
                       </button>
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">
@@ -320,7 +321,8 @@ const AddRateCardItemModal = ({ isOpen, onClose }) => {
                     onClick={addMaterial}
                     className="mt-4 px-4 py-2 bg-blue-500 text-white rounded-lg shadow-md hover:bg-blue-600 transition-colors flex items-center gap-2"
                   >
-                    <IoMdAdd />Add Material
+                    <IoMdAdd />
+                    Add Material
                   </button>
                 </div>
               )}
@@ -329,10 +331,10 @@ const AddRateCardItemModal = ({ isOpen, onClose }) => {
             <div className="col-span-1 md:col-span-2 flex flex-col sm:flex-row justify-end gap-3 sm:gap-4 mt-4">
               <button
                 type="button"
-                onClick={handleReset}
-                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg border border-red-500 text-red-500 hover:bg-red-50 transition-colors duration-300 text-sm sm:text-base"
+                onClick={onClose}
+                className="w-full sm:w-auto px-4 sm:px-6 py-2 sm:py-2.5 rounded-lg border border-gray-500 text-gray-500 hover:bg-gray-50 transition-colors duration-300 text-sm sm:text-base"
               >
-                Reset
+                Cancel
               </button>
               <button
                 type="submit"

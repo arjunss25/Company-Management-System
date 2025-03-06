@@ -687,7 +687,7 @@ export const AdminApi = {
   listRateCards: async () => {
     try {
       const response = await axiosInstance.get(
-        '/list-ratecard/'
+        'http://82.29.160.146/api/v1/list-ratecard/'
       );
       return response.data;
     } catch (error) {
@@ -717,6 +717,51 @@ export const AdminApi = {
       return response.data;
     } catch (error) {
       console.error('Error deleting rate card:', error);
+      throw error;
+    }
+  },
+
+  addContract: async (formData) => {
+    try {
+      const response = await axiosInstance.post('/add-contract/', formData);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding contract:', error);
+      throw error;
+    }
+  },
+
+  listContracts: async () => {
+    try {
+      const response = await axiosInstance.get('/list-contracts/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching contracts:', error);
+      throw error;
+    }
+  },
+
+  editContract: async (contractId, formData) => {
+    try {
+      const response = await axiosInstance.patch(
+        `/edit-delete-contract/${contractId}/`,
+        formData
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error editing contract:', error);
+      throw error;
+    }
+  },
+
+  deleteContract: async (contractId) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/edit-delete-contract/${contractId}/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting contract:', error);
       throw error;
     }
   },

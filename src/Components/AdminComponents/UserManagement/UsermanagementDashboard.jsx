@@ -106,7 +106,7 @@ const UsermanagementDashboard = () => {
     if (title === 'Add New User') {
       setShowModal(true);
     } else if (title === 'View Users') {
-      navigate('/staff-details');
+      navigate('/admin/staff-details');
     }
   };
 

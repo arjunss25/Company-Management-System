@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { IoIosArrowDown } from 'react-icons/io';
 import { FiEdit } from 'react-icons/fi';
 import { RiDeleteBin6Line } from 'react-icons/ri';
@@ -7,6 +7,11 @@ import UpdateContractModal from './UpdateContractModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { useNavigate } from 'react-router-dom';
 import { IoArrowBack } from 'react-icons/io5';
+
+import { AdminApi } from '../../../Services/AdminApi';
+import { IoMdAddCircleOutline } from 'react-icons/io';
+import { MdDeleteForever } from 'react-icons/md';
+import SuccessModal from './SuccessModal';
 
 const AddContract = () => {
   const navigate = useNavigate();
@@ -18,25 +23,72 @@ const AddContract = () => {
     contractNo: '',
     validFrom: '',
     validTill: '',
-    attachment: null,
+    attachments: [],
   });
   const [errors, setErrors] = useState({});
   const [selectedContract, setSelectedContract] = useState(null);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [contractToDelete, setContractToDelete] = useState(null);
+  const [clients, setClients] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [searchClient, setSearchClient] = useState('');
+  const [searchLocation, setSearchLocation] = useState('');
+  const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
+  const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
+  const [rateCards, setRateCards] = useState([]);
+  const [searchRateCard, setSearchRateCard] = useState('');
+  const [isRateCardDropdownOpen, setIsRateCardDropdownOpen] = useState(false);
+  const fileInputRef = useRef(null);
+  const [attachments, setAttachments] = useState([{ file: null }]);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [isFailureModalOpen, setIsFailureModalOpen] = useState(false);
+  const [modalMessage, setModalMessage] = useState('');
+  const [navigationTimer, setNavigationTimer] = useState(null);
+  const [contracts, setContracts] = useState([]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const contractsPerPage = 10; 
 
-  // Dummy data for contracts list
-  const contracts = [
-    { id: 1, contractNo: '30', client: 'Divya M', location: 'asdsa' },
-    { id: 2, contractNo: '28', client: 'Adwaith K', location: 'asdsa' },
-    { id: 3, contractNo: 'saS', client: 'Divya M', location: 'asdsa' },
-    { id: 4, contractNo: '122', client: 'Divya M', location: 'asdsa' },
-    { id: 5, contractNo: '15', client: 'Divya M', location: 'asdsa' },
-    { id: 6, contractNo: '13', client: 'Adwaith K', location: 'Djnjs' },
-    { id: 7, contractNo: '56', client: 'Divya M', location: 'Djnjs' },
-    { id: 8, contractNo: '19', client: 'Adwaith K', location: 'Djnjs' },
-  ];
+  useEffect(() => {
+    const fetchClientsAndLocationsAndRateCards = async () => {
+      try {
+        const clientResponse = await AdminApi.getClientList();
+        const locationResponse = await AdminApi.listLocations();
+        const rateCardResponse = await AdminApi.listRateCards();
+        const contractsResponse = await AdminApi.listContracts();
+
+        setClients(clientResponse.data || []);
+        setLocations(locationResponse.data || []);
+        setRateCards(rateCardResponse.data || []);
+        setContracts(contractsResponse.data || []);
+      } catch (error) {
+        console.error(
+          'Error fetching clients, locations, rate cards, or contracts:',
+          error
+        );
+      }
+    };
+
+    fetchClientsAndLocationsAndRateCards();
+  }, []);
+
+  useEffect(() => {
+    if (isSuccessModalOpen) {
+      const timer = setTimeout(() => {
+        setIsSuccessModalOpen(false);
+      }, 3000); 
+      return () => clearTimeout(timer); 
+    }
+  }, [isSuccessModalOpen]);
+
+  useEffect(() => {
+    if (isFailureModalOpen) {
+      const timer = setTimeout(() => {
+        setIsFailureModalOpen(false);
+      }, 3000); // Modal stays open for 3 seconds
+      return () => clearTimeout(timer); // Cleanup the timer on unmount
+    }
+  }, [isFailureModalOpen]);
 
   const handleInputChange = (e) => {
     const { name, value, type, files } = e.target;
@@ -47,6 +99,27 @@ const AddContract = () => {
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
+  };
+
+  const handleAddAttachment = (e) => {
+    const { files } = e.target;
+    if (files.length > 0) {
+      const newAttachments = Array.from(files);
+      setFormData((prev) => ({
+        ...prev,
+        attachments: [...prev.attachments, ...newAttachments],
+      }));
+    }
+  };
+
+  const handleRemoveAttachment = (index) => {
+    if (attachments.length > 1) {
+      setAttachments((prev) => prev.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleFileInputClick = () => {
+    fileInputRef.current.click();
   };
 
   const validateForm = () => {
@@ -73,41 +146,180 @@ const AddContract = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  // Function to format date to DD-MM-YYYY
+  const formatDate = (dateString) => {
+    const date = new Date(dateString);
+    const day = date.getDate().toString().padStart(2, '0');
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const year = date.getFullYear(); // Use full year instead of last 2 digits
+    return `${day}-${month}-${year}`;
+  };
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      console.log('Form submitted:', formData);
+      try {
+        const formDataObj = new FormData();
+
+        // Append form fields with proper field names
+        formDataObj.append('client', formData.client);
+        formDataObj.append('location', formData.location);
+        formDataObj.append('rate_card', formData.rateCard);
+        formDataObj.append('contract_no', formData.contractNo);
+        formDataObj.append('valid_from', formatDate(formData.validFrom)); // This will now be DD-MM-YYYY
+        formDataObj.append('valid_till', formatDate(formData.validTill)); // This will now be DD-MM-YYYY
+
+        // Handle attachments properly
+        attachments.forEach((attachment) => {
+          if (attachment.file) {
+            formDataObj.append('attachments', attachment.file);
+          }
+        });
+
+        // Log FormData entries to verify data
+        for (let pair of formDataObj.entries()) {
+          console.log('FormData Entry:', pair[0], pair[1]);
+        }
+
+        const response = await AdminApi.addContract(formDataObj);
+        console.log('API Response:', response);
+
+        if (response.status === 'Success') {
+          setFormData({
+            client: '',
+            location: '',
+            rateCard: '',
+            contractNo: '',
+            validFrom: '',
+            validTill: '',
+            attachments: [],
+          });
+          setAttachments([{ file: null }]);
+          setModalMessage('Contract added successfully!');
+          setIsSuccessModalOpen(true);
+
+          // Start the delayed navigation timer
+          const timer = setTimeout(() => {
+            navigate('/admin/contract-dashboard');
+          }, 3000);
+          // Store the timer ID so we can clear it if needed
+          setNavigationTimer(timer);
+        }
+      } catch (error) {
+        console.error(
+          'Error adding contract:',
+          error.response ? error.response.data : error.message
+        );
+        setModalMessage('Error adding contract. Please try again.');
+        setIsFailureModalOpen(true);
+      }
     }
   };
 
-  const handleEdit = (id) => {
-    const contract = contracts.find((c) => c.id === id);
-    setSelectedContract(contract);
-    setIsUpdateModalOpen(true);
+  const handleEdit = async (contractId) => {
+    const contract = contracts.find((c) => c.id === contractId);
+    if (contract) {
+      setSelectedContract(contract);
+      setIsUpdateModalOpen(true);
+    }
   };
 
-  const handleDelete = (id) => {
-    setContractToDelete(id);
+  const handleDelete = (contractId) => {
+    setContractToDelete(contractId);
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (contractToDelete) {
-      console.log('Deleting contract:', contractToDelete);
-      // Add your delete logic here
-      // After successful deletion, you might want to refresh your contracts list
+      try {
+        const response = await AdminApi.deleteContract(contractToDelete);
+        if (response.status === 'Success') {
+          setContracts((prev) =>
+            prev.filter((contract) => contract.id !== contractToDelete)
+          );
+          setIsDeleteModalOpen(false);
+          setContractToDelete(null);
+        } else {
+          console.error('Failed to delete contract');
+        }
+      } catch (error) {
+        console.error('Error deleting contract:', error);
+      }
     }
-    setContractToDelete(null);
   };
 
   const handleBack = () => {
     navigate('/contract-dashboard');
   };
 
-  return (
-    <div className="w-full h-screen bg-gray-50 flex">
+  const filteredClients = clients.filter((client) =>
+    client.clientName.toLowerCase().includes(searchClient.toLowerCase())
+  );
 
-      <div className="main-content w-full md:w-[calc(100%-300px)] h-full overflow-y-scroll">
+  const filteredLocations = locations.filter((location) =>
+    location.location_name.toLowerCase().includes(searchLocation.toLowerCase())
+  );
+
+  const filteredRateCards = rateCards.filter(
+    (rateCard) =>
+      rateCard.card_name &&
+      rateCard.card_name.toLowerCase().includes(searchRateCard.toLowerCase())
+  );
+
+  const toggleClientDropdown = () => {
+    setIsClientDropdownOpen(!isClientDropdownOpen);
+    if (isLocationDropdownOpen) setIsLocationDropdownOpen(false);
+  };
+
+  const toggleLocationDropdown = () => {
+    setIsLocationDropdownOpen(!isLocationDropdownOpen);
+    if (isClientDropdownOpen) setIsClientDropdownOpen(false);
+  };
+
+  const toggleRateCardDropdown = () => {
+    setIsRateCardDropdownOpen(!isRateCardDropdownOpen);
+  };
+
+  const handleAddAttachmentField = () => {
+    setAttachments((prev) => [...prev, { file: null }]);
+  };
+
+  const handleAttachmentChange = (index, e) => {
+    const { files } = e.target;
+    if (files.length > 0) {
+      const newAttachments = [...attachments];
+      newAttachments[index] = { file: files[0] };
+      setAttachments(newAttachments);
+
+      // Log to verify file is being captured
+      console.log('File added:', files[0]);
+    }
+  };
+  const handleContinue = () => {
+    // Clear any existing navigation timer
+    if (navigationTimer) {
+      clearTimeout(navigationTimer);
+    }
+    setIsSuccessModalOpen(false);
+    // Navigate immediately
+    navigate('/admin/contract-dashboard');
+  };
+
+  // Calculate pagination values
+  const indexOfLastContract = currentPage * contractsPerPage;
+  const indexOfFirstContract = indexOfLastContract - contractsPerPage;
+  const currentContracts = contracts.slice(
+    indexOfFirstContract,
+    indexOfLastContract
+  );
+  const totalPages = Math.ceil(contracts.length / contractsPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  return (
+    <div className="w-full flex">
+      <div className="main-content w-full">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -118,7 +330,7 @@ const AddContract = () => {
           <div className="flex items-center justify-between mb-12">
             <div className="flex items-center space-x-8">
               <button
-                onClick={() => navigate('/contract-dashboard')}
+                onClick={() => navigate('/admin/contract-dashboard')}
                 className="group flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300"
               >
                 <IoArrowBack
@@ -169,17 +381,56 @@ const AddContract = () => {
                         <label className="text-sm font-medium text-gray-700">
                           Client
                         </label>
-                        <select
-                          name="client"
-                          value={formData.client}
-                          onChange={handleInputChange}
-                          className={`w-full p-3 border ${
-                            errors.client ? 'border-red-500' : 'border-gray-200'
-                          } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all`}
-                        >
-                          <option value="">Select client</option>
-                          {/* Add your client options here */}
-                        </select>
+                        <div className="relative">
+                          <div
+                            className="w-full px-4 py-3 rounded-lg border border-gray-200 cursor-pointer flex justify-between items-center"
+                            onClick={toggleClientDropdown}
+                          >
+                            <span>
+                              {clients.find(
+                                (client) => client.id === formData.client
+                              )?.clientName || 'Select Client'}
+                            </span>
+                            <IoIosArrowDown
+                              className={`transform transition-transform ${
+                                isClientDropdownOpen ? 'rotate-180' : ''
+                              }`}
+                            />
+                          </div>
+                          {isClientDropdownOpen && (
+                            <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
+                              <div className="p-2 border-b">
+                                <input
+                                  type="text"
+                                  className="w-full px-3 py-2 border border-gray-200 rounded-md"
+                                  placeholder="Search clients..."
+                                  value={searchClient}
+                                  onChange={(e) =>
+                                    setSearchClient(e.target.value)
+                                  }
+                                />
+                              </div>
+                              <div className="max-h-48 overflow-y-auto">
+                                {filteredClients.map((client) => (
+                                  <div
+                                    key={client.id}
+                                    onClick={() => {
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        client: client.id,
+                                      }));
+                                      setSearchClient('');
+                                      setIsClientDropdownOpen(false);
+                                    }}
+                                    className="px-4 py-2 cursor-pointer hover:bg-blue-100"
+                                  >
+                                    {client.clientName}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         {errors.client && (
                           <p className="text-red-500 text-xs mt-1">
                             {errors.client}
@@ -191,19 +442,56 @@ const AddContract = () => {
                         <label className="text-sm font-medium text-gray-700">
                           Location
                         </label>
-                        <select
-                          name="location"
-                          value={formData.location}
-                          onChange={handleInputChange}
-                          className={`w-full p-3 border ${
-                            errors.location
-                              ? 'border-red-500'
-                              : 'border-gray-200'
-                          } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all`}
-                        >
-                          <option value="">Select location</option>
-                          {/* Add your location options here */}
-                        </select>
+                        <div className="relative">
+                          <div
+                            className="w-full px-4 py-3 rounded-lg border border-gray-200 cursor-pointer flex justify-between items-center"
+                            onClick={toggleLocationDropdown}
+                          >
+                            <span>
+                              {locations.find(
+                                (location) => location.id === formData.location
+                              )?.location_name || 'Select Location'}
+                            </span>
+                            <IoIosArrowDown
+                              className={`transform transition-transform ${
+                                isLocationDropdownOpen ? 'rotate-180' : ''
+                              }`}
+                            />
+                          </div>
+                          {isLocationDropdownOpen && (
+                            <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
+                              <div className="p-2 border-b">
+                                <input
+                                  type="text"
+                                  className="w-full px-3 py-2 border border-gray-200 rounded-md"
+                                  placeholder="Search locations..."
+                                  value={searchLocation}
+                                  onChange={(e) =>
+                                    setSearchLocation(e.target.value)
+                                  }
+                                />
+                              </div>
+                              <div className="max-h-48 overflow-y-auto">
+                                {filteredLocations.map((location) => (
+                                  <div
+                                    key={location.id}
+                                    onClick={() => {
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        location: location.id,
+                                      }));
+                                      setSearchLocation('');
+                                      setIsLocationDropdownOpen(false);
+                                    }}
+                                    className="px-4 py-2 cursor-pointer hover:bg-blue-100"
+                                  >
+                                    {location.location_name}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         {errors.location && (
                           <p className="text-red-500 text-xs mt-1">
                             {errors.location}
@@ -215,19 +503,56 @@ const AddContract = () => {
                         <label className="text-sm font-medium text-gray-700">
                           Rate Card
                         </label>
-                        <select
-                          name="rateCard"
-                          value={formData.rateCard}
-                          onChange={handleInputChange}
-                          className={`w-full p-3 border ${
-                            errors.rateCard
-                              ? 'border-red-500'
-                              : 'border-gray-200'
-                          } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all`}
-                        >
-                          <option value="">Select rate card</option>
-                          {/* Add your rate card options here */}
-                        </select>
+                        <div className="relative">
+                          <div
+                            className="w-full px-4 py-3 rounded-lg border border-gray-200 cursor-pointer flex justify-between items-center"
+                            onClick={toggleRateCardDropdown}
+                          >
+                            <span>
+                              {rateCards.find(
+                                (rateCard) => rateCard.id === formData.rateCard
+                              )?.card_name || 'Select Rate Card'}
+                            </span>
+                            <IoIosArrowDown
+                              className={`transform transition-transform ${
+                                isRateCardDropdownOpen ? 'rotate-180' : ''
+                              }`}
+                            />
+                          </div>
+                          {isRateCardDropdownOpen && (
+                            <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
+                              <div className="p-2 border-b">
+                                <input
+                                  type="text"
+                                  className="w-full px-3 py-2 border border-gray-200 rounded-md"
+                                  placeholder="Search rate cards..."
+                                  value={searchRateCard}
+                                  onChange={(e) =>
+                                    setSearchRateCard(e.target.value)
+                                  }
+                                />
+                              </div>
+                              <div className="max-h-48 overflow-y-auto">
+                                {filteredRateCards.map((rateCard) => (
+                                  <div
+                                    key={rateCard.id}
+                                    onClick={() => {
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        rateCard: rateCard.id,
+                                      }));
+                                      setSearchRateCard('');
+                                      setIsRateCardDropdownOpen(false);
+                                    }}
+                                    className="px-4 py-2 cursor-pointer hover:bg-blue-100"
+                                  >
+                                    {rateCard.card_name}
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
                         {errors.rateCard && (
                           <p className="text-red-500 text-xs mt-1">
                             {errors.rateCard}
@@ -304,33 +629,38 @@ const AddContract = () => {
 
                       <div className="space-y-2">
                         <label className="text-sm font-medium text-gray-700">
-                          Attachment
+                          Attachments
                         </label>
-                        <div className="flex items-center space-x-2">
-                          <label className="w-full flex items-center px-4 py-2 bg-white rounded-lg border-2 border-dashed border-gray-300 cursor-pointer hover:border-blue-500 transition-all">
-                            <span className="text-sm text-gray-500">
-                              Choose file
-                            </span>
+                        {attachments.map((attachment, index) => (
+                          <div
+                            key={index}
+                            className="flex items-center space-x-2 border border-gray-300 rounded-md p-2"
+                          >
                             <input
                               type="file"
-                              name="attachment"
-                              onChange={handleInputChange}
-                              className="hidden"
+                              onChange={(e) => handleAttachmentChange(index, e)}
+                              className="border-0 p-2 flex-1"
                             />
-                          </label>
-                          <button
-                            type="button"
-                            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                          >
-                            +
-                          </button>
-                          <button
-                            type="button"
-                            className="p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                          >
-                            -
-                          </button>
-                        </div>
+                            {attachments.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveAttachment(index)}
+                                className="text-red-500 hover:underline flex items-center"
+                              >
+                                <MdDeleteForever size={20} className="mr-1" />
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={handleAddAttachmentField}
+                          className="flex items-center p-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-all duration-200"
+                        >
+                          <IoMdAddCircleOutline size={20} className="mr-1" />
+                          Add Attachment
+                        </button>
                       </div>
                     </div>
 
@@ -394,7 +724,7 @@ const AddContract = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {contracts.map((contract, index) => (
+                        {currentContracts.map((contract, index) => (
                           <motion.tr
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -404,17 +734,22 @@ const AddContract = () => {
                           >
                             <td className="px-8 py-5">
                               <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors duration-300">
-                                {contract.contractNo}
+                                {contract.contract_no}
                               </span>
                             </td>
                             <td className="px-8 py-5">
                               <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors duration-300">
-                                {contract.client}
+                                {clients.find(
+                                  (client) => client.id === contract.client
+                                )?.clientName || 'Unknown'}
                               </span>
                             </td>
                             <td className="px-8 py-5">
                               <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors duration-300">
-                                {contract.location}
+                                {locations.find(
+                                  (location) =>
+                                    location.id === contract.location
+                                )?.location_name || 'Unknown'}
                               </span>
                             </td>
                             <td className="px-8 py-5">
@@ -444,16 +779,55 @@ const AddContract = () => {
                   </div>
 
                   {/* Pagination */}
-                  <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-end">
-                    <div className="flex items-center space-x-2">
-                      <button className="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300">
-                        Previous
-                      </button>
-                      <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300">
-                        Next
-                      </button>
+                  {contracts.length > contractsPerPage && (
+                    <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+                      <div className="text-sm text-gray-500">
+                        Showing {indexOfFirstContract + 1} to{' '}
+                        {Math.min(indexOfLastContract, contracts.length)} of{' '}
+                        {contracts.length} contracts
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <button
+                          onClick={() => handlePageChange(currentPage - 1)}
+                          disabled={currentPage === 1}
+                          className={`px-4 py-2 rounded-lg border ${
+                            currentPage === 1
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                          } transition-all duration-300`}
+                        >
+                          Previous
+                        </button>
+                        {Array.from(
+                          { length: totalPages },
+                          (_, i) => i + 1
+                        ).map((pageNumber) => (
+                          <button
+                            key={pageNumber}
+                            onClick={() => handlePageChange(pageNumber)}
+                            className={`px-4 py-2 rounded-lg ${
+                              currentPage === pageNumber
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                            } transition-all duration-300`}
+                          >
+                            {pageNumber}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => handlePageChange(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                          className={`px-4 py-2 rounded-lg border ${
+                            currentPage === totalPages
+                              ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              : 'bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                          } transition-all duration-300`}
+                        >
+                          Next
+                        </button>
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -479,6 +853,18 @@ const AddContract = () => {
         onConfirm={handleConfirmDelete}
         title="Delete Contract"
         message="Are you sure you want to delete this contract? This action cannot be undone."
+      />
+
+      <SuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        message={modalMessage}
+        onContinue={handleContinue}
+      />
+      <SuccessModal
+        isOpen={isFailureModalOpen}
+        onClose={() => setIsFailureModalOpen(false)}
+        message={modalMessage}
       />
     </div>
   );

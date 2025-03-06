@@ -73,7 +73,7 @@ const ContractDashboard = () => {
   const handleCardClick = (title) => {
     switch (title) {
       case 'Add Contract':
-        navigate('/add-contract');
+        navigate('/admin/add-contract');
         break;
       case 'Active':
         navigate('/active-contracts');
