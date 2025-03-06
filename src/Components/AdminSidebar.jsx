@@ -47,6 +47,20 @@ const AdminSidebar = () => {
     return termsPaths.includes(path);
   };
 
+  // Function to check if a path is contract-related
+  const isContractPath = (path) => {
+    const contractPaths = [
+      '/admin/contract-dashboard',
+      '/admin/view-rate-card',
+      '/admin/add-contract',
+      '/admin/active-contracts',
+      '/admin/expired-contracts',
+      '/admin/expiring-contracts',
+      '/admin/view-rate-card-items',
+    ];
+    return contractPaths.includes(path);
+  };
+
   const menuItems = [
     {
       path: '/admin/dashboard',
@@ -105,7 +119,9 @@ const AdminSidebar = () => {
                     (item.path === '/admin/client-location' &&
                       isClientLocationPath(location.pathname)) ||
                     (item.path === '/admin/terms-and-conditions-dashboard' &&
-                      isTermsPath(location.pathname))
+                      isTermsPath(location.pathname)) ||
+                    (item.path === '/admin/contract-dashboard' &&
+                      isContractPath(location.pathname))
                       ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black'
                       : ''
                   }`}
