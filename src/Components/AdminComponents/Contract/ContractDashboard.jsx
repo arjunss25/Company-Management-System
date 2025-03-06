@@ -93,8 +93,8 @@ const ContractDashboard = () => {
       case 'Add Rate card Item':
         setIsRateCardItemModalOpen(true);
         break;
-      case 'View Rate card Item': // Corrected title
-        navigate('/view-ratecard-items');
+      case 'View Rate card Item':
+        navigate('/admin/view-rate-card-items');
         break;
       default:
         break;
