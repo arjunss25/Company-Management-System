@@ -698,7 +698,7 @@ export const AdminApi = {
 
   editRateCard: async (id, data) => {
     try {
-      const response = await axiosInstance.put(
+      const response = await axiosInstance.patch(
         `/edit-delete-ratecard/${id}/`,
         data
       );

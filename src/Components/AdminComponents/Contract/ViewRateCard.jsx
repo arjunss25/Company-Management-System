@@ -52,6 +52,11 @@ const ViewRateCard = () => {
     }
   };
 
+  const handleUpdate = async () => {
+    const response = await AdminApi.listRateCards();
+    setRateCards(response.data);
+  };
+
   return (
     <div className="flex">
       <div className="flex-1 ">
@@ -188,6 +193,7 @@ const ViewRateCard = () => {
           setSelectedRateCard(null);
         }}
         rateCard={selectedRateCard}
+        onUpdate={handleUpdate}
       />
 
       <DeleteConfirmationModal
