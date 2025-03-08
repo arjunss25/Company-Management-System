@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiEdit } from 'react-icons/fi';
 import { RiDeleteBin6Line } from 'react-icons/ri';
 import { IoArrowBack } from 'react-icons/io5';
@@ -6,17 +6,34 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import UpdateRateCardItemModal from './UpdateRateCardItemModal';
+import { AdminApi } from '../../../Services/AdminApi';
 
 const ViewRateCardItems = () => {
   const navigate = useNavigate();
-  const [rateCards] = useState([
-    { id: 1, name: 'dfbh', type: 'Opex' },
-    { id: 2, name: 'sae', type: 'Capex' },
-  ]);
+  const [rateCards, setRateCards] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [selectedRateCard, setSelectedRateCard] = useState(null);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [rateCardToDelete, setRateCardToDelete] = useState(null);
+
+  useEffect(() => {
+    fetchRateCardItems();
+  }, []);
+
+  const fetchRateCardItems = async () => {
+    try {
+      setLoading(true);
+      const response = await AdminApi.getRateCardItems();
+      setRateCards(response.data || []);
+    } catch (error) {
+      console.error('Error fetching rate card items:', error);
+      setError('Failed to fetch rate card items');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleEdit = (rateCard) => {
     setSelectedRateCard(rateCard);
@@ -28,10 +45,32 @@ const ViewRateCardItems = () => {
     setIsDeleteModalOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    // Add your delete logic here
-    console.log('Deleting rate card:', rateCardToDelete);
+  const handleConfirmDelete = async () => {
+    try {
+      await AdminApi.deleteRateCard(rateCardToDelete.id);
+      await fetchRateCardItems(); // Refresh the list after deletion
+      setIsDeleteModalOpen(false);
+      setRateCardToDelete(null);
+    } catch (error) {
+      console.error('Error deleting rate card:', error);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-xl font-semibold text-gray-600">Loading...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-xl font-semibold text-red-600">{error}</div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-screen bg-gray-50">

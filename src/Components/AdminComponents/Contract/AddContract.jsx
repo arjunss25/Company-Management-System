@@ -7,7 +7,6 @@ import UpdateContractModal from './UpdateContractModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { useNavigate } from 'react-router-dom';
 import { IoArrowBack } from 'react-icons/io5';
-
 import { AdminApi } from '../../../Services/AdminApi';
 import { IoMdAddCircleOutline } from 'react-icons/io';
 import { MdDeleteForever } from 'react-icons/md';

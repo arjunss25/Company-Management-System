@@ -712,7 +712,6 @@ export const AdminApi = {
       throw error;
     }
   },
-
   listRateCards: async () => {
     try {
       const response = await axiosInstance.get(
@@ -724,7 +723,16 @@ export const AdminApi = {
       throw error;
     }
   },
-
+  // Add-ratecard-item
+  addRateCardItem: async (rateCardItemData) => {
+    try {
+      const response = await axiosInstance.post('/ratecard-detail/', rateCardItemData);
+      return response.data;
+    } catch (error) {
+      console.error('Error adding rate card item:', error);
+      throw error;
+    }
+  },
   editRateCard: async (id, data) => {
     try {
       const response = await axiosInstance.patch(
@@ -821,6 +829,15 @@ export const AdminApi = {
       return response.data;
     } catch (error) {
       console.error('Error fetching expiring soon contracts:', error);
+      throw error;
+    }
+  },
+  listUnits: async () => {
+    try {
+      const response = await axiosInstance.get('/list-units/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching units:', error);
       throw error;
     }
   },

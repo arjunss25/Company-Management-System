@@ -13,7 +13,7 @@ const ActiveContract = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const contractsPerPage = 10;
 
-  // Add pagination handler
+  // pagination handler
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
     window.scrollTo(0, 0);
@@ -36,7 +36,7 @@ const ActiveContract = () => {
     }
   };
 
-  // Calculate pagination values
+  // pagination values
   const indexOfLastContract = currentPage * contractsPerPage;
   const indexOfFirstContract = indexOfLastContract - contractsPerPage;
   const currentContracts = contracts.slice(indexOfFirstContract, indexOfLastContract);
