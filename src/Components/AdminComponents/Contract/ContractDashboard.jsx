@@ -76,13 +76,13 @@ const ContractDashboard = () => {
         navigate('/admin/add-contract');
         break;
       case 'Active':
-        navigate('/active-contracts');
+        navigate('/admin/active-contracts');
         break;
       case 'Expired':
-        navigate('/expired-contracts');
+        navigate('/admin/expired-contracts');
         break;
       case 'Expiring Soon':
-        navigate('/expiring-soon-contracts');
+        navigate('/admin/expiring-contracts');
         break;
       case 'View Ratecard':
         navigate('/admin/view-rate-card');

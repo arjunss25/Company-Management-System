@@ -40,14 +40,14 @@ const AddContract = () => {
   const [searchRateCard, setSearchRateCard] = useState('');
   const [isRateCardDropdownOpen, setIsRateCardDropdownOpen] = useState(false);
   const fileInputRef = useRef(null);
-  const [attachments, setAttachments] = useState([{ file: null }]);
+  const [attachments, setAttachments] = useState([]);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
   const [isFailureModalOpen, setIsFailureModalOpen] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
   const [navigationTimer, setNavigationTimer] = useState(null);
   const [contracts, setContracts] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const contractsPerPage = 10; 
+  const contractsPerPage = 10;
 
   useEffect(() => {
     const fetchClientsAndLocationsAndRateCards = async () => {
@@ -76,8 +76,8 @@ const AddContract = () => {
     if (isSuccessModalOpen) {
       const timer = setTimeout(() => {
         setIsSuccessModalOpen(false);
-      }, 3000); 
-      return () => clearTimeout(timer); 
+      }, 3000);
+      return () => clearTimeout(timer);
     }
   }, [isSuccessModalOpen]);
 
@@ -85,8 +85,8 @@ const AddContract = () => {
     if (isFailureModalOpen) {
       const timer = setTimeout(() => {
         setIsFailureModalOpen(false);
-      }, 3000); // Modal stays open for 3 seconds
-      return () => clearTimeout(timer); // Cleanup the timer on unmount
+      }, 3000);
+      return () => clearTimeout(timer);
     }
   }, [isFailureModalOpen]);
 
@@ -105,10 +105,7 @@ const AddContract = () => {
     const { files } = e.target;
     if (files.length > 0) {
       const newAttachments = Array.from(files);
-      setFormData((prev) => ({
-        ...prev,
-        attachments: [...prev.attachments, ...newAttachments],
-      }));
+      setAttachments((prev) => [...prev, ...newAttachments]);
     }
   };
 
@@ -146,43 +143,43 @@ const AddContract = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  // Function to format date to DD-MM-YYYY
   const formatDate = (dateString) => {
     const date = new Date(dateString);
     const day = date.getDate().toString().padStart(2, '0');
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const year = date.getFullYear(); // Use full year instead of last 2 digits
+    const year = date.getFullYear();
     return `${day}-${month}-${year}`;
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
       try {
         const formDataObj = new FormData();
-
-        // Append form fields with proper field names
+    
+        // Append basic contract details
         formDataObj.append('client', formData.client);
         formDataObj.append('location', formData.location);
         formDataObj.append('rate_card', formData.rateCard);
         formDataObj.append('contract_no', formData.contractNo);
-        formDataObj.append('valid_from', formatDate(formData.validFrom)); // This will now be DD-MM-YYYY
-        formDataObj.append('valid_till', formatDate(formData.validTill)); // This will now be DD-MM-YYYY
-
-        // Handle attachments properly
-        attachments.forEach((attachment) => {
-          if (attachment.file) {
-            formDataObj.append('attachments', attachment.file);
+        formDataObj.append('valid_from', formatDate(formData.validFrom));
+        formDataObj.append('valid_till', formatDate(formData.validTill));
+    
+        // Append attachments with the correct field name
+        attachments.forEach((file) => {
+          if (file instanceof File) {
+            formDataObj.append('attachments[]', file);
           }
         });
-
-        // Log FormData entries to verify data
+    
+        // Log FormData entries for debugging
         for (let pair of formDataObj.entries()) {
           console.log('FormData Entry:', pair[0], pair[1]);
         }
-
+    
         const response = await AdminApi.addContract(formDataObj);
         console.log('API Response:', response);
-
+    
         if (response.status === 'Success') {
           setFormData({
             client: '',
@@ -193,15 +190,14 @@ const AddContract = () => {
             validTill: '',
             attachments: [],
           });
-          setAttachments([{ file: null }]);
+          setAttachments([]);
           setModalMessage('Contract added successfully!');
           setIsSuccessModalOpen(true);
-
-          // Start the delayed navigation timer
+    
           const timer = setTimeout(() => {
             navigate('/admin/contract-dashboard');
           }, 3000);
-          // Store the timer ID so we can clear it if needed
+    
           setNavigationTimer(timer);
         }
       } catch (error) {
@@ -286,25 +282,23 @@ const AddContract = () => {
   const handleAttachmentChange = (index, e) => {
     const { files } = e.target;
     if (files.length > 0) {
-      const newAttachments = [...attachments];
-      newAttachments[index] = { file: files[0] };
-      setAttachments(newAttachments);
-
-      // Log to verify file is being captured
-      console.log('File added:', files[0]);
+      setAttachments((prev) => {
+        const newAttachments = [...prev];
+        newAttachments[index] = files[0];
+        return newAttachments;
+      });
     }
   };
+
   const handleContinue = () => {
-    // Clear any existing navigation timer
     if (navigationTimer) {
       clearTimeout(navigationTimer);
     }
     setIsSuccessModalOpen(false);
-    // Navigate immediately
+
     navigate('/admin/contract-dashboard');
   };
 
-  // Calculate pagination values
   const indexOfLastContract = currentPage * contractsPerPage;
   const indexOfFirstContract = indexOfLastContract - contractsPerPage;
   const currentContracts = contracts.slice(
@@ -312,7 +306,6 @@ const AddContract = () => {
     indexOfLastContract
   );
   const totalPages = Math.ceil(contracts.length / contractsPerPage);
-
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
   };

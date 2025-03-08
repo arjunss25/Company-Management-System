@@ -1,36 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoArrowBack } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { AdminApi } from '../../../Services/AdminApi';
 
 const ExpiredContracts = () => {
   const navigate = useNavigate();
-  const [contracts] = useState([
-    {
-      id: 1,
-      slno: '001',
-      contractNo: 'CNT2023001',
-      client: 'Tech Solutions',
-      location: 'San Francisco',
-      validTill: '31-12-2024',
-    },
-    {
-      id: 2,
-      slno: '002',
-      contractNo: 'CNT2023002',
-      client: 'Digital Innovations',
-      location: 'Seattle',
-      validTill: '31-12-2024',
-    },
-    {
-      id: 3,
-      slno: '003',
-      contractNo: 'CNT2023003',
-      client: 'Smart Systems',
-      location: 'Boston',
-      validTill: '31-12-2024',
-    },
-  ]);
+  const [contracts, setContracts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const contractsPerPage = 10;
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo(0, 0);
+  };
+
+  useEffect(() => {
+    fetchExpiredContracts();
+  }, []);
+
+  const fetchExpiredContracts = async () => {
+    try {
+      const response = await AdminApi.listExpiredContracts();
+      const contractsData = response?.data || [];
+      setContracts(contractsData);
+    } catch (error) {
+      console.error('Error fetching expired contracts:', error);
+      setContracts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate pagination values
+  const indexOfLastContract = currentPage * contractsPerPage;
+  const indexOfFirstContract = indexOfLastContract - contractsPerPage;
+  const currentContracts = contracts.slice(indexOfFirstContract, indexOfLastContract);
+  const totalPages = Math.ceil(contracts.length / contractsPerPage);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -84,27 +91,30 @@ const ExpiredContracts = () => {
                     </th>
                   </tr>
                 </thead>
+                
                 <tbody>
-                  {contracts.map((contract, index) => (
+                  {currentContracts.map((contract, index) => (
                     <motion.tr
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ duration: 0.3, delay: index * 0.1 }}
-                      key={contract.id}
+                      key={index}
                       className="group hover:bg-blue-50/50 transition-colors duration-300"
                     >
                       <td className="px-6 py-5">
                         <span className="text-gray-700 font-medium">
-                          {contract.slno}
+                          {indexOfFirstContract + index + 1}
                         </span>
                       </td>
                       <td className="px-6 py-5">
                         <span className="text-gray-700 font-medium">
-                          {contract.contractNo}
+                          {contract.contract_no}
                         </span>
                       </td>
                       <td className="px-6 py-5">
-                        <span className="text-gray-700">{contract.client}</span>
+                        <span className="text-gray-700">
+                          {contract.client}
+                        </span>
                       </td>
                       <td className="px-6 py-5">
                         <span className="text-gray-700">
@@ -113,7 +123,7 @@ const ExpiredContracts = () => {
                       </td>
                       <td className="px-6 py-5">
                         <span className="text-red-600 font-medium">
-                          {contract.validTill}
+                          {contract.valid_till}
                         </span>
                       </td>
                     </motion.tr>
@@ -123,16 +133,55 @@ const ExpiredContracts = () => {
             </div>
 
             {/* Pagination */}
-            <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-end">
-              <div className="flex items-center space-x-2">
-                <button className="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300">
-                  Previous
-                </button>
-                <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300">
-                  Next
-                </button>
+            {/* Update Pagination section */}
+            {(
+              <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+                <div className="text-sm text-gray-500">
+                  Showing {indexOfFirstContract + 1} to{' '}
+                  {Math.min(indexOfLastContract, contracts.length)} of{' '}
+                  {contracts.length} contracts
+                </div>
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className={`px-4 py-2 rounded-lg border ${
+                      currentPage === 1
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                    } transition-all duration-300`}
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (pageNumber) => (
+                      <button
+                        key={pageNumber}
+                        onClick={() => handlePageChange(pageNumber)}
+                        className={`px-4 py-2 rounded-lg ${
+                          currentPage === pageNumber
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                        } transition-all duration-300`}
+                      >
+                        {pageNumber}
+                      </button>
+                    )
+                  )}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className={`px-4 py-2 rounded-lg border ${
+                      currentPage === totalPages
+                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                        : 'bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                    } transition-all duration-300`}
+                  >
+                    Next
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </motion.div>
       </div>

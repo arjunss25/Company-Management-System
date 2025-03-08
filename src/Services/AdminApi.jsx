@@ -204,7 +204,29 @@ export const AdminApi = {
       throw error;
     }
   },
-
+  // Add the addContract endpoint
+  // Remove the first addContract implementation and keep this one with proper FormData handling
+  addContract: async (formData) => {
+    try {
+      // Log FormData contents for debugging
+      for (let pair of formData.entries()) {
+        console.log('FormData Entry:', pair[0], pair[1]);
+      }
+  const response = await axiosInstance.post('/add-contract/', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+  } catch (error) {
+  if (error.response) {
+  console.error('Error response:', error.response.data);
+  return error.response.data;
+  }
+  console.error('Error adding contract:', error);
+  throw error;
+  }
+  },
   listStaffRole: async () => {
     try {
       const response = await axiosInstance.get('/list-staff-role/');
@@ -586,7 +608,15 @@ export const AdminApi = {
       throw error;
     }
   },
-
+  listActiveContracts: async () => {
+    try {
+      const response = await axiosInstance.get('/contracts-active/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching active contracts:', error);
+      throw error;
+    }
+  },
   // Client Management APIs
   getClientList: async () => {
     try {
@@ -648,7 +678,6 @@ export const AdminApi = {
       throw error;
     }
   },
-
   // Add searchTerms function
   searchTerms: async (searchTerm) => {
     try {
@@ -720,17 +749,38 @@ export const AdminApi = {
       throw error;
     }
   },
-
-  addContract: async (formData) => {
+  // Add this method to the AdminApi object
+  listExpiredContracts: async () => {
     try {
-      const response = await axiosInstance.post('/add-contract/', formData);
+      const response = await axiosInstance.get('/contracts-expired/');
       return response.data;
     } catch (error) {
-      console.error('Error adding contract:', error);
+      console.error('Error fetching expired contracts:', error);
       throw error;
     }
   },
-
+  // Remove the first addContract implementation and keep this one with proper FormData handling
+  addContract: async (formData) => {
+    try {
+      // Log FormData contents for debugging
+      for (let pair of formData.entries()) {
+        console.log('FormData Entry:', pair[0], pair[1]);
+      }
+  const response = await axiosInstance.post('/add-contract/', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+  } catch (error) {
+  if (error.response) {
+  console.error('Error response:', error.response.data);
+  return error.response.data;
+  }
+  console.error('Error adding contract:', error);
+  throw error;
+  }
+  },
   listContracts: async () => {
     try {
       const response = await axiosInstance.get('/list-contracts/');
@@ -762,6 +812,15 @@ export const AdminApi = {
       return response.data;
     } catch (error) {
       console.error('Error deleting contract:', error);
+      throw error;
+    }
+  },
+  listExpiringSoonContracts: async () => {
+    try {
+      const response = await axiosInstance.get('/contracts-expiring-soon/');
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching expiring soon contracts:', error);
       throw error;
     }
   },

@@ -1,38 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FiEdit } from 'react-icons/fi';
 import { RiDeleteBin6Line } from 'react-icons/ri';
 import { IoArrowBack } from 'react-icons/io5';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { AdminApi } from '../../../Services/AdminApi';
 
 const ActiveContract = () => {
   const navigate = useNavigate();
-  const [contracts] = useState([
-    {
-      id: 1,
-      slno: '001',
-      contractNo: 'CNT2024001',
-      client: 'ABC Corporation',
-      location: 'New York',
-      validTill: '31-12-2024',
-    },
-    {
-      id: 2,
-      slno: '002',
-      contractNo: 'CNT2024002',
-      client: 'XYZ Industries',
-      location: 'Los Angeles',
-      validTill: '31-12-2024',
-    },
-    {
-      id: 3,
-      slno: '003',
-      contractNo: 'CNT2024003',
-      client: 'Global Tech',
-      location: 'Chicago',
-      validTill: '31-12-2024',
-    },
-  ]);
+  const [contracts, setContracts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const contractsPerPage = 10;
+
+  // Add pagination handler
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    window.scrollTo(0, 0);
+  };
+
+  useEffect(() => {
+    fetchActiveContracts();
+  }, []);
+
+  const fetchActiveContracts = async () => {
+    try {
+      const response = await AdminApi.listActiveContracts();
+      const contractsData = response?.data || [];
+      setContracts(contractsData);
+    } catch (error) {
+      console.error('Error fetching active contracts:', error);
+      setContracts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calculate pagination values
+  const indexOfLastContract = currentPage * contractsPerPage;
+  const indexOfFirstContract = indexOfLastContract - contractsPerPage;
+  const currentContracts = contracts.slice(indexOfFirstContract, indexOfLastContract);
+  const totalPages = Math.ceil(contracts.length / contractsPerPage);
 
   return (
     <div className="flex h-screen bg-gray-50">
@@ -70,24 +78,27 @@ const ActiveContract = () => {
                 <thead>
                   <tr className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
                     <th className="px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Slno
-                    </th>
-                    <th className="px-6 py-5 text-left text-sm font-semibold text-gray-600">
                       Contract No
                     </th>
                     <th className="px-6 py-5 text-left text-sm font-semibold text-gray-600">
-                      Client
+                      Client Name
                     </th>
                     <th className="px-6 py-5 text-left text-sm font-semibold text-gray-600">
                       Location
                     </th>
                     <th className="px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                      Rate Card
+                    </th>
+                    <th className="px-6 py-5 text-left text-sm font-semibold text-gray-600">
                       Valid Till
+                    </th>
+                    <th className="px-6 py-5 text-left text-sm font-semibold text-gray-600">
+                      Status
                     </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {contracts.map((contract, index) => (
+                  {currentContracts.map((contract, index) => (
                     <motion.tr
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
@@ -97,45 +108,34 @@ const ActiveContract = () => {
                     >
                       <td className="px-6 py-5">
                         <span className="text-gray-700 font-medium">
-                          {contract.slno}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="text-gray-700 font-medium">
-                          {contract.contractNo}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="text-gray-700">{contract.client}</span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className="text-gray-700">
-                          {contract.location}
+                          {contract.contract_no}
                         </span>
                       </td>
                       <td className="px-6 py-5">
                         <span className="text-gray-700">
-                          {contract.validTill}
+                          {contract.client_name}
                         </span>
                       </td>
-                      {/* <td className="px-6 py-5">
-                        <div className="flex items-center space-x-4">
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-300"
-                          >
-                            <FiEdit size={18} />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-300"
-                          >
-                            <RiDeleteBin6Line size={18} />
-                          </motion.button>
-                        </div>
-                      </td> */}
+                      <td className="px-6 py-5">
+                        <span className="text-gray-700">
+                          {contract.location_name}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className="text-gray-700">
+                          {contract.rate_cardname}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className="text-gray-700">
+                          {contract.valid_till}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                          {contract.contract_status}
+                        </span>
+                      </td>
                     </motion.tr>
                   ))}
                 </tbody>
@@ -143,12 +143,48 @@ const ActiveContract = () => {
             </div>
 
             {/* Pagination */}
-            <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-end">
+            <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+              <div className="text-sm text-gray-500">
+                Showing {indexOfFirstContract + 1} to{' '}
+                {Math.min(indexOfLastContract, contracts.length)} of{' '}
+                {contracts.length} contracts
+              </div>
               <div className="flex items-center space-x-2">
-                <button className="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300">
+                <button
+                  onClick={() => handlePageChange(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className={`px-4 py-2 rounded-lg border ${
+                    currentPage === 1
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                  } transition-all duration-300`}
+                >
                   Previous
                 </button>
-                <button className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (pageNumber) => (
+                    <button
+                      key={pageNumber}
+                      onClick={() => handlePageChange(pageNumber)}
+                      className={`px-4 py-2 rounded-lg ${
+                        currentPage === pageNumber
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                      } transition-all duration-300`}
+                    >
+                      {pageNumber}
+                    </button>
+                  )
+                )}
+                <button
+                  onClick={() => handlePageChange(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className={`px-4 py-2 rounded-lg border ${
+                    currentPage === totalPages
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                  } transition-all duration-300`}
+                >
                   Next
                 </button>
               </div>
