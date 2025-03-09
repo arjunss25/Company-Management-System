@@ -2,11 +2,11 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   AiOutlineDashboard,
-  AiOutlineFileText,
   AiOutlineSetting,
 } from 'react-icons/ai';
 import { FaBuilding, FaFileContract, FaBoxOpen, FaUsers } from 'react-icons/fa';
 import { MdGavel } from 'react-icons/md';
+import { AiOutlineFileText } from 'react-icons/ai';
 
 const AdminSidebar = () => {
   const location = useLocation();
@@ -61,11 +61,42 @@ const AdminSidebar = () => {
     return contractPaths.includes(path);
   };
 
+  // Add this function to check quotation-related paths
+  const isQuotationPath = (path) => {
+    const quotationPaths = [
+      '/admin/quotation-dashboard',
+      '/admin/add-quotations',
+      '/admin/view-quotations',
+      '/admin/active-quotations',
+      '/admin/pending-approval',
+      '/admin/cancelled-quotations',
+      '/admin/not-started',
+      '/admin/in-progress',
+      '/admin/completed',
+      '/admin/on-hold',
+      '/admin/no-access',
+      '/admin/lpo-pending',
+      '/admin/wcr-pending',
+      '/admin/grn-pending',
+      '/admin/invoice-pending',
+      '/admin/lpo-received',
+      '/admin/grn-received',
+      '/admin/retention-overdue'
+    ];
+    return quotationPaths.includes(path);
+  };
+
   const menuItems = [
     {
       path: '/admin/dashboard',
       icon: <AiOutlineDashboard size={22} />,
       label: 'Dashboard',
+    },
+    // Add this new menu item after Dashboard
+    {
+      path: '/admin/quotation-dashboard',
+      icon: <AiOutlineFileText size={22} />,
+      label: 'Quotation',
     },
     {
       path: '/admin/client-location',
@@ -121,7 +152,9 @@ const AdminSidebar = () => {
                     (item.path === '/admin/terms-and-conditions-dashboard' &&
                       isTermsPath(location.pathname)) ||
                     (item.path === '/admin/contract-dashboard' &&
-                      isContractPath(location.pathname))
+                      isContractPath(location.pathname)) ||
+                    (item.path === '/admin/quotation-dashboard' &&
+                      isQuotationPath(location.pathname))
                       ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black'
                       : ''
                   }`}

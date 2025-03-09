@@ -6,7 +6,7 @@ import { AiOutlinePrinter, AiOutlineFilter } from 'react-icons/ai';
 import { GrRevert } from "react-icons/gr";
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import DeleteConfirmationModal from '../../../components/Admin/Contract/DeleteConfirmationModal';
+import DeleteConfirmationModal from '../../Common/DeleteConfirmationModal';
 import DateFilterModal from './DateFilterModal';
 
 const CancelledQuotationTable = () => {

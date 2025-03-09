@@ -12,7 +12,7 @@ import TermsAndConditions from './TermsAndConditions';
 import ClientModal from './ClientModal';
 import LocationModal from './LocationModal';
 import SiteInChargeModal from './SiteInChargeModal';
-import AddStaffModal from '../../Staff/AddStaffModal';
+import AddStaffModal from '../../../Common/AddStaffModal';
 
 const WorkDetails = () => {
   const [formData, setFormData] = useState({

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useSelector } from 'react-redux';
+import TokenService from '../Config/tokenService';
 import {
   selectIsAuthenticated,
   selectUserRole,
@@ -11,8 +12,17 @@ const ProtectedRoute = ({ allowedRoles, allowedPermissions, element }) => {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const userRole = useSelector(selectUserRole);
   const userPermissions = useSelector(selectPermissions);
+  const token = TokenService.getToken();
+
+  console.log('Auth Debug:', {
+    isAuthenticated,
+    userRole,
+    userPermissions,
+    hasToken: !!token
+  });
 
   console.log('ProtectedRoute - Checking access:', {
+    token: token ? 'Token exists' : 'No token',
     userRole,
     allowedRoles,
     allowedPermissions,
@@ -20,54 +30,36 @@ const ProtectedRoute = ({ allowedRoles, allowedPermissions, element }) => {
     isAuthenticated,
   });
 
-  // user authentication check
-  if (!isAuthenticated) {
+  // Check both Redux auth state and token
+  if (!isAuthenticated || !token) {
     console.log('Not authenticated, redirecting to login');
     return <Navigate to="/login" replace />;
   }
 
-  // If roles are specified, role-based access check
+  // Role-based access check
   if (Array.isArray(allowedRoles) && allowedRoles.length > 0) {
     const hasAllowedRole = allowedRoles.some(
       (role) => role.toLowerCase() === userRole?.toLowerCase()
     );
 
     if (!hasAllowedRole) {
-      console.log(
-        'Unauthorized role, redirecting. Required one of:',
-        allowedRoles,
-        'but has:',
-        userRole
-      );
+      console.log('Unauthorized role, redirecting to unauthorized');
       return <Navigate to="/unauthorized" replace />;
     }
   }
 
-  // If permissions are specified, check permission-based access
+  // Permission-based access check
   if (Array.isArray(allowedPermissions) && allowedPermissions.length > 0) {
-    // Check if user has ALL required permissions
-    const hasAllRequiredPermissions = allowedPermissions.every((permission) =>
+    const hasRequiredPermissions = allowedPermissions.every((permission) =>
       userPermissions.includes(permission)
     );
 
-    console.log('Checking permissions:', {
-      required: allowedPermissions,
-      userPermissions,
-      hasAccess: hasAllRequiredPermissions,
-    });
-
-    if (!hasAllRequiredPermissions) {
-      console.log(
-        'Unauthorized permission, redirecting. Required ALL of:',
-        allowedPermissions,
-        'but has:',
-        userPermissions
-      );
+    if (!hasRequiredPermissions) {
+      console.log('Unauthorized permission, redirecting to unauthorized');
       return <Navigate to="/unauthorized" replace />;
     }
   }
 
-  // If all checks pass, render the protected content
   return element ? element : <Outlet />;
 };
 

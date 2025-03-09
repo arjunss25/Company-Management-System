@@ -1,4 +1,7 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import usePermissions from '../../../Hooks/userPermission';
+import { PERMISSIONS } from '../../../Hooks/userPermission';
 import { MdAddCircle, MdClose,MdOutlinePendingActions } from 'react-icons/md';
 import { FaEye, FaClock, FaHourglassStart } from 'react-icons/fa';
 import { VscLayersActive } from 'react-icons/vsc';
@@ -9,19 +12,31 @@ import { AiFillFileAdd } from 'react-icons/ai';
 import { IoMdCheckmarkCircleOutline } from 'react-icons/io';
 import { GrDocumentLocked } from "react-icons/gr";
 import { GiCheckMark } from 'react-icons/gi';
-import { useNavigate } from 'react-router-dom';
-import Navbar from '../../Navbar/Navbar';
+
 
 const QuotationDashboard = () => {
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
+
+  // Check if user has basic quotation viewing permission
+  if (!hasPermission(PERMISSIONS.VIEW_QUOTATIONS)) {
+    navigate('/unauthorized');
+    return null;
+  }
 
   const sections = [
     {
       title: 'Quotation',
       items: [
-        { count: '+', label: 'Add Quotations', icon: <AiFillFileAdd className="text-green-500 text-2xl" />, path: '/add-quotations' },
-        { count: 44, label: 'View Quotations', icon: <FaEye className="text-blue-500 text-2xl" />, path: '/view-quotations' },
-        { count: 6, label: 'Cancelled Quotations', icon: <MdClose className="text-red-500 text-2xl" />, path: '/cancelled-quotations' },
+        { 
+          count: '+', 
+          label: 'Add Quotations', 
+          icon: <AiFillFileAdd className="text-green-500 text-2xl" />, 
+          path: '/admin/add-quotations',
+          requiredPermission: PERMISSIONS.CREATE_QUOTATION
+        },
+        { count: 44, label: 'View Quotations', icon: <FaEye className="text-blue-500 text-2xl" />, path: '/admin/view-quotations' },
+        { count: 6, label: 'Cancelled Quotations', icon: <MdClose className="text-red-500 text-2xl" />, path: '/admin/cancelled-quotations' },
         { count: 24, label: 'Pending For Approval', icon: <FaClock className="text-orange-500 text-2xl" />, path: '/pending-approval' },
         { count: 0, label: 'Approval Pending Work Started', icon: <MdOutlinePendingActions className="text-orange-500 text-2xl" />, path: '/pending-workstarted' },
         { count: 17, label: 'Active Quotations', icon: <VscLayersActive className="text-blue-500 text-2xl" />, path: '/active-quotations' },
@@ -61,15 +76,18 @@ const QuotationDashboard = () => {
     },
   ];
 
-  const handleCardClick = (path) => {
+  const handleCardClick = (path, requiredPermission) => {
+    if (requiredPermission && !hasPermission(requiredPermission)) {
+      navigate('/unauthorized');
+      return;
+    }
     navigate(path);
   };
 
   return (
-    <div className="w-full h-screen bg-gray-50 flex">
+    <div className="w-full flex">
 
-      <div className="main-content w-full md:w-[calc(100%-300px)] h-full overflow-y-scroll">
-        <Navbar/>
+      <div className="main-content w-full">
         <div className="title-sec w-full h-[12vh] flex items-center justify-center px-8">
           <h1 className="text-[1.8rem] font-semibold text-gray-800">
             Quotation Dashboard
@@ -87,7 +105,7 @@ const QuotationDashboard = () => {
                   key={idx}
                   className="card bg-white rounded-2xl shadow-sm hover:shadow-lg p-6 w-[240px] h-[210px] cursor-pointer
                            group relative overflow-hidden transition-all duration-300"
-                  onClick={() => handleCardClick(item.path)}
+                  onClick={() => handleCardClick(item.path, item.requiredPermission)}
                 >
                   <div
                     className="w-10 h-10 rounded-xl flex items-center justify-center mb-6"

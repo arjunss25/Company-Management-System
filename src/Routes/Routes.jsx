@@ -39,6 +39,25 @@ import Staffdetails from '../Components/AdminComponents/UserManagement/Staffdeta
 import Userrights from '../Components/AdminComponents/UserManagement/Userrights';
 import AddRateCardModal from '../Components/AdminComponents/Contract/AddRateCardModal';
 import UpdateRateCardModal from '../Components/AdminComponents/Contract/UpdateRateCardModal';
+import QuotationDashboard from '../Components/AdminComponents/Quotation/QuotationDashboard';
+import AddQuotations from '../Components/AdminComponents/Quotation/AddQuotation/AddQuotations';
+import ViewQuotationTable from '../Components/AdminComponents/Quotation/ViewQuotationTable';
+import ActiveQuotationTable from '../Components/AdminComponents/Quotation/ActiveQuotationTable';
+import PendingForApproval from '../Components/AdminComponents/Quotation/PendingForApproval';
+import CancelledQuotationTable from '../Components/AdminComponents/Quotation/CancelledQuotationTable';
+import EditQuotation from '../Components/AdminComponents/Quotation/EditQuotation/EditQuotation';
+import NotStartedTable from '../Components/AdminComponents/Quotation/WorkStatus/NotStartedTable';
+import InProgress from '../Components/AdminComponents/Quotation/WorkStatus/InProgress';
+import Completed from '../Components/AdminComponents/Quotation/WorkStatus/Completed';
+import OnHold from '../Components/AdminComponents/Quotation/WorkStatus/Onhold';
+import NoAccess from '../Components/AdminComponents/Quotation/WorkStatus/NoAccess';
+import LpoPending from '../Components/AdminComponents/Quotation/DocumentationStatus/LpoPending';
+import WcrPending from '../Components/AdminComponents/Quotation/DocumentationStatus/WcrPending';
+import GrnPending from '../Components/AdminComponents/Quotation/DocumentationStatus/GrnPending';
+import InvoicePending from '../Components/AdminComponents/Quotation/DocumentationStatus/InvoicePending';
+import LpoReceived from '../Components/AdminComponents/Quotation/DocumentationStatus/LpoReceived';
+import GrnReceived from '../Components/AdminComponents/Quotation/DocumentationStatus/GrnReceived';
+import RetentionOverDue from '../Components/AdminComponents/Quotation/Retention/RetentionOverDue';
 
 const AppRoutes = () => {
   return (
@@ -351,7 +370,216 @@ const AppRoutes = () => {
             />
           }
         />
+
+
+
+
+
+
+
+{/* /////////////////////////////////////////////////// */}
+ {/* Quotation Routes - Move them inside admin route block */}
+ <Route
+    path="quotation-dashboard"
+    element={
+      <ProtectedRoute
+        allowedRoles={['admin', 'Admin', 'staff', 'Staff', 'sales', 'Sales']}
+        allowedPermissions={[PERMISSIONS.VIEW_QUOTATIONS]}
+        element={<QuotationDashboard />}
+      />
+    }
+  />
+  <Route 
+    path="add-quotations" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.CREATE_QUOTATION]} 
+        element={<AddQuotations />} 
+      />
+    } 
+  />
+  <Route 
+    path="view-quotations" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_QUOTATIONS]} 
+        element={<ViewQuotationTable />} 
+      />
+    } 
+  />
+  <Route 
+    path="active-quotations" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_ACTIVE_QUOTATIONS]} 
+        element={<ActiveQuotationTable />} 
+      />
+    } 
+  />
+  <Route 
+    path="pending-approval" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_PENDING_QUOTATIONS]} 
+        element={<PendingForApproval />} 
+      />
+    } 
+  />
+  <Route 
+    path="cancelled-quotations" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_CANCELLED_QUOTATIONS]} 
+        element={<CancelledQuotationTable />} 
+      />
+    } 
+  />
+  <Route 
+    path="edit-quotation/:id" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.EDIT_QUOTATION]} 
+        element={<EditQuotation />} 
+      />
+    } 
+  />
+
+  {/* Work Status Routes */}
+  <Route 
+    path="not-started" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_NOT_STARTED]} 
+        element={<NotStartedTable />} 
+      />
+    } 
+  />
+  <Route 
+    path="in-progress" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_IN_PROGRESS]} 
+        element={<InProgress />} 
+      />
+    } 
+  />
+  <Route 
+    path="completed" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_COMPLETED]} 
+        element={<Completed />} 
+      />
+    } 
+  />
+  <Route 
+    path="on-hold" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_ON_HOLD]} 
+        element={<OnHold />} 
+      />
+    } 
+  />
+  <Route 
+    path="no-access" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_NO_ACCESS]} 
+        element={<NoAccess />} 
+      />
+    } 
+  />
+
+  {/* Documentation Status Routes */}
+  <Route 
+    path="lpo-pending" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_LPO_STATUS]} 
+        element={<LpoPending />} 
+      />
+    } 
+  />
+  <Route 
+    path="wcr-pending" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_WCR_STATUS]} 
+        element={<WcrPending />} 
+      />
+    } 
+  />
+  <Route 
+    path="grn-pending" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_GRN_STATUS]} 
+        element={<GrnPending />} 
+      />
+    } 
+  />
+  <Route 
+    path="invoice-pending" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_INVOICE_STATUS]} 
+        element={<InvoicePending />} 
+      />
+    } 
+  />
+  <Route 
+    path="lpo-received" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_LPO_STATUS]} 
+        element={<LpoReceived />} 
+      />
+    } 
+  />
+  <Route 
+    path="grn-received" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_GRN_STATUS]} 
+        element={<GrnReceived />} 
+      />
+    } 
+  />
+
+  {/* Retention Routes */}
+  <Route 
+    path="retention-overdue" 
+    element={
+      <ProtectedRoute 
+        allowedPermissions={[PERMISSIONS.VIEW_RETENTION_STATUS]} 
+        element={<RetentionOverDue />} 
+      />
+    } 
+  />
+
+
+
+
+
+
+
+
+
       </Route>
+ 
+
+
+
+
+
+
+
+
+
+
+
+
 
       {/* Catch all route */}
       <Route path="*" element={<Navigate to="/login" replace />} />
