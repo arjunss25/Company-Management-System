@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IoChevronDownOutline,
   IoSearchOutline,
@@ -14,9 +14,17 @@ import LocationModal from './LocationModal';
 import SiteInChargeModal from './SiteInChargeModal';
 import AddStaffModal from '../../../Common/AddStaffModal';
 
+// api imports
+import {
+  generateQuotationNumber,
+  getSalesPersons,
+  generateJobNumber,
+  getClients,getLocations
+} from '../../../../Services/QuotationApi';
+
 const WorkDetails = () => {
   const [formData, setFormData] = useState({
-    quotationNo: 'zxcdsc-QTN-47-1224',
+    quotationNo: '',
     date: '30-12-2024',
     projectManager: '',
     pmName: '',
@@ -49,14 +57,10 @@ const WorkDetails = () => {
       { lpoStatus: '', prNo: '', date: '', lpoNo: '', lpoAmount: '' },
     ],
 
-
     // lpoStatus: '',
     // prNo: '',
     // lpoNo: '',
     // lpoAmount: '',
-
-
-
 
     lpoDate: '',
     wcrAttachment: null,
@@ -94,37 +98,18 @@ const WorkDetails = () => {
   const [openSelect, setOpenSelect] = useState(null);
   const [isClientDropdownOpen, setIsClientDropdownOpen] = useState(false);
   const [clientSearch, setClientSearch] = useState('');
-  const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
-  const [locationSearch, setLocationSearch] = useState('');
   const [attentionSearch, setAttentionSearch] = useState('');
   const [showProducts, setShowProducts] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pmNames, setPmNames] = useState([]);
+  const [pmLoading, setPmLoading] = useState(false);
+  const [clients, setClients] = useState([]);
+  const [clientsLoading, setClientsLoading] = useState(false);
+  const [locations, setLocations] = useState([]);
+const [locationSearch, setLocationSearch] = useState('');
+const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
+const [attentionsList, setAttentionsList] = useState([]);
 
-  const pmNames = [
-    'John Smith',
-    'Sarah Johnson',
-    'Michael Chen',
-    'Emma Williams',
-  ];
-
-  const clientNames = [
-    'Acme Corporation',
-    'Global Industries Ltd',
-    'Tech Solutions Inc',
-    'Summit Enterprises',
-    'Pacific Trading Co',
-    'Elite Systems Group',
-  ];
-
-  const locationNames = [
-    'New York City, USA',
-    'London, UK',
-    'Singapore',
-    'Dubai, UAE',
-    'Sydney, Australia',
-    'Tokyo, Japan',
-    'Mumbai, India',
-    'Shanghai, China',
-  ];
 
   const attentionNames = [
     'Mr. James Wilson',
@@ -137,17 +122,6 @@ const WorkDetails = () => {
     'Mrs. Jennifer Lee',
   ];
 
-  const filteredPmNames = pmNames.filter((name) =>
-    name.toLowerCase().includes(pmSearch.toLowerCase())
-  );
-
-  const filteredClientNames = clientNames.filter((name) =>
-    name.toLowerCase().includes(clientSearch.toLowerCase())
-  );
-
-  const filteredLocationNames = locationNames.filter((name) =>
-    name.toLowerCase().includes(locationSearch.toLowerCase())
-  );
 
   const filteredAttentionNames = attentionNames.filter((name) =>
     name.toLowerCase().includes(attentionSearch.toLowerCase())
@@ -281,71 +255,149 @@ const WorkDetails = () => {
     }));
   };
 
-
   const handleSaveAndContinue = () => {
     setShowProducts(true);
   };
 
+  // date functionality in gnr
+  const calculateDueDate = (grnDate, dueAfter) => {
+    if (!grnDate) return '';
 
+    const date = new Date(grnDate);
 
-
-
-// date functionality in gnr
-const calculateDueDate = (grnDate, dueAfter) => {
-  if (!grnDate) return '';
-  
-  const date = new Date(grnDate);
-  
-  switch (dueAfter) {
-    case '1 Year':
-      date.setFullYear(date.getFullYear() + 1);
-      break;
-    case '2 Years':
-      date.setFullYear(date.getFullYear() + 2);
-      break;
-    case '3 Years':
-      date.setFullYear(date.getFullYear() + 3);
-      break;
-    default:
-      return '';
-  }
-  
-  return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
-};
-
-// Modify the handleInvoiceDetailChange function
-const handleInvoiceDateChange = (index, field, value) => {
-  setFormData(prev => {
-    const updatedDetails = [...prev.invoiceDetails];
-    updatedDetails[index] = {
-      ...updatedDetails[index],
-      [field]: value
-    };
-
-    // If GRN date or Due After changes, update the Due Date
-    if (field === 'grnDate' || field === 'dueAfter') {
-      const grnDate = field === 'grnDate' ? value : updatedDetails[index].grnDate;
-      const dueAfter = field === 'dueAfter' ? value : updatedDetails[index].dueAfter;
-      
-      if (grnDate && dueAfter) {
-        updatedDetails[index].dueDate = calculateDueDate(grnDate, dueAfter);
-      }
+    switch (dueAfter) {
+      case '1 Year':
+        date.setFullYear(date.getFullYear() + 1);
+        break;
+      case '2 Years':
+        date.setFullYear(date.getFullYear() + 2);
+        break;
+      case '3 Years':
+        date.setFullYear(date.getFullYear() + 3);
+        break;
+      default:
+        return '';
     }
 
-    return {
-      ...prev,
-      invoiceDetails: updatedDetails
+    return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
+  };
+
+  // Modify the handleInvoiceDetailChange function
+  const handleInvoiceDateChange = (index, field, value) => {
+    setFormData((prev) => {
+      const updatedDetails = [...prev.invoiceDetails];
+      updatedDetails[index] = {
+        ...updatedDetails[index],
+        [field]: value,
+      };
+
+      // If GRN date or Due After changes, update the Due Date
+      if (field === 'grnDate' || field === 'dueAfter') {
+        const grnDate =
+          field === 'grnDate' ? value : updatedDetails[index].grnDate;
+        const dueAfter =
+          field === 'dueAfter' ? value : updatedDetails[index].dueAfter;
+
+        if (grnDate && dueAfter) {
+          updatedDetails[index].dueDate = calculateDueDate(grnDate, dueAfter);
+        }
+      }
+
+      return {
+        ...prev,
+        invoiceDetails: updatedDetails,
+      };
+    });
+  };
+
+  const [option, setOption] = useState('Not Applicable');
+
+  const [isClientModalOpen, setIsClientModalOpen] = useState(false);
+  const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
+  const [isSiteInChargeModalOpen, setIsSiteInChargeModalOpen] = useState(false);
+  const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+
+  // api -integration
+
+  // quotation number
+  useEffect(() => {
+    const fetchQuotationNumber = async () => {
+      try {
+        const data = await generateQuotationNumber();
+        setFormData((prev) => ({
+          ...prev,
+          quotationNo: data || '',
+        }));
+      } catch (error) {
+        console.error('Failed to fetch quotation number:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
-  });
-};
+
+    fetchQuotationNumber();
+  }, []);
+
+  // pmnames
+  useEffect(() => {
+    const fetchPMNames = async () => {
+      if (formData.projectManager === 'Applicable') {
+        setPmLoading(true);
+        try {
+          const data = await getSalesPersons();
+          setPmNames(data);
+        } catch (error) {
+          console.error('Failed to fetch PM names:', error);
+        } finally {
+          setPmLoading(false);
+        }
+      }
+    };
+
+    fetchPMNames();
+  }, [formData.projectManager]);
+
+  const filteredPmNames = pmNames.filter((pm) =>
+    pm.staff_name.toLowerCase().includes(pmSearch.toLowerCase())
+  );
+
+  // fetch client
+  useEffect(() => {
+    const fetchClients = async () => {
+      setClientsLoading(true);
+      try {
+        const data = await getClients();
+        setClients(data || []);
+      } catch (error) {
+        console.error('Failed to fetch clients:', error);
+      } finally {
+        setClientsLoading(false);
+      }
+    };
+
+    fetchClients();
+  }, []);
+  const filteredClientNames = clients.filter((client) =>
+    client.clientName.toLowerCase().includes(clientSearch.toLowerCase())
+  );
+
+  // fetch location
+  useEffect(() => {
+    const fetchLocations = async () => {
+      try {
+        const data = await getLocations();
+        setLocations(data || []);
+      } catch (error) {
+        console.error('Failed to fetch locations:', error);
+      }
+    };
+  
+    fetchLocations();
+  }, []);
 
 
-const [option, setOption] = useState('Not Applicable');
 
-const [isClientModalOpen, setIsClientModalOpen] = useState(false);
-const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
-const [isSiteInChargeModalOpen, setIsSiteInChargeModalOpen] = useState(false);
-const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
+
 
 
 
@@ -366,7 +418,7 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
           <input
             type="text"
             name="quotationNo"
-            value={formData.quotationNo}
+            value={isLoading ? 'Loading...' : formData.quotationNo}
             disabled
             className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
           />
@@ -422,65 +474,82 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
               PM Name <span className="text-red-500 ml-1">*</span> :
             </label>
             <div className="sec flex gap-2">
-            <div className="relative flex-1">
-              <div
-                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white cursor-pointer"
-                onClick={() => {
-                  setIsPmDropdownOpen(!isPmDropdownOpen);
-                  handleSelectClick('pmName');
-                }}
-              >
-                {formData.pmName || 'Select PM'}
-              </div>
-              <IoChevronDownOutline
-                className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none transition-transform duration-300 ${
-                  openSelect === 'pmName' ? 'rotate-180' : ''
-                }`}
-                size={20}
-              />
-
-              {isPmDropdownOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-                  <div className="p-2 border-b">
-                    <input
-                      type="text"
-                      placeholder="Search PM..."
-                      value={pmSearch}
-                      onChange={(e) => setPmSearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    {filteredPmNames.map((name, index) => (
-                      <div
-                        key={index}
-                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => {
-                          setFormData((prev) => ({ ...prev, pmName: name }));
-                          setIsPmDropdownOpen(false);
-                          setPmSearch('');
-                        }}
-                      >
-                        {name}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <button
-                  type="button"
-                  onClick={() => setIsAddStaffModalOpen(true)}
-                  className="px-4 py-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap"
+              <div className="relative flex-1">
+                <div
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white cursor-pointer"
+                  onClick={() => {
+                    setIsPmDropdownOpen(!isPmDropdownOpen);
+                    handleSelectClick('pmName');
+                  }}
                 >
-                  New
-                </button>
-                <AddStaffModal
-  isOpen={isAddStaffModalOpen}
-  onClose={() => setIsAddStaffModalOpen(false)}
-/>
+                  {formData.pmName || 'Select PM'}
+                </div>
+                <IoChevronDownOutline
+                  className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none transition-transform duration-300 ${
+                    openSelect === 'pmName' ? 'rotate-180' : ''
+                  }`}
+                  size={20}
+                />
+
+                {isPmDropdownOpen && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+                    <div className="p-2 border-b">
+                      <input
+                        type="text"
+                        placeholder="Search PM..."
+                        value={pmSearch}
+                        onChange={(e) => setPmSearch(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {filteredPmNames.map((pm) => (
+                        <div
+                          key={pm.id}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={async () => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              pmName: pm.staff_name,
+                            }));
+                            setIsPmDropdownOpen(false);
+                            setPmSearch('');
+
+                            // job number generation
+                            try {
+                              const jobNo = await generateJobNumber(pm.id);
+                              setFormData((prev) => ({
+                                ...prev,
+                                jobNo: jobNo || '',
+                              }));
+                            } catch (error) {
+                              console.error(
+                                'Failed to generate job number:',
+                                error
+                              );
+                            }
+                          }}
+                        >
+                          {pm.staff_name}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => setIsAddStaffModalOpen(true)}
+                className="px-4 py-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap"
+              >
+                New
+              </button>
+              <AddStaffModal
+                isOpen={isAddStaffModalOpen}
+                onClose={() => setIsAddStaffModalOpen(false)}
+              />
             </div>
           </div>
         )}
@@ -494,8 +563,8 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
             type="text"
             name="jobNo"
             value={formData.jobNo}
-            onChange={handleInputChange}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+            disabled
+            className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
           />
         </div>
 
@@ -578,19 +647,26 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
                     />
                   </div>
                   <div className="max-h-48 overflow-y-auto">
-                    {filteredClientNames.map((name, index) => (
-                      <div
-                        key={index}
-                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => {
-                          setFormData((prev) => ({ ...prev, client: name }));
-                          setIsClientDropdownOpen(false);
-                          setClientSearch('');
-                        }}
-                      >
-                        {name}
-                      </div>
-                    ))}
+                    {clientsLoading ? (
+                      <div className="px-3 py-2 text-gray-500">Loading...</div>
+                    ) : (
+                      filteredClientNames.map((client) => (
+                        <div
+                          key={client.id}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              client: client.clientName,
+                            }));
+                            setIsClientDropdownOpen(false);
+                            setClientSearch('');
+                          }}
+                        >
+                          {client.clientName}
+                        </div>
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -633,35 +709,44 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
                 size={20}
               />
 
-              {isLocationDropdownOpen && (
-                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-                  <div className="p-2 border-b">
-                    <input
-                      type="text"
-                      placeholder="Search Location..."
-                      value={locationSearch}
-                      onChange={(e) => setLocationSearch(e.target.value)}
-                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
-                  <div className="max-h-48 overflow-y-auto">
-                    {filteredLocationNames.map((name, index) => (
-                      <div
-                        key={index}
-                        className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => {
-                          setFormData((prev) => ({ ...prev, location: name }));
-                          setIsLocationDropdownOpen(false);
-                          setLocationSearch('');
-                        }}
-                      >
-                        {name}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+             
+    {isLocationDropdownOpen && (
+      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+        <div className="p-2 border-b">
+          <input
+            type="text"
+            placeholder="Search Location..."
+            value={locationSearch}
+            onChange={(e) => setLocationSearch(e.target.value)}
+            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+        <div className="max-h-48 overflow-y-auto">
+          {locations
+            .filter((loc) =>
+              loc.location_name.toLowerCase().includes(locationSearch.toLowerCase())
+            )
+            .map((location) => (
+              <div
+                key={location.id}
+                className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                onClick={() => {
+                  setFormData((prev) => ({
+                    ...prev,
+                    location: location.location_name,
+                    locationId: location.id
+                  }));
+                  setIsLocationDropdownOpen(false);
+                  setLocationSearch('');
+                }}
+              >
+                {location.location_name}
+              </div>
+            ))}
+        </div>
+      </div>
+    )}
             </div>
             <button
               type="button"
@@ -822,24 +907,24 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
             Option:
           </label>
           <div className="relative">
-          <select
-            name="option"
-            value={option}
-            onChange={(e) => setOption(e.target.value)}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-          >
-            <option value="Not Applicable">Not Applicable</option>
-            <option value="Applicable">Applicable</option>
-          </select>
-          <IoChevronDownOutline
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-            size={20}
-          />
-        </div>
+            <select
+              name="option"
+              value={option}
+              onChange={(e) => setOption(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+            >
+              <option value="Not Applicable">Not Applicable</option>
+              <option value="Applicable">Applicable</option>
+            </select>
+            <IoChevronDownOutline
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+              size={20}
+            />
+          </div>
         </div>
       </div>
 
- {(formData.quotationStatus === 'Approved' ||
+      {(formData.quotationStatus === 'Approved' ||
         formData.quotationStatus ===
           'Approval Pending but Work Started on Urgent basis') && (
         <>
@@ -906,9 +991,9 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
                   New
                 </button>
                 <SiteInChargeModal
-  isOpen={isSiteInChargeModalOpen}
-  onClose={() => setIsSiteInChargeModalOpen(false)}
-/>
+                  isOpen={isSiteInChargeModalOpen}
+                  onClose={() => setIsSiteInChargeModalOpen(false)}
+                />
               </div>
             </div>
 
@@ -926,11 +1011,8 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
               />
             </div>
           </div>
-
-</>
-          )}
-
-
+        </>
+      )}
 
       {/* Unit Section */}
       <div className="pb-6 border-b">
@@ -1029,21 +1111,6 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
                   {/* Type-specific fields */}
                   {detail.type && (
                     <>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
                       {/* Fields for Apartment */}
                       {detail.type === 'Apartment' && (
                         <>
@@ -1422,7 +1489,7 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
                         </>
                       )}
 
-                      {/* Warehouse fields */}  
+                      {/* Warehouse fields */}
                       {detail.type === 'Warehouse' && (
                         <>
                           <div className="space-y-2">
@@ -1555,101 +1622,78 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
                         </>
                       )}
 
-
-
-
-
                       {/* extra fields f the quotation s approved */}
-                      
-                    {/* Common fields for all types when quotation status is Approved or Urgent */}
-    {(formData.quotationStatus === 'Approved' || 
-      formData.quotationStatus === 'Approval Pending but Work Started on Urgent basis') && (
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 col-span-3">
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 h-5 block">
-            Start Date:
-          </label>
-          <input
-            type="date"
-            value={detail.startDate || ''}
-            onChange={(e) =>
-              handleUnitTypeDetailChange(
-                index,
-                'startDate',
-                e.target.value
-              )
-            }
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-          />
-        </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 h-5 block">
-            End Date:
-          </label>
-          <input
-            type="date"
-            value={detail.endDate || ''}
-            onChange={(e) =>
-              handleUnitTypeDetailChange(
-                index,
-                'endDate',
-                e.target.value
-              )
-            }
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-          />
-        </div>
+                      {/* Common fields for all types when quotation status is Approved or Urgent */}
+                      {(formData.quotationStatus === 'Approved' ||
+                        formData.quotationStatus ===
+                          'Approval Pending but Work Started on Urgent basis') && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 col-span-3">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 h-5 block">
+                              Start Date:
+                            </label>
+                            <input
+                              type="date"
+                              value={detail.startDate || ''}
+                              onChange={(e) =>
+                                handleUnitTypeDetailChange(
+                                  index,
+                                  'startDate',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                          </div>
 
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700 h-5 block">
-            Work Status:
-          </label>
-          <div className="relative">
-            <select
-              value={detail.workStatus || ''}
-              onChange={(e) =>
-                handleUnitTypeDetailChange(
-                  index,
-                  'workStatus',
-                  e.target.value
-                )
-              }
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-            >
-              <option value="">Select</option>
-              <option value="Not Started">Not Started</option>
-              <option value="In Progress">In Progress</option>
-              <option value="Completed">Completed</option>
-            </select>
-            <IoChevronDownOutline
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-              size={20}
-            />
-          </div>
-        </div>
-      </div>
-    )}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 h-5 block">
+                              End Date:
+                            </label>
+                            <input
+                              type="date"
+                              value={detail.endDate || ''}
+                              onChange={(e) =>
+                                handleUnitTypeDetailChange(
+                                  index,
+                                  'endDate',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                          </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 h-5 block">
+                              Work Status:
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={detail.workStatus || ''}
+                                onChange={(e) =>
+                                  handleUnitTypeDetailChange(
+                                    index,
+                                    'workStatus',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                              >
+                                <option value="">Select</option>
+                                <option value="Not Started">Not Started</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="Completed">Completed</option>
+                              </select>
+                              <IoChevronDownOutline
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                                size={20}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -1672,51 +1716,11 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
         )}
       </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
       {/* Additional Fields*/}
       {(formData.quotationStatus === 'Approved' ||
         formData.quotationStatus ===
           'Approval Pending but Work Started on Urgent basis') && (
         <>
-          
-
           {/* LPO and PR Section */}
           <div className="space-y-6 border-b pb-6">
             {/* All LPO related fields */}
@@ -2084,229 +2088,231 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
           </div>
 
           {/* Invoice Section */}
-<div className="space-y-6 border-b pb-6">
-  {/* Invoice Type Selection */}
-  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700 h-5 block">
-        Invoice:
-      </label>
-      <div className="relative">
-        <select
-          name="invoice"
-          value={formData.invoice}
-          onChange={handleInputChange}
-          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-        >
-          <option value="">Select</option>
-          <option value="Single">Single</option>
-          <option value="Partial">Partial</option>
-        </select>
-        <IoChevronDownOutline
-          className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-          size={20}
-        />
-      </div>
-    </div>
-
-    {/* Invoice Status */}
-    {formData.invoice && (
-      <div className="space-y-2">
-        <label className="text-sm font-medium text-gray-700 h-5 block">
-          Invoice Status:
-        </label>
-        <div className="relative">
-          <select
-            name="invoiceStatus"
-            value={formData.invoiceStatus}
-            onChange={handleInputChange}
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-          >
-            <option value="Pending">Pending</option>
-            <option value="Submitted">Submitted</option>
-          </select>
-          <IoChevronDownOutline
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-            size={20}
-          />
-        </div>
-      </div>
-    )}
-  </div>
-
-  {/* Invoice Details */}
-  {formData.invoice && formData.invoiceStatus === 'Submitted' && (
-    <div className="space-y-4">
-      {formData.invoiceDetails.map((detail, index) => (
-        <div key={index} className="border rounded-lg p-4 relative">
-          {/* Delete button for additional invoice details */}
-          {formData.invoice === 'Partial' && index > 0 && (
-            <button
-              type="button"
-              onClick={() => handleRemoveInvoice(index)}
-              className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-            >
-              <IoCloseOutline size={24} />
-            </button>
-          )}
-
-          <div className="space-y-4">
-            {/* First row with Invoice No, Date, Amount */}
+          <div className="space-y-6 border-b pb-6">
+            {/* Invoice Type Selection */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Invoice No:
+                <label className="text-sm font-medium text-gray-700 h-5 block">
+                  Invoice:
                 </label>
-                <input
-                  type="text"
-                  value={detail.invoiceNo}
-                  onChange={(e) =>
-                    handleInvoiceDetailChange(
-                      index,
-                      'invoiceNo',
-                      e.target.value
-                    )
-                  }
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                />
+                <div className="relative">
+                  <select
+                    name="invoice"
+                    value={formData.invoice}
+                    onChange={handleInputChange}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                  >
+                    <option value="">Select</option>
+                    <option value="Single">Single</option>
+                    <option value="Partial">Partial</option>
+                  </select>
+                  <IoChevronDownOutline
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                    size={20}
+                  />
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Invoice Date:
-                </label>
-                <input
-                  type="date"
-                  value={detail.invoiceDate}
-                  onChange={(e) =>
-                    handleInvoiceDetailChange(
-                      index,
-                      'invoiceDate',
-                      e.target.value
-                    )
-                  }
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Invoice Amount:
-                </label>
-                <input
-                  type="number"
-                  value={detail.invoiceAmount}
-                  onChange={(e) =>
-                    handleInvoiceDetailChange(
-                      index,
-                      'invoiceAmount',
-                      e.target.value
-                    )
-                  }
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                />
-              </div>
+              {/* Invoice Status */}
+              {formData.invoice && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 h-5 block">
+                    Invoice Status:
+                  </label>
+                  <div className="relative">
+                    <select
+                      name="invoiceStatus"
+                      value={formData.invoiceStatus}
+                      onChange={handleInputChange}
+                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Submitted">Submitted</option>
+                    </select>
+                    <IoChevronDownOutline
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                      size={20}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
-            {/* Second row with GRN Status and Retention */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* GRN Status */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  GRN Status:
-                </label>
-                <div className="relative">
-                  <select
-                    value={detail.grnStatus}
-                    onChange={(e) =>
-                      handleInvoiceDetailChange(
-                        index,
-                        'grnStatus',
-                        e.target.value
-                      )
-                    }
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Received">Received</option>
-                    <option value="Not Applicable">Not Applicable</option>
-                  </select>
-                  <IoChevronDownOutline
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                    size={20}
-                  />
-                </div>
-              </div>
+            {/* Invoice Details */}
+            {formData.invoice && formData.invoiceStatus === 'Submitted' && (
+              <div className="space-y-4">
+                {formData.invoiceDetails.map((detail, index) => (
+                  <div key={index} className="border rounded-lg p-4 relative">
+                    {/* Delete button for additional invoice details */}
+                    {formData.invoice === 'Partial' && index > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveInvoice(index)}
+                        className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                      >
+                        <IoCloseOutline size={24} />
+                      </button>
+                    )}
 
+                    <div className="space-y-4">
+                      {/* First row with Invoice No, Date, Amount */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">
+                            Invoice No:
+                          </label>
+                          <input
+                            type="text"
+                            value={detail.invoiceNo}
+                            onChange={(e) =>
+                              handleInvoiceDetailChange(
+                                index,
+                                'invoiceNo',
+                                e.target.value
+                              )
+                            }
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                          />
+                        </div>
 
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">
+                            Invoice Date:
+                          </label>
+                          <input
+                            type="date"
+                            value={detail.invoiceDate}
+                            onChange={(e) =>
+                              handleInvoiceDetailChange(
+                                index,
+                                'invoiceDate',
+                                e.target.value
+                              )
+                            }
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                          />
+                        </div>
 
-              {/* GRN Details when status is Received */}
-{detail.grnStatus === 'Received' && (
-  <>
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700">
-        GRN No:
-      </label>
-      <input
-        type="text"
-        value={detail.grnNo || ''}
-        onChange={(e) =>
-          handleInvoiceDetailChange(
-            index,
-            'grnNo',
-            e.target.value
-          )
-        }
-        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-      />
-    </div>
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">
+                            Invoice Amount:
+                          </label>
+                          <input
+                            type="number"
+                            value={detail.invoiceAmount}
+                            onChange={(e) =>
+                              handleInvoiceDetailChange(
+                                index,
+                                'invoiceAmount',
+                                e.target.value
+                              )
+                            }
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                          />
+                        </div>
+                      </div>
 
-    <div className="space-y-2">
-      <label className="text-sm font-medium text-gray-700">
-        GRN Date:
-      </label>
-      <input
-        type="date"
-        value={detail.grnDate || ''}
-        onChange={(e) =>
-          handleInvoiceDetailChange(
-            index,
-            'grnDate',
-            e.target.value
-          )
-        }
-        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-      />
-    </div>
-  </>
-)}
+                      {/* Second row with GRN Status and Retention */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* GRN Status */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">
+                            GRN Status:
+                          </label>
+                          <div className="relative">
+                            <select
+                              value={detail.grnStatus}
+                              onChange={(e) =>
+                                handleInvoiceDetailChange(
+                                  index,
+                                  'grnStatus',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                            >
+                              <option value="Pending">Pending</option>
+                              <option value="Received">Received</option>
+                              <option value="Not Applicable">
+                                Not Applicable
+                              </option>
+                            </select>
+                            <IoChevronDownOutline
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                              size={20}
+                            />
+                          </div>
+                        </div>
 
-              {/* Retention */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Retention:
-                </label>
-                <div className="relative">
-                  <select
-                    value={detail.retention}
-                    onChange={(e) =>
-                      handleInvoiceDetailChange(
-                        index,
-                        'retention',
-                        e.target.value
-                      )
-                    }
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-                  >
-                    <option value="Not Applicable">Not Applicable</option>
-                    <option value="Applicable">Applicable</option>
-                  </select>
-                  <IoChevronDownOutline
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                    size={20}
-                  />
-                </div>
-              </div>
+                        {/* GRN Details when status is Received */}
+                        {detail.grnStatus === 'Received' && (
+                          <>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-700">
+                                GRN No:
+                              </label>
+                              <input
+                                type="text"
+                                value={detail.grnNo || ''}
+                                onChange={(e) =>
+                                  handleInvoiceDetailChange(
+                                    index,
+                                    'grnNo',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                              />
+                            </div>
+
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-700">
+                                GRN Date:
+                              </label>
+                              <input
+                                type="date"
+                                value={detail.grnDate || ''}
+                                onChange={(e) =>
+                                  handleInvoiceDetailChange(
+                                    index,
+                                    'grnDate',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {/* Retention */}
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">
+                            Retention:
+                          </label>
+                          <div className="relative">
+                            <select
+                              value={detail.retention}
+                              onChange={(e) =>
+                                handleInvoiceDetailChange(
+                                  index,
+                                  'retention',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                            >
+                              <option value="Not Applicable">
+                                Not Applicable
+                              </option>
+                              <option value="Applicable">Applicable</option>
+                            </select>
+                            <IoChevronDownOutline
+                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                              size={20}
+                            />
+                          </div>
+                        </div>
 
                         {/* Amount (shows up next to Retention) */}
                         {detail.retention === 'Applicable' && (
@@ -2335,46 +2341,46 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
                         <>
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
                             {/* Due After */}
-<div className="space-y-2">
-  <label className="text-sm font-medium text-gray-700">
-    Due After:
-  </label>
-  <div className="relative">
-    <select
-      value={detail.dueAfter}
-      onChange={(e) =>
-        handleInvoiceDateChange(
-          index,
-          'dueAfter',
-          e.target.value
-        )
-      }
-      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-    >
-      <option value="">Select</option>
-      <option value="1 Year">1 Year</option>
-      <option value="2 Years">2 Years</option>
-      <option value="3 Years">3 Years</option>
-    </select>
-    <IoChevronDownOutline
-      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-      size={20}
-    />
-  </div>
-</div>
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-700">
+                                Due After:
+                              </label>
+                              <div className="relative">
+                                <select
+                                  value={detail.dueAfter}
+                                  onChange={(e) =>
+                                    handleInvoiceDateChange(
+                                      index,
+                                      'dueAfter',
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                                >
+                                  <option value="">Select</option>
+                                  <option value="1 Year">1 Year</option>
+                                  <option value="2 Years">2 Years</option>
+                                  <option value="3 Years">3 Years</option>
+                                </select>
+                                <IoChevronDownOutline
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                                  size={20}
+                                />
+                              </div>
+                            </div>
 
-{/* Due Date */}
-<div className="space-y-2">
-  <label className="text-sm font-medium text-gray-700">
-    Due Date:
-  </label>
-  <input
-    type="date"
-    value={detail.dueDate || ''}
-    readOnly
-    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
-  />
-</div>
+                            {/* Due Date */}
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-700">
+                                Due Date:
+                              </label>
+                              <input
+                                type="date"
+                                value={detail.dueDate || ''}
+                                readOnly
+                                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
+                              />
+                            </div>
 
                             {/* Retention Invoice */}
                             <div className="space-y-2">
@@ -2489,13 +2495,8 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
         </>
       )}
 
-
-
-
-
-
-{/* Save and Continue Button */}
-<div className="flex justify-end pt-6">
+      {/* Save and Continue Button */}
+      <div className="flex justify-end pt-6">
         <button
           type="button"
           onClick={handleSaveAndContinue}
@@ -2505,24 +2506,15 @@ const [isAddStaffModalOpen, setIsAddStaffModalOpen] = useState(false);
         </button>
       </div>
 
-
-
-
-
       {showProducts && (
         <div className="mt-8 border-t pt-8">
-          <ProductDetails optionValue={option}/>
+          <ProductDetails optionValue={option} />
         </div>
       )}
-
-
-
-
 
       <div className="border-t pt-6">
         <TermsAndConditions />
       </div>
-
     </div>
   );
 };
