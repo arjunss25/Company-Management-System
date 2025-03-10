@@ -19,7 +19,7 @@ import {
   generateQuotationNumber,
   getSalesPersons,
   generateJobNumber,
-  getClients,getLocations
+  getClients,getLocations,getAttentionsApplicable,getStaffList,addQuotationWorkDetails
 } from '../../../../Services/QuotationApi';
 
 const WorkDetails = () => {
@@ -57,10 +57,6 @@ const WorkDetails = () => {
       { lpoStatus: '', prNo: '', date: '', lpoNo: '', lpoAmount: '' },
     ],
 
-    // lpoStatus: '',
-    // prNo: '',
-    // lpoNo: '',
-    // lpoAmount: '',
 
     lpoDate: '',
     wcrAttachment: null,
@@ -109,6 +105,9 @@ const WorkDetails = () => {
 const [locationSearch, setLocationSearch] = useState('');
 const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
 const [attentionsList, setAttentionsList] = useState([]);
+const [staffList, setStaffList] = useState([]);
+const [isSiteInChargeDropdownOpen, setIsSiteInChargeDropdownOpen] = useState(false);
+const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
 
 
   const attentionNames = [
@@ -178,12 +177,18 @@ const [attentionsList, setAttentionsList] = useState([]);
   };
 
   const handleLPODetailChange = (index, field, value) => {
-    setFormData((prev) => ({
-      ...prev,
-      lpoDetails: prev.lpoDetails.map((detail, i) =>
+    setFormData((prev) => {
+      const updatedDetails = prev.lpoDetails.map((detail, i) =>
         i === index ? { ...detail, [field]: value } : detail
-      ),
-    }));
+      );
+  
+      console.log("Updated LPO Details:", updatedDetails); // Debugging
+  
+      return {
+        ...prev,
+        lpoDetails: updatedDetails,
+      };
+    });
   };
 
   const handleAddInvoice = () => {
@@ -255,8 +260,195 @@ const [attentionsList, setAttentionsList] = useState([]);
     }));
   };
 
-  const handleSaveAndContinue = () => {
-    setShowProducts(true);
+  const handleSaveAndContinue = async () => {
+    try {
+      // Debugging: Log the formData state before any processing
+      console.log("Initial formData:", formData);
+  
+      // Format unit details
+      const formattedUnits = formData.unit === 'Single' 
+        ? [{
+            type: formData.unitType,
+            start_date: formData.unitDetails[0]?.startDate || formData.date,
+            end_date: formData.unitDetails[0]?.endDate || formData.date,
+            work_status: formData.unitDetails[0]?.workStatus || "Not Started",
+            // Add type-specific fields
+            ...(formData.unitType === 'Apartment' && {
+              building_no: formData.unitDetails[0]?.buildingNo || '',
+              phase: formData.unitDetails[0]?.phase || '',
+              ap_no: formData.unitDetails[0]?.apNo || '',
+              flat_type: formData.unitDetails[0]?.flatType || ''
+            }),
+            ...(formData.unitType === 'Building' && {
+              building_no: formData.unitDetails[0]?.buildingNo || ''
+            }),
+            ...(formData.unitType === 'Community Center' && {
+              community_center_no: formData.unitDetails[0]?.communityCenterNo || '',
+              community_center_type: formData.unitDetails[0]?.communityCenterType || ''
+            }),
+            ...(formData.unitType === 'Labour Camp' && {
+              lc_no: formData.unitDetails[0]?.lcNo || '',
+              lc_location: formData.unitDetails[0]?.lcLocation || '',
+              room_no: formData.unitDetails[0]?.roomNo || ''
+            }),
+            ...(formData.unitType === 'Mall' && {
+              mall_no: formData.unitDetails[0]?.mallNo || '',
+              mall_type: formData.unitDetails[0]?.mallType || ''
+            }),
+            ...(formData.unitType === 'Swimming Pool' && {
+              swimming_pool_no: formData.unitDetails[0]?.swimmingPoolNo || ''
+            }),
+            ...(formData.unitType === 'Villa' && {
+              villa_no: formData.unitDetails[0]?.villaNo || '',
+              villa_type: formData.unitDetails[0]?.villaType || ''
+            }),
+            ...(formData.unitType === 'Warehouse' && {
+              warehouse_no: formData.unitDetails[0]?.warehouseNo || '',
+              warehouse_location: formData.unitDetails[0]?.warehouseLocation || ''
+            }),
+            ...(formData.unitType === 'Toilet' && {
+              toilet_no: formData.unitDetails[0]?.toiletNo || '',
+              toilet_type: formData.unitDetails[0]?.toiletType || ''
+            }),
+            ...(formData.unitType === 'Other' && {
+              reference_no: formData.unitDetails[0]?.referenceNo || '',
+              description: formData.unitDetails[0]?.description || ''
+            })
+          }]
+        : formData.unitDetails.map(detail => ({
+            type: detail.type,
+            start_date: detail.startDate || formData.date,
+            end_date: detail.endDate || formData.date,
+            work_status: detail.workStatus || "Not Started",
+            // Add type-specific fields based on unit type
+            ...(detail.type === 'Apartment' && {
+              building_no: detail.buildingNo || '',
+              phase: detail.phase || '',
+              ap_no: detail.apNo || '',
+              flat_type: detail.flatType || ''
+            }),
+            ...(detail.type === 'Building' && {
+              building_no: detail.buildingNo || ''
+            }),
+            ...(detail.type === 'Community Center' && {
+              community_center_no: detail.communityCenterNo || '',
+              community_center_type: detail.communityCenterType || ''
+            }),
+            ...(detail.type === 'Labour Camp' && {
+              lc_no: detail.lcNo || '',
+              lc_location: detail.lcLocation || '',
+              room_no: detail.roomNo || ''
+            }),
+            ...(detail.type === 'Mall' && {
+              mall_no: detail.mallNo || '',
+              mall_type: detail.mallType || ''
+            }),
+            ...(detail.type === 'Swimming Pool' && {
+              swimming_pool_no: detail.swimmingPoolNo || ''
+            }),
+            ...(detail.type === 'Villa' && {
+              villa_no: detail.villaNo || '',
+              villa_type: detail.villaType || ''
+            }),
+            ...(detail.type === 'Warehouse' && {
+              warehouse_no: detail.warehouseNo || '',
+              warehouse_location: detail.warehouseLocation || ''
+            }),
+            ...(detail.type === 'Toilet' && {
+              toilet_no: detail.toiletNo || '',
+              toilet_type: detail.toiletType || ''
+            }),
+            ...(detail.type === 'Other' && {
+              reference_no: detail.referenceNo || '',
+              description: detail.description || ''
+            })
+          }));
+  
+      // Debugging: Log the formatted units
+      console.log("Formatted Units:", formattedUnits);
+  
+      // Format LPO details
+      const formattedLPO = formData.lpoDetails.map((lpo) => ({
+        lpo_status: lpo.lpoStatus || "Pending",
+        pr_no: lpo.prNo || '', // Ensure this is correctly mapped
+        lpo_no: lpo.lpoNo || '', // Ensure this is correctly mapped
+        lpo_amount: Number(lpo.lpoAmount) || 0,
+        lpo_date: lpo.date || formData.date,
+      }));
+  
+      // Debugging: Log the formatted LPO details
+      console.log("Formatted LPO:", formattedLPO);
+  
+      // Format invoice details
+      const formattedInvoices = formData.invoiceDetails.map((invoice) => ({
+        invoice_status: invoice.invoiceStatus || "Pending",
+        invoice_no: invoice.invoiceNo || "",
+        invoice_date: invoice.invoiceDate || formData.date,
+        invoice_amount: Number(invoice.invoiceAmount) || 0,
+        grn_status: invoice.grnStatus || "Pending",
+        grn_no: invoice.grnNo || "",
+        grn_date: invoice.grnDate || formData.date,
+        retention: invoice.retention || "Not Applicable",
+        retention_amount: Number(invoice.retentionAmount) || 0,
+        due_after: invoice.dueAfter || "",
+        due_date: invoice.dueDate || formData.date,
+        retention_invoice: invoice.retentionInvoice || "Pending",
+        retention_invoice_date: invoice.retentionInvoiceDate || formData.date,
+        retention_invoice_no: invoice.retentionInvoiceNo || "",
+        retention_invoice_amount: Number(invoice.retentionInvoiceAmount) || 0,
+      }));
+  
+      // Debugging: Log the formatted invoices
+      console.log("Formatted Invoices:", formattedInvoices);
+  
+      // Prepare the final payload
+      const payload = {
+        quotation_no: formData.quotationNo,
+        date: formData.date,
+        project_manager: formData.projectManager,
+        attention: formData.attention,
+        attention_to: formData.attentionTo || "",
+        client: formData.client,
+        expected_labour_cost: Number(formData.expectedLabourCost) || 0,
+        expected_material_cost: Number(formData.expectedMaterialCost) || 0,
+        invoice: formData.invoice,
+        invoice_status: formData.invoiceStatus || "Pending",
+        invoices: formattedInvoices,
+        job_no: formData.jobNo,
+        location: formData.location,
+        lpo: formattedLPO,
+        lpo_number: formData.lpoNumber,
+        option: option,
+        pm_name: formData.pmName,
+        project_status: formData.projectStatus || "Active",
+        quotation_status: formData.quotationStatus,
+        rfq_no: formData.rfqNo,
+        scheduled_hand_over_date: formData.scheduledHandOverDate || formData.date,
+        site_in_charge: formData.siteInCharge,
+        subject: formData.subject,
+        unit_option: formData.unit,
+        units: formattedUnits,
+        wcr_status: formData.wcrStatus || "Pending",
+      };
+  
+      // Debugging: Log the final payload before sending to the API
+      console.log("Final Payload:", payload);
+  
+      // Call the API
+      const response = await addQuotationWorkDetails(payload);
+  
+      // Debugging: Log the API response
+      console.log("API Response:", response);
+  
+      if (response) {
+        toast.success('Work details saved successfully');
+        setShowProducts(true);
+      }
+    } catch (error) {
+      // Debugging: Log any errors
+      console.error('Error saving work details:', error);
+      toast.error(error.response?.data?.message || 'Error saving work details');
+    }
   };
 
   // date functionality in gnr
@@ -395,8 +587,19 @@ const [attentionsList, setAttentionsList] = useState([]);
     fetchLocations();
   }, []);
 
-
-
+// site in charge fetch
+  useEffect(() => {
+    const fetchStaffList = async () => {
+      try {
+        const data = await getStaffList();
+        setStaffList(data || []);
+      } catch (error) {
+        console.error('Failed to fetch staff list:', error);
+      }
+    };
+  
+    fetchStaffList();
+  }, []);
 
 
 
@@ -652,19 +855,29 @@ const [attentionsList, setAttentionsList] = useState([]);
                     ) : (
                       filteredClientNames.map((client) => (
                         <div
-                          key={client.id}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                          onClick={() => {
-                            setFormData((prev) => ({
-                              ...prev,
-                              client: client.clientName,
-                            }));
-                            setIsClientDropdownOpen(false);
-                            setClientSearch('');
-                          }}
-                        >
-                          {client.clientName}
-                        </div>
+  key={client.id}
+  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+  onClick={async () => {
+    setFormData((prev) => ({
+      ...prev,
+      client: client.clientName,
+      clientId: client.id,
+      attentionTo: '' 
+    }));
+    setIsClientDropdownOpen(false);
+    setClientSearch('');
+    
+    // Fetch attentions 
+    try {
+      const attentionsData = await getAttentionsApplicable(client.id);
+      setAttentionsList(attentionsData || []);
+    } catch (error) {
+      console.error('Failed to fetch attentions:', error);
+    }
+  }}
+>
+  {client.clientName}
+</div>
                       ))
                     )}
                   </div>
@@ -815,38 +1028,43 @@ const [attentionsList, setAttentionsList] = useState([]);
                   size={20}
                 />
 
-                {isAttentionDropdownOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-                    <div className="p-2 border-b">
-                      <input
-                        type="text"
-                        placeholder="Search Contact Person..."
-                        value={attentionSearch}
-                        onChange={(e) => setAttentionSearch(e.target.value)}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </div>
-                    <div className="max-h-48 overflow-y-auto">
-                      {filteredAttentionNames.map((name, index) => (
-                        <div
-                          key={index}
-                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                          onClick={() => {
-                            setFormData((prev) => ({
-                              ...prev,
-                              attentionTo: name,
-                            }));
-                            setIsAttentionDropdownOpen(false);
-                            setAttentionSearch('');
-                          }}
-                        >
-                          {name}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+{isAttentionDropdownOpen && (
+  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+    <div className="p-2 border-b">
+      <input
+        type="text"
+        placeholder="Search Contact Person..."
+        value={attentionSearch}
+        onChange={(e) => setAttentionSearch(e.target.value)}
+        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+        onClick={(e) => e.stopPropagation()}
+      />
+    </div>
+    <div className="max-h-48 overflow-y-auto">
+      {attentionsList
+        .filter((attention) =>
+          attention.name.toLowerCase().includes(attentionSearch.toLowerCase())
+        )
+        .map((attention) => (
+          <div
+            key={attention.id}
+            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+            onClick={() => {
+              setFormData((prev) => ({
+                ...prev,
+                attentionTo: attention.name,
+                attentionToId: attention.id
+              }));
+              setIsAttentionDropdownOpen(false);
+              setAttentionSearch('');
+            }}
+          >
+            {attention.name}
+          </div>
+        ))}
+    </div>
+  </div>
+)}
               </div>
               {/* <button
                 type="button"
@@ -960,42 +1178,74 @@ const [attentionsList, setAttentionsList] = useState([]);
 
             {/* Site In Charge with New Button */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 h-5 block">
-                Site In Charge:
-              </label>
-              <div className="flex gap-2">
-                <div className="relative flex-1">
-                  <select
-                    name="siteInCharge"
-                    value={formData.siteInCharge}
-                    onChange={handleInputChange}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-                  >
-                    <option value="">Select</option>
-                    {siteInChargeOptions.map((option, index) => (
-                      <option key={index} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
-                  <IoChevronDownOutline
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                    size={20}
-                  />
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setIsSiteInChargeModalOpen(true)}
-                  className="px-4 py-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap"
+  <label className="text-sm font-medium text-gray-700 h-5 block">
+    Site In Charge <span className="text-red-500 ml-1">*</span> :
+  </label>
+  <div className="flex gap-2">
+    <div className="relative flex-1">
+      <div
+        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white cursor-pointer"
+        onClick={() => {
+          setIsSiteInChargeDropdownOpen(!isSiteInChargeDropdownOpen);
+          handleSelectClick('siteInCharge');
+        }}
+      >
+        {formData.siteInCharge || 'Select Site In Charge'}
+      </div>
+      <IoChevronDownOutline
+        className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none transition-transform duration-300 ${
+          openSelect === 'siteInCharge' ? 'rotate-180' : ''
+        }`}
+        size={20}
+      />
+
+      {isSiteInChargeDropdownOpen && (
+        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+          <div className="p-2 border-b">
+            <input
+              type="text"
+              placeholder="Search Site In Charge..."
+              value={siteInChargeSearch}
+              onChange={(e) => setSiteInChargeSearch(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+          <div className="max-h-48 overflow-y-auto">
+            {staffList
+              .filter((staff) =>
+                staff.staff_name.toLowerCase().includes(siteInChargeSearch.toLowerCase())
+              )
+              .map((staff) => (
+                <div
+                  key={staff.id}
+                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                  onClick={() => {
+                    setFormData((prev) => ({
+                      ...prev,
+                      siteInCharge: staff.staff_name,
+                      siteInChargeId: staff.id
+                    }));
+                    setIsSiteInChargeDropdownOpen(false);
+                    setSiteInChargeSearch('');
+                  }}
                 >
-                  New
-                </button>
-                <SiteInChargeModal
-                  isOpen={isSiteInChargeModalOpen}
-                  onClose={() => setIsSiteInChargeModalOpen(false)}
-                />
-              </div>
-            </div>
+                  {staff.staff_name}
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+    </div>
+    <button
+      type="button"
+      onClick={() => setIsSiteInChargeModalOpen(true)}
+      className="px-4 py-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap"
+    >
+      New
+    </button>
+  </div>
+</div>
 
             {/* Scheduled Hand Over Date */}
             <div className="space-y-2">
@@ -1807,7 +2057,7 @@ const [attentionsList, setAttentionsList] = useState([]);
                           value={formData.lpoNo}
                           onChange={(e) =>
                             handleLPODetailChange(
-                              index,
+                              // index,
                               'lpoNo',
                               e.target.value
                             )
@@ -1860,133 +2110,107 @@ const [attentionsList, setAttentionsList] = useState([]);
               {formData.lpoNumber === 'Partial' && (
                 <div className="space-y-4">
                   {formData.lpoDetails.map((detail, index) => (
-                    <div key={index} className="border rounded-lg p-4 relative">
-                      {/* Delete button positioned at top-right corner inside the border */}
-                      {index > 0 && (
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveLPO(index)}
-                          className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-                        >
-                          <IoCloseOutline size={24} />
-                        </button>
-                      )}
+  <div key={index} className="border rounded-lg p-4 relative">
+    {/* Delete button for additional LPO details */}
+    {index > 0 && (
+      <button
+        type="button"
+        onClick={() => handleRemoveLPO(index)}
+        className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+      >
+        <IoCloseOutline size={24} />
+      </button>
+    )}
 
-                      <div className="space-y-4">
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                          {/* LPO Status */}
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">
-                              LPO Status:
-                            </label>
-                            <div className="relative">
-                              <select
-                                value={detail.lpoStatus}
-                                onChange={(e) =>
-                                  handleLPODetailChange(
-                                    index,
-                                    'lpoStatus',
-                                    e.target.value
-                                  )
-                                }
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-                              >
-                                <option value="">Select</option>
-                                <option value="Pending">Pending</option>
-                                <option value="Received">Received</option>
-                              </select>
-                              <IoChevronDownOutline
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                                size={20}
-                              />
-                            </div>
-                          </div>
+    <div className="space-y-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* LPO Status */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            LPO Status:
+          </label>
+          <div className="relative">
+            <select
+              value={detail.lpoStatus}
+              onChange={(e) =>
+                handleLPODetailChange(index, 'lpoStatus', e.target.value)
+              }
+              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+            >
+              <option value="">Select</option>
+              <option value="Pending">Pending</option>
+              <option value="Received">Received</option>
+            </select>
+            <IoChevronDownOutline
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+              size={20}
+            />
+          </div>
+        </div>
 
-                          {/* PR No */}
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">
-                              PR No:
-                            </label>
-                            <input
-                              type="text"
-                              value={detail.prNo}
-                              onChange={(e) =>
-                                handleLPODetailChange(
-                                  index,
-                                  'prNo',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            />
-                          </div>
-                        </div>
+        {/* PR No */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            PR No:
+          </label>
+          <input
+            type="text"
+            value={detail.prNo || ''}
+            onChange={(e) =>
+              handleLPODetailChange(index, 'prNo', e.target.value)
+            }
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+          />
+        </div>
 
-                        {/* Additional fields when LPO Status is Received */}
-                        {detail.lpoStatus === 'Received' && (
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                            {/* LPO No */}
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">
-                                LPO No:
-                              </label>
-                              <input
-                                type="text"
-                                value={detail.lpoNo}
-                                onChange={(e) =>
-                                  handleLPODetailChange(
-                                    index,
-                                    'lpoNo',
-                                    e.target.value
-                                  )
-                                }
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                              />
-                            </div>
+        {/* LPO No */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            LPO No:
+          </label>
+          <input
+            type="text"
+            value={detail.lpoNo || ''}
+            onChange={(e) =>
+              handleLPODetailChange(index, 'lpoNo', e.target.value)
+            }
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+          />
+        </div>
 
-                            {/* LPO Amount */}
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">
-                                LPO Amount:
-                              </label>
-                              <input
-                                type="number"
-                                value={detail.lpoAmount}
-                                onChange={(e) =>
-                                  handleLPODetailChange(
-                                    index,
-                                    'lpoAmount',
-                                    e.target.value
-                                  )
-                                }
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                              />
-                            </div>
+        {/* LPO Amount */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            LPO Amount:
+          </label>
+          <input
+            type="number"
+            value={detail.lpoAmount || ''}
+            onChange={(e) =>
+              handleLPODetailChange(index, 'lpoAmount', e.target.value)
+            }
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+          />
+        </div>
 
-                            {/* Date */}
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">
-                                Date:
-                              </label>
-                              <input
-                                type="date"
-                                value={detail.date}
-                                onChange={(e) =>
-                                  handleLPODetailChange(
-                                    index,
-                                    'date',
-                                    e.target.value
-                                  )
-                                }
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                              />
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-
+        {/* Date */}
+        <div className="space-y-2">
+          <label className="text-sm font-medium text-gray-700">
+            Date:
+          </label>
+          <input
+            type="date"
+            value={detail.date || ''}
+            onChange={(e) =>
+              handleLPODetailChange(index, 'date', e.target.value)
+            }
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+          />
+        </div>
+      </div>
+    </div>
+  </div>
+))}
                   {/* Add LPO Button */}
                   <div className="flex justify-end">
                     <button

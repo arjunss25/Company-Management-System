@@ -59,12 +59,55 @@ export const getLocations = async () => {
 };
 
 // attention to list
-export const getAttentions = async (clientId) => {
+export const getAttentionsApplicable = async (clientId) => {
   try {
     const response = await axiosInstance.get(`/list-attentions-applicable/${clientId}/`);
     return response.data.data;
   } catch (error) {
     console.error('Error fetching attentions:', error);
+    throw error;
+  }
+};
+
+
+// site in charge list
+export const getStaffList = async () => {
+  try {
+    const response = await axiosInstance.get('/list-staffs/');
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching staff list:', error);
+    throw error;
+  }
+};
+
+
+// wcr attachment
+export const uploadWCRAttachment = async (quotationNo, wcrAttachment) => {
+  try {
+    const formData = new FormData();
+    formData.append('quotation_no', quotationNo);
+    formData.append('wcr_attachment', wcrAttachment);
+
+    const response = await axiosInstance.post('/upload-wcr/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+
+// work details form submission
+export const addQuotationWorkDetails = async (payload) => {
+  try {
+    const response = await axiosInstance.post('/add-quotation-work-details/', payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding quotation work details:', error);
     throw error;
   }
 };
