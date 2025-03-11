@@ -1,4 +1,3 @@
-import React, { useState, useEffect } from 'react';
 import {
   IoChevronDownOutline,
   IoSearchOutline,
@@ -8,6 +7,7 @@ import {
   IoDocumentOutline,
 } from 'react-icons/io5';
 import ProductDetails from './ProductDetails';
+import React, { useEffect, useState } from 'react';
 import TermsAndConditions from './TermsAndConditions';
 import ClientModal from './ClientModal';
 import LocationModal from './LocationModal';
@@ -19,13 +19,15 @@ import {
   generateQuotationNumber,
   getSalesPersons,
   generateJobNumber,
-  getClients,getLocations,getAttentionsApplicable,getStaffList,addQuotationWorkDetails
+  getClients,getLocations,getAttentionsApplicable,getStaffList,addQuotationWorkDetails,
 } from '../../../../Services/QuotationApi';
+
+
 
 const WorkDetails = () => {
   const [formData, setFormData] = useState({
     quotationNo: '',
-    date: '30-12-2024',
+    date: new Date().toISOString().split('T')[0],
     projectManager: '',
     pmName: '',
     jobNo: '',
@@ -108,57 +110,33 @@ const [attentionsList, setAttentionsList] = useState([]);
 const [staffList, setStaffList] = useState([]);
 const [isSiteInChargeDropdownOpen, setIsSiteInChargeDropdownOpen] = useState(false);
 const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
+const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
-
-  const attentionNames = [
-    'Mr. James Wilson',
-    'Ms. Emily Parker',
-    'Dr. Robert Chen',
-    'Mrs. Sarah Thompson',
-    'Mr. David Miller',
-    'Ms. Lisa Anderson',
-    'Dr. Michael Brown',
-    'Mrs. Jennifer Lee',
-  ];
-
-
-  const filteredAttentionNames = attentionNames.filter((name) =>
-    name.toLowerCase().includes(attentionSearch.toLowerCase())
-  );
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
+    const [day, month, year] = dateString.split('-');
+    return `${year}-${month}-${day}`;
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => {
-      // If selecting "Multiple" in unit dropdown, initialize with one type
-      if (name === 'unit' && value === 'Multiple') {
-        return {
-          ...prev,
-          [name]: value,
-          unitDetails: [{ type: '' }], // Initialize with one empty type
-        };
-      }
-      // If changing from Multiple to Single or other values, reset unitDetails
-      if (name === 'unit' && value !== 'Multiple') {
-        return {
-          ...prev,
-          [name]: value,
-          unitDetails: [], // Clear unit details
-        };
-      }
-      // Default case
-      return {
-        ...prev,
-        [name]: value,
-      };
-    });
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+      ...(name === 'invoiceStatus' && {
+        invoiceDetails: prev.invoiceDetails.map(detail => ({
+          ...detail,
+          invoiceStatus: value
+        }))
+      })
+    }));
   };
 
   const handleSelectClick = (selectName) => {
     setOpenSelect(openSelect === selectName ? null : selectName);
   };
-
-  const siteInChargeOptions = ['Person 1', 'Person 2', 'Person 3'];
-
+  
   const handleAddLPO = () => {
     setFormData((prev) => ({
       ...prev,
@@ -177,18 +155,25 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
   };
 
   const handleLPODetailChange = (index, field, value) => {
-    setFormData((prev) => {
-      const updatedDetails = prev.lpoDetails.map((detail, i) =>
-        i === index ? { ...detail, [field]: value } : detail
-      );
-  
-      console.log("Updated LPO Details:", updatedDetails); // Debugging
-  
-      return {
+    if (formData.lpoNumber === 'Single') {
+      // For single LPO, update both the main form and the LPO details
+      setFormData((prev) => ({
         ...prev,
-        lpoDetails: updatedDetails,
-      };
-    });
+        [field]: value,
+        lpoDetails: [{
+          ...prev.lpoDetails[0],
+          [field]: value
+        }]
+      }));
+    } else {
+      // For partial LPO, update only the LPO details array
+      setFormData((prev) => ({
+        ...prev,
+        lpoDetails: prev.lpoDetails.map((detail, i) =>
+          i === index ? { ...detail, [field]: value } : detail
+        )
+      }));
+    }
   };
 
   const handleAddInvoice = () => {
@@ -259,6 +244,46 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
       ),
     }));
   };
+  const handleAddNewClient = (newClient) => {
+    // Update clients list
+    setClients(prevClients => [...prevClients, newClient]);
+    
+    // Update the selected client in the form
+    setFormData(prev => ({
+      ...prev,
+      // client: newClient.id,
+      clientName: newClient.clientName
+    }));
+  };
+  const handleAddNewLocation = (newLocation) => {
+    // Update locations list
+    setLocations(prevLocations => [...prevLocations, newLocation]);
+    
+    // Update the selected location in the form
+    setFormData(prev => ({
+      ...prev,
+      location: newLocation.locationName
+    }));
+  };
+  
+  const handleAddNewStaff = (newStaff) => {
+    // Update staff list
+    setPmNames(prevStaff => [...prevStaff, newStaff]);
+    
+    // Update the selected staff in the form if needed
+    setFormData(prev => ({
+      ...prev,
+      projectManager: newStaff.id,
+      pmName: newStaff.staffName
+    }));
+  };``
+
+
+
+
+
+
+
 
   const handleSaveAndContinue = async () => {
     try {
@@ -268,7 +293,7 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
       // Format unit details
       const formattedUnits = formData.unit === 'Single' 
         ? [{
-            type: formData.unitType,
+            unit_type: formData.unitType,
             start_date: formData.unitDetails[0]?.startDate || formData.date,
             end_date: formData.unitDetails[0]?.endDate || formData.date,
             work_status: formData.unitDetails[0]?.workStatus || "Not Started",
@@ -280,10 +305,10 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
               flat_type: formData.unitDetails[0]?.flatType || ''
             }),
             ...(formData.unitType === 'Building' && {
-              building_no: formData.unitDetails[0]?.buildingNo || ''
+              building_number: formData.unitDetails[0]?.buildingNo || ''
             }),
             ...(formData.unitType === 'Community Center' && {
-              community_center_no: formData.unitDetails[0]?.communityCenterNo || '',
+              communitycenter_no: formData.unitDetails[0]?.communityCenterNo || '',
               community_center_type: formData.unitDetails[0]?.communityCenterType || ''
             }),
             ...(formData.unitType === 'Labour Camp' && {
@@ -293,10 +318,10 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
             }),
             ...(formData.unitType === 'Mall' && {
               mall_no: formData.unitDetails[0]?.mallNo || '',
-              mall_type: formData.unitDetails[0]?.mallType || ''
+              type: formData.unitDetails[0]?.mallType || ''
             }),
             ...(formData.unitType === 'Swimming Pool' && {
-              swimming_pool_no: formData.unitDetails[0]?.swimmingPoolNo || ''
+              pool_no: formData.unitDetails[0]?.swimmingPoolNo || ''
             }),
             ...(formData.unitType === 'Villa' && {
               villa_no: formData.unitDetails[0]?.villaNo || '',
@@ -316,7 +341,7 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
             })
           }]
         : formData.unitDetails.map(detail => ({
-            type: detail.type,
+          unit_type: detail.type,
             start_date: detail.startDate || formData.date,
             end_date: detail.endDate || formData.date,
             work_status: detail.workStatus || "Not Started",
@@ -328,10 +353,10 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
               flat_type: detail.flatType || ''
             }),
             ...(detail.type === 'Building' && {
-              building_no: detail.buildingNo || ''
+              building_number: detail.buildingNo || ''
             }),
             ...(detail.type === 'Community Center' && {
-              community_center_no: detail.communityCenterNo || '',
+              communitycenter_no: detail.communityCenterNo || '',
               community_center_type: detail.communityCenterType || ''
             }),
             ...(detail.type === 'Labour Camp' && {
@@ -341,7 +366,7 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
             }),
             ...(detail.type === 'Mall' && {
               mall_no: detail.mallNo || '',
-              mall_type: detail.mallType || ''
+              type: detail.mallType || ''
             }),
             ...(detail.type === 'Swimming Pool' && {
               swimming_pool_no: detail.swimmingPoolNo || ''
@@ -368,20 +393,28 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
       console.log("Formatted Units:", formattedUnits);
   
       // Format LPO details
-      const formattedLPO = formData.lpoDetails.map((lpo) => ({
-        lpo_status: lpo.lpoStatus || "Pending",
-        pr_no: lpo.prNo || '', // Ensure this is correctly mapped
-        lpo_no: lpo.lpoNo || '', // Ensure this is correctly mapped
-        lpo_amount: Number(lpo.lpoAmount) || 0,
-        lpo_date: lpo.date || formData.date,
-      }));
+      const formattedLPO = formData.lpoNumber === 'Single' 
+        ? [{
+            lpo_status: formData.lpoStatus || "Pending",
+            pr_no: formData.prNo || '', 
+            lpo_no: formData.lpoNo || '', 
+            lpo_amount: Number(formData.lpoAmount) || 0,
+            lpo_date: formatDate(formData.lpoDate) || formatDate(formData.date),
+          }]
+        : formData.lpoDetails.map((lpo) => ({
+            lpo_status: lpo.lpoStatus || "Pending",
+            pr_no: lpo.prNo || '',
+            lpo_no: lpo.lpoNo || '',
+            lpo_amount: Number(lpo.lpoAmount) || 0,
+            lpo_date: formatDate(lpo.date) || formatDate(formData.date),
+          }));
   
       // Debugging: Log the formatted LPO details
       console.log("Formatted LPO:", formattedLPO);
   
       // Format invoice details
       const formattedInvoices = formData.invoiceDetails.map((invoice) => ({
-        invoice_status: invoice.invoiceStatus || "Pending",
+        invoice_status: formData.invoiceStatus || "Pending", // Changed from invoice.invoiceStatus to formData.invoiceStatus
         invoice_no: invoice.invoiceNo || "",
         invoice_date: invoice.invoiceDate || formData.date,
         invoice_amount: Number(invoice.invoiceAmount) || 0,
@@ -400,11 +433,11 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
   
       // Debugging: Log the formatted invoices
       console.log("Formatted Invoices:", formattedInvoices);
-  
+    
       // Prepare the final payload
       const payload = {
         quotation_no: formData.quotationNo,
-        date: formData.date,
+        date: formatDate(formData.date),
         project_manager: formData.projectManager,
         attention: formData.attention,
         attention_to: formData.attentionTo || "",
@@ -440,15 +473,19 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
       // Debugging: Log the API response
       console.log("API Response:", response);
   
-      if (response) {
-        toast.success('Work details saved successfully');
-        setShowProducts(true);
+      if (response && response.status === 'Success') { // Adjust the condition based on your API response structure
+        
+        setShowProducts(true); // Show the ProductDetails component
       }
+  
     } catch (error) {
       // Debugging: Log any errors
       console.error('Error saving work details:', error);
       toast.error(error.response?.data?.message || 'Error saving work details');
+      setShowProducts(false);
     }
+
+    
   };
 
   // date functionality in gnr
@@ -601,6 +638,33 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
     fetchStaffList();
   }, []);
 
+  const handleLPOChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+      // Reset related fields when lpoNumber changes
+      ...(name === 'lpoNumber' && {
+        lpoStatus: '',
+        prNo: '',
+        lpoNo: '',
+        lpoAmount: '',
+        lpoDate: '',
+      }),
+      // Update lpoDetails array for Single LPO
+      ...(prev.lpoNumber === 'Single' && {
+        lpoDetails: [{
+          ...prev.lpoDetails[0],
+          lpoStatus: name === 'lpoStatus' ? value : prev.lpoStatus,
+          prNo: name === 'prNo' ? value : prev.prNo,
+          lpoNo: name === 'lpoNo' ? value : prev.lpoNo,
+          lpoAmount: name === 'lpoAmount' ? value : prev.lpoAmount,
+          date: name === 'lpoDate' ? value : prev.lpoDate,
+        }]
+      })
+    }));
+  };
+
 
 
 
@@ -744,15 +808,16 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
 
               <button
                 type="button"
-                onClick={() => setIsAddStaffModalOpen(true)}
+                onClick={() => setIsStaffModalOpen(true)}
                 className="px-4 py-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap"
               >
                 New
               </button>
               <AddStaffModal
-                isOpen={isAddStaffModalOpen}
-                onClose={() => setIsAddStaffModalOpen(false)}
-              />
+  isOpen={isStaffModalOpen}
+  onClose={() => setIsStaffModalOpen(false)}
+  handleAddStaff={handleAddNewStaff}
+/>
             </div>
           </div>
         )}
@@ -894,9 +959,11 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
           </div>
           {/* Add the ClientModal component */}
           <ClientModal
-            isOpen={isClientModalOpen}
-            onClose={() => setIsClientModalOpen(false)}
-          />
+      isOpen={isClientModalOpen}
+      onClose={() => setIsClientModalOpen(false)}
+      handleAddClient={handleAddNewClient}
+      companyId={formData.companyId}
+    />
         </div>
 
         {/* Location */}
@@ -970,9 +1037,10 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
             </button>
 
             <LocationModal
-              isOpen={isLocationModalOpen}
-              onClose={() => setIsLocationModalOpen(false)}
-            />
+  isOpen={isLocationModalOpen}
+  onClose={() => setIsLocationModalOpen(false)}
+  handleAddLocation={handleAddNewLocation}
+/>
           </div>
         </div>
       </div>
@@ -1986,7 +2054,7 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
                     <select
                       name="lpoNumber"
                       value={formData.lpoNumber}
-                      onChange={handleInputChange}
+                      onChange={handleLPOChange}
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
                     >
                       <option value="">Select</option>
@@ -2014,7 +2082,7 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
                         <select
                           name="lpoStatus"
                           value={formData.lpoStatus}
-                          onChange={handleInputChange}
+                          onChange={handleLPOChange}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
                         >
                           <option value="">Select</option>
@@ -2037,7 +2105,7 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
                         type="text"
                         name="prNo"
                         value={formData.prNo}
-                        onChange={handleInputChange}
+                        onChange={handleLPOChange}
                         className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                       />
                     </div>
@@ -2055,13 +2123,7 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
                           type="text"
                           name="lpoNo"
                           value={formData.lpoNo}
-                          onChange={(e) =>
-                            handleLPODetailChange(
-                              // index,
-                              'lpoNo',
-                              e.target.value
-                            )
-                          }
+                          onChange={handleLPOChange}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                         />
                       </div>
@@ -2075,13 +2137,7 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
                           type="number"
                           name="lpoAmount"
                           value={formData.lpoAmount}
-                          onChange={(e) =>
-                            handleLPODetailChange(
-                              index,
-                              'lpoAmount',
-                              e.target.value
-                            )
-                          }
+                          onChange={handleLPOChange}  // Changed from handleLPODetailChange
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                         />
                       </div>
@@ -2095,9 +2151,7 @@ const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
                           type="date"
                           name="lpoDate"
                           value={formData.lpoDate}
-                          onChange={(e) =>
-                            handleLPODetailChange(index, 'date', e.target.value)
-                          }
+                          onChange={handleLPOChange}  // Changed from handleLPODetailChange
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                         />
                       </div>

@@ -1,18 +1,20 @@
 import React, { useState } from 'react';
 import { IoCloseOutline } from 'react-icons/io5';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
+import { registerStaff } from '../../Services/QuotationApi';
 
-const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
+const AddStaffModal = ({ isOpen, onClose, handleAddStaff }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    staffName: '',
-    abbreviation: '',
-    role: '',
+    staff_name: '',
+    abbrevation: '',
+    role: 'Sales Person',
     username: '',
     password: '',
-    dateOfRegistration: '',
-    phoneNumber: '',
-    photo: null,
+    date_of_registration: '',
+    number: '',
+    image: null,
   });
 
   const handleInputChange = (e) => {
@@ -23,22 +25,69 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData);
-    onClose();
+    setIsLoading(true);
+
+    try {
+      const formDataToSend = new FormData();
+      
+      // Log the form data before sending
+      console.log('Form Data Values:', formData);
+
+      // Append each field individually
+      formDataToSend.append('staff_name', formData.staff_name);
+      formDataToSend.append('abbrevation', formData.abbrevation);
+      formDataToSend.append('role', 'Staff');
+      formDataToSend.append('username', formData.username);
+      formDataToSend.append('password', formData.password);
+      formDataToSend.append('date_of_registration', formData.date_of_registration);
+      formDataToSend.append('number', formData.number);
+      
+      if (formData.image) {
+        formDataToSend.append('image', formData.image);
+      }
+
+      // Log the FormData entries
+      for (let pair of formDataToSend.entries()) {
+        console.log(pair[0] + ': ' + pair[1]);
+      }
+
+      const response = await registerStaff(formDataToSend);
+      
+      if (response.status === 'Success') {
+        handleAddStaff(response.data);
+        handleReset();
+        onClose();
+      } else {
+        console.error('Registration failed:', response.message);
+      }
+    } catch (error) {
+      console.error('Error registering staff:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  // Also update the role input field to match API requirement
+  <input
+    type="text"
+    value="Staff"
+    name="role"
+    readOnly
+    className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed"
+  />
 
   const handleReset = () => {
     setFormData({
-      staffName: '',
-      abbreviation: '',
-      role: '',
+      staff_name: '',
+      abbrevation: '',
+      role: 'Sales Person',
       username: '',
       password: '',
-      dateOfRegistration: '',
-      phoneNumber: '',
-      photo: null,
+      date_of_registration: '',
+      number: '',
+      image: null,
     });
   };
 
@@ -66,8 +115,8 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
               </label>
               <input
                 type="text"
-                name="staffName"
-                value={formData.staffName}
+                name="staff_name"
+                value={formData.staff_name}
                 onChange={handleInputChange}
                 placeholder="Staff Name"
                 className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
@@ -81,30 +130,25 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
               </label>
               <input
                 type="text"
-                name="abbreviation"
-                value={formData.abbreviation}
+                name="abbrevation"
+                value={formData.abbrevation}
                 onChange={handleInputChange}
                 placeholder="Staff Abbreviation"
                 className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               />
             </div>
 
-            {/* Role */}
+            {/* Role - Read Only */}
             <div className="space-y-2">
               <label className="block text-sm font-semibold text-gray-700">
                 Role
               </label>
-              <select
-                name="role"
-                value={formData.role}
-                onChange={handleInputChange}
-                className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
-              >
-                <option value="">Select</option>
-                <option value="admin">Admin</option>
-                <option value="staff">Staff</option>
-                <option value="manager">Manager</option>
-              </select>
+              <input
+                type="text"
+                value="Sales Person"
+                readOnly
+                className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 cursor-not-allowed"
+              />
             </div>
 
             {/* Username */}
@@ -159,8 +203,8 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
               </label>
               <input
                 type="date"
-                name="dateOfRegistration"
-                value={formData.dateOfRegistration}
+                name="date_of_registration"
+                value={formData.date_of_registration}
                 onChange={handleInputChange}
                 className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
               />
@@ -173,8 +217,8 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
               </label>
               <input
                 type="tel"
-                name="phoneNumber"
-                value={formData.phoneNumber}
+                name="number"
+                value={formData.number}
                 onChange={handleInputChange}
                 placeholder="Phone Number"
                 className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
@@ -188,7 +232,7 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
               </label>
               <input
                 type="file"
-                name="photo"
+                name="image"
                 onChange={handleInputChange}
                 accept="image/*"
                 className="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all"
@@ -200,15 +244,24 @@ const AddStaffModal = ({ isOpen, onClose, onSubmit }) => {
             <button
               type="button"
               onClick={handleReset}
-              className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+              disabled={isLoading}
+              className="px-6 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium disabled:opacity-50"
             >
               Reset
             </button>
             <button
               type="submit"
-              className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-sm shadow-blue-200"
+              disabled={isLoading}
+              className="px-6 py-2.5 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors font-medium shadow-sm shadow-blue-200 disabled:opacity-50 flex items-center gap-2"
             >
-              Submit
+              {isLoading ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Registering...
+                </>
+              ) : (
+                'Submit'
+              )}
             </button>
           </div>
         </form>

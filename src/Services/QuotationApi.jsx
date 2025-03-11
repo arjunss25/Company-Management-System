@@ -101,6 +101,39 @@ export const uploadWCRAttachment = async (quotationNo, wcrAttachment) => {
 };
 
 
+// register sales person
+export const registerStaff = async (formData) => {
+  try {
+    const data = new FormData();
+    Object.keys(formData).forEach(key => {
+      data.append(key, formData[key]);
+    });
+    
+    const response = await axiosInstance.post('/register-staff-by-admin/', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error registering staff:', error);
+    throw error;
+  }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // work details form submission
 export const addQuotationWorkDetails = async (payload) => {
   try {
@@ -111,3 +144,5 @@ export const addQuotationWorkDetails = async (payload) => {
     throw error;
   }
 };
+
+
