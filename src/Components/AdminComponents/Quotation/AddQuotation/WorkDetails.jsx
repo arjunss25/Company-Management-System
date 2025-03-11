@@ -1307,16 +1307,12 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
     </div>
     <button
       type="button"
-      onClick={() => setIsStaffModalOpen(true)}
+      onClick={() => setIsSiteInChargeModalOpen(true)}
       className="px-4 py-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap"
     >
       New
     </button>
-    <AddStaffModal
-  isOpen={isStaffModalOpen}
-  onClose={() => setIsStaffModalOpen(false)}
-  handleAddStaff={handleAddNewStaff}
-/>
+    <SiteInChargeModal/>
   </div>
 </div>
 

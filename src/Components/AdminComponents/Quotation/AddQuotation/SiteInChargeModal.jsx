@@ -2,18 +2,20 @@ import React, { useState } from 'react';
 import { IoCloseOutline } from 'react-icons/io5';
 import { IoEyeOutline, IoEyeOffOutline } from 'react-icons/io5';
 import { IoCloudUploadOutline } from 'react-icons/io5';
+import { registerStaff } from '../../../../Services/QuotationApi';
 
 const SiteInChargeModal = ({ isOpen, onClose, onSubmit }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
-    staffName: '',
-    abbreviation: '',
-    role: '',
+    staff_name: '',
+    abbrevation: '',
+    role: 'Staff',
     username: '',
     password: '',
-    dateOfRegistration: '',
-    phoneNumber: '',
-    photo: null,
+    date_of_registration: '',
+    number: '',
+    image: null,
   });
 
   const handleInputChange = (e) => {
@@ -24,22 +26,55 @@ const SiteInChargeModal = ({ isOpen, onClose, onSubmit }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    onSubmit(formData);
-    onClose();
+    setIsLoading(true);
+
+    try {
+      const formDataToSend = new FormData();
+
+      // Convert the date format (yyyy-mm-dd → dd-mm-yyyy)
+      let formattedDate = '';
+      if (formData.date_of_registration) {
+        const [year, month, day] = formData.date_of_registration.split('-');
+        formattedDate = `${day}-${month}-${year}`;
+      }
+
+      // Append all form data
+      Object.entries(formData).forEach(([key, value]) => {
+        if (key === 'date_of_registration' && value) {
+          formDataToSend.append(key, formattedDate);
+        } else if (value) {
+          formDataToSend.append(key, value);
+        }
+      });
+
+      const response = await registerStaff(formDataToSend);
+
+      if (response.status === 'Success') {
+        onSubmit(response.data);
+        handleReset();
+        onClose();
+      } else {
+        console.error('Registration failed:', response.message);
+      }
+    } catch (error) {
+      console.error('Error registering staff:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleReset = () => {
     setFormData({
-      staffName: '',
-      abbreviation: '',
-      role: '',
+      staff_name: '',
+      abbrevation: '',
+      role: 'Staff',
       username: '',
       password: '',
-      dateOfRegistration: '',
-      phoneNumber: '',
-      photo: null,
+      date_of_registration: '',
+      number: '',
+      image: null,
     });
   };
 
