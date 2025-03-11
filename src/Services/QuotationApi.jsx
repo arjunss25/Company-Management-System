@@ -104,19 +104,16 @@ export const uploadWCRAttachment = async (quotationNo, wcrAttachment) => {
 // register sales person
 export const registerStaff = async (formData) => {
   try {
-    const data = new FormData();
-    Object.keys(formData).forEach(key => {
-      data.append(key, formData[key]);
-    });
-    
-    const response = await axiosInstance.post('/register-staff-by-admin/', data, {
+    const response = await axiosInstance.post("/register-staff-by-admin/", formData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
+
+    console.log("API Response:", response.data);
     return response.data;
   } catch (error) {
-    console.error('Error registering staff:', error);
+    console.error("Error registering staff:", error);
     throw error;
   }
 };
