@@ -388,53 +388,45 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
               description: detail.description || ''
             })
           }));
-  
-      // Debugging: Log the formatted units
-      console.log("Formatted Units:", formattedUnits);
-  
+
       // Format LPO details
       const formattedLPO = formData.lpoNumber === 'Single' 
         ? [{
-            lpo_status: formData.lpoStatus || "Pending",
+            lpo_status: formData.lpoStatus || "",
             pr_no: formData.prNo || '', 
             lpo_no: formData.lpoNo || '', 
-            lpo_amount: Number(formData.lpoAmount) || 0,
-            lpo_date: formatDate(formData.lpoDate) || formatDate(formData.date),
+            lpo_amount: Number(formData.lpoAmount) || "",
+            lpo_date: formatDate(formData.lpoDate) || "",
           }]
         : formData.lpoDetails.map((lpo) => ({
-            lpo_status: lpo.lpoStatus || "Pending",
+            lpo_status: lpo.lpoStatus || "",
             pr_no: lpo.prNo || '',
             lpo_no: lpo.lpoNo || '',
-            lpo_amount: Number(lpo.lpoAmount) || 0,
-            lpo_date: formatDate(lpo.date) || formatDate(formData.date),
+            lpo_amount: Number(lpo.lpoAmount) || "",
+            lpo_date: formatDate(lpo.date) || "",
           }));
-  
-      // Debugging: Log the formatted LPO details
-      console.log("Formatted LPO:", formattedLPO);
   
       // Format invoice details
       const formattedInvoices = formData.invoiceDetails.map((invoice) => ({
-        invoice_status: formData.invoiceStatus || "Pending", // Changed from invoice.invoiceStatus to formData.invoiceStatus
+        invoice_status: formData.invoiceStatus || "", // Changed from invoice.invoiceStatus to formData.invoiceStatus
         invoice_no: invoice.invoiceNo || "",
-        invoice_date: invoice.invoiceDate || formData.date,
-        invoice_amount: Number(invoice.invoiceAmount) || 0,
-        grn_status: invoice.grnStatus || "Pending",
+        invoice_date: invoice.invoiceDate || "",
+        invoice_amount: Number(invoice.invoiceAmount) || "",
+        grn_status: invoice.grnStatus || "",
         grn_no: invoice.grnNo || "",
-        grn_date: invoice.grnDate || formData.date,
-        retention: invoice.retention || "Not Applicable",
-        retention_amount: Number(invoice.retentionAmount) || 0,
+        grn_date: invoice.grnDate || "",
+        retention: invoice.retention || "",
+        retention_amount: Number(invoice.retentionAmount) || "",
         due_after: invoice.dueAfter || "",
-        due_date: invoice.dueDate || formData.date,
-        retention_invoice: invoice.retentionInvoice || "Pending",
-        retention_invoice_date: invoice.retentionInvoiceDate || formData.date,
+        due_date: invoice.dueDate || "",
+        retention_invoice: invoice.retentionInvoice || "",
+        retention_invoice_date: invoice.retentionInvoiceDate || '',
         retention_invoice_no: invoice.retentionInvoiceNo || "",
-        retention_invoice_amount: Number(invoice.retentionInvoiceAmount) || 0,
+        retention_invoice_amount: Number(invoice.retentionInvoiceAmount) || "",
       }));
   
-      // Debugging: Log the formatted invoices
-      console.log("Formatted Invoices:", formattedInvoices);
-    
-      // Prepare the final payload
+
+   
       const payload = {
         quotation_no: formData.quotationNo,
         date: formatDate(formData.date),
@@ -442,10 +434,10 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
         attention: formData.attention,
         attention_to: formData.attentionTo || "",
         client: formData.client,
-        expected_labour_cost: Number(formData.expectedLabourCost) || 0,
-        expected_material_cost: Number(formData.expectedMaterialCost) || 0,
+        expected_labour_cost: Number(formData.expectedLabourCost) || "",
+        expected_material_cost: Number(formData.expectedMaterialCost) || "",
         invoice: formData.invoice,
-        invoice_status: formData.invoiceStatus || "Pending",
+        invoice_status: formData.invoiceStatus || "",
         invoices: formattedInvoices,
         job_no: formData.jobNo,
         location: formData.location,
@@ -453,29 +445,28 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
         lpo_number: formData.lpoNumber,
         option: option,
         pm_name: formData.pmName,
-        project_status: formData.projectStatus || "Active",
+        project_status: formData.projectStatus || "",
         quotation_status: formData.quotationStatus,
         rfq_no: formData.rfqNo,
-        scheduled_hand_over_date: formData.scheduledHandOverDate || formData.date,
+        scheduled_hand_over_date: formData.scheduledHandOverDate || "",
         site_in_charge: formData.siteInCharge,
         subject: formData.subject,
         unit_option: formData.unit,
         units: formattedUnits,
-        wcr_status: formData.wcrStatus || "Pending",
+        wcr_status: formData.wcrStatus || "",
       };
-  
-      // Debugging: Log the final payload before sending to the API
-      console.log("Final Payload:", payload);
-  
+
       // Call the API
       const response = await addQuotationWorkDetails(payload);
   
       // Debugging: Log the API response
       console.log("API Response:", response);
   
-      if (response && response.status === 'Success') { // Adjust the condition based on your API response structure
-        
-        setShowProducts(true); // Show the ProductDetails component
+      if (response && response.status === 'Success') {
+        // Only show ProductDetails if status is Pending
+        if (formData.quotationStatus === 'Pending') {
+          setShowProducts(true);
+        }
       }
   
     } catch (error) {
@@ -1312,9 +1303,16 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
     >
       New
     </button>
-    <SiteInChargeModal/>
-  </div>
-</div>
+    <SiteInChargeModal
+  isOpen={isSiteInChargeModalOpen}
+  onClose={() => setIsSiteInChargeModalOpen(false)}
+  handleAddStaff={(newStaff) => {
+        handleAddNewStaff(newStaff);
+        setIsSiteInChargeModalOpen(false);
+      }}
+              />
+            </div>
+          </div>
 
             {/* Scheduled Hand Over Date */}
             <div className="space-y-2">
@@ -2785,7 +2783,7 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
         </button>
       </div>
 
-      {showProducts && (
+      {showProducts && formData.quotationStatus === 'Pending' && (
         <div className="mt-8 border-t pt-8">
           <ProductDetails optionValue={option} />
         </div>
