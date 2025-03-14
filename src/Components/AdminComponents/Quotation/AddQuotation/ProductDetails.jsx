@@ -3,8 +3,14 @@ import { IoIosAdd } from 'react-icons/io';
 import ProductModal from './ProductModal';
 import ProductTable from './ProductTable';
 import ScopeModal from './ScopeModal';
+import { useDispatch, useSelector } from 'react-redux';
+import { addQuotationProduct } from '../../../../store/slices/quotationProductsSlice';
+import { toast } from 'react-hot-toast';
 
 const ProductDetails = ({ optionValue }) => {
+  const dispatch = useDispatch();
+  const quotationId = useSelector((state) => state.quotation.id);
+  
   const [selectedColumns, setSelectedColumns] = useState({
     Photo: false,
     Brand: false,
@@ -44,24 +50,45 @@ const ProductDetails = ({ optionValue }) => {
     }));
   };
 
-  const handleAddProduct = (product) => {
-    const selectedOption =
-      optionValue === 'Not Applicable'
-        ? 'Default Products'
-        : product.selectedOption || 'Option 1';
+  const handleAddProduct = async (product) => {
+    try {
+      if (!quotationId) {
+        toast.error('Please save work details first');
+        return;
+      }
 
-    setProductsByOption((prev) => ({
-      ...prev,
-      [selectedOption]: prev[selectedOption]
-        ? [
-            // If option exists, add new product to first table's products
-            [...prev[selectedOption][0], product],
-            // Keep any other tables if they exist (though we won't create more now)
-            ...prev[selectedOption].slice(1),
-          ]
-        : [[product]], // If option doesn't exist, create new table with product
-    }));
-    setIsModalOpen(false);
+      const selectedOption =
+        optionValue === 'Not Applicable'
+          ? 'Default Products'
+          : product.selectedOption || 'Option 1';
+
+      const productData = {
+        ...product,
+        quotation: quotationId.toString(),
+        grand_total: product.amount // Set grand_total same as amount for now
+      };
+
+      console.log('Sending product data:', productData);
+
+      const result = await dispatch(addQuotationProduct(productData)).unwrap();
+      
+      if (result) {
+        toast.success('Product added successfully');
+        setProductsByOption((prev) => ({
+          ...prev,
+          [selectedOption]: prev[selectedOption]
+            ? [
+                [...prev[selectedOption][0], product],
+                ...prev[selectedOption].slice(1),
+              ]
+            : [[product]],
+        }));
+        setIsModalOpen(false);
+      }
+    } catch (error) {
+      console.error('Failed to add product:', error);
+      toast.error(error.message || 'Failed to add product');
+    }
   };
 
   const handleEditProduct = (product) => {
@@ -358,6 +385,7 @@ const ProductDetails = ({ optionValue }) => {
         selectedColumns={selectedColumns}
         onAdd={handleAddProduct}
         showOptions={optionValue === 'Applicable'}
+        quotationId={quotationId}
       />
 
       <ScopeModal

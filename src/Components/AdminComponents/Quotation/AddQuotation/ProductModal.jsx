@@ -14,6 +14,7 @@ const ProductModal = ({
   selectedColumns,
   onAdd,
   showOptions,
+  quotationId,
 }) => {
   // Move all useState hooks to the top, before any conditional returns
   const [editorState, setEditorState] = useState({
@@ -36,6 +37,9 @@ const ProductModal = ({
   const [unitPrice, setUnitPrice] = useState('');
   const [amount, setAmount] = useState('');
   const [selectedOption, setSelectedOption] = useState('Option 1');
+  const [photo, setPhoto] = useState(null);
+
+  const optionChoices = ['Option 1', 'Option 2', 'Option 3', 'Option 4']; // Valid option choices
 
   // useEffect hook should also be before any conditional returns
   useEffect(() => {
@@ -202,23 +206,39 @@ const ProductModal = ({
     listStylePosition: 'inside',
   };
 
-  const handleSubmit = () => {
+  const handlePhotoChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      console.log('Photo selected:', file.name);
+      setPhoto(file);
+    }
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    console.log('Starting product submission...');
+    
     const productData = {
-      description,
-      heading,
-      brand,
-      location,
-      itemCode,
-      workOrderNumber,
-      referenceNumber,
-      unit,
-      quantity,
-      unitPrice,
-      amount,
-      selectedOption: showOptions ? selectedOption : 'Default Products',
+      quotation: quotationId?.toString() || '',
+      heading: heading || '',
+      description: description || '',
+      unit: unit || '',
+      quantity: quantity || '',
+      unit_price: unitPrice || '',
+      amount: amount || '',
+      grand_total: amount || '',
+      option: selectedOption || '',
+      photo: photo,
+      brand: brand || '',
+      location: location || '',
+      item_code: itemCode || '',
+      work_order_number: workOrderNumber || '',
+      reference_number: referenceNumber || ''
     };
+
+    console.log('Complete product data being submitted:', productData);
     onAdd(productData);
-    onClose();
   };
 
   return (
@@ -259,9 +279,11 @@ const ProductModal = ({
                   className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                   required
                 >
-                  <option value="Option 1">Option 1</option>
-                  <option value="Option 2">Option 2</option>
-                  <option value="Option 3">Option 3</option>
+                  {optionChoices.map((option) => (
+                    <option key={option} value={option}>
+                      {option}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
@@ -391,24 +413,37 @@ const ProductModal = ({
                   <div className="flex items-center justify-center w-full">
                     <label className="w-full h-32 flex flex-col items-center justify-center border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-all group">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        <svg
-                          className="w-8 h-8 text-gray-400 group-hover:text-gray-500 transition-colors"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                          />
-                        </svg>
-                        <p className="mt-2 text-sm text-gray-500 group-hover:text-gray-600 transition-colors">
-                          Click to upload
-                        </p>
+                        {photo ? (
+                          <div className="text-sm text-gray-600">
+                            Selected: {photo.name}
+                          </div>
+                        ) : (
+                          <>
+                            <svg
+                              className="w-8 h-8 text-gray-400 group-hover:text-gray-500 transition-colors"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                              />
+                            </svg>
+                            <p className="mt-2 text-sm text-gray-500 group-hover:text-gray-600 transition-colors">
+                              Click to upload
+                            </p>
+                          </>
+                        )}
                       </div>
-                      <input type="file" className="hidden" accept="image/*" />
+                      <input
+                        type="file"
+                        className="hidden"
+                        accept="image/*"
+                        onChange={handlePhotoChange}
+                      />
                     </label>
                   </div>
                 </div>
@@ -439,6 +474,8 @@ const ProductModal = ({
                   </label>
                   <input
                     type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
                     className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     placeholder="Enter location"
                   />
@@ -453,6 +490,8 @@ const ProductModal = ({
                   </label>
                   <input
                     type="text"
+                    value={itemCode}
+                    onChange={(e) => setItemCode(e.target.value)}
                     className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     placeholder="Enter item code"
                   />
@@ -467,6 +506,8 @@ const ProductModal = ({
                   </label>
                   <input
                     type="text"
+                    value={workOrderNumber}
+                    onChange={(e) => setWorkOrderNumber(e.target.value)}
                     className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     placeholder="Enter work order number"
                   />
@@ -481,6 +522,8 @@ const ProductModal = ({
                   </label>
                   <input
                     type="text"
+                    value={referenceNumber}
+                    onChange={(e) => setReferenceNumber(e.target.value)}
                     className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                     placeholder="Enter reference number"
                   />
@@ -493,7 +536,11 @@ const ProductModal = ({
                   <label className="block text-sm font-medium text-gray-700">
                     Unit
                   </label>
-                  <select className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all [&_optgroup]:max-h-32 [&_option]:max-h-32">
+                  <select
+                    value={unit}
+                    onChange={(e) => setUnit(e.target.value)}
+                    className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                  >
                     <option value="">Select unit</option>
                     <option value="box">Box</option>
                     <option value="bundle">Bundle</option>

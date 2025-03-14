@@ -13,6 +13,8 @@ import ClientModal from './ClientModal';
 import LocationModal from './LocationModal';
 import SiteInChargeModal from './SiteInChargeModal';
 import AddStaffModal from '../../../Common/AddStaffModal';
+import { useDispatch } from 'react-redux';
+import { setQuotationDetails } from '../../../../store/slices/quotationSlice';
 
 // api imports
 import {
@@ -112,6 +114,8 @@ const [isSiteInChargeDropdownOpen, setIsSiteInChargeDropdownOpen] = useState(fal
 const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
 const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
+  const dispatch = useDispatch();
+
   const formatDate = (dateString) => {
     if (!dateString) return '';
     if (/^\d{4}-\d{2}-\d{2}$/.test(dateString)) return dateString;
@@ -121,16 +125,37 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({
+    console.log('handleInputChange called with:', { name, value });
+
+    setFormData((prev) => {
+      if (name === 'unit') {
+        // When changing unit type (Single/Multiple)
+        return {
       ...prev,
       [name]: value,
-      ...(name === 'invoiceStatus' && {
-        invoiceDetails: prev.invoiceDetails.map(detail => ({
-          ...detail,
-          invoiceStatus: value
-        }))
-      })
-    }));
+          unitDetails: value === 'Single' 
+            ? [{ type: prev.unitType || '', ...prev.unitDetails[0] }] 
+            : []
+        };
+      }
+      
+      if (name === 'unitType' && prev.unit === 'Single') {
+        // When changing unit type in Single mode
+      return {
+      ...prev,
+      [name]: value,
+          unitDetails: [{
+            ...prev.unitDetails[0] || {},
+            type: value
+          }]
+        };
+      }
+
+      return {
+        ...prev,
+        [name]: value
+      };
+    });
   };
 
   const handleSelectClick = (selectName) => {
@@ -237,12 +262,35 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   };
 
   const handleUnitTypeDetailChange = (index, field, value) => {
-    setFormData((prev) => ({
+    console.log('handleUnitTypeDetailChange called with:', { index, field, value });
+    
+    setFormData((prev) => {
+      // Create a copy of the current unitDetails array
+      let updatedDetails = [...prev.unitDetails];
+      
+      if (prev.unit === 'Single') {
+        // For Single unit, ensure we have at least one item
+        if (updatedDetails.length === 0) {
+          updatedDetails = [{ type: prev.unitType }];
+        }
+        // Update the first item
+        updatedDetails[0] = {
+          ...updatedDetails[0],
+          [field]: value
+        };
+      } else {
+        // For Multiple units, update the specific index
+        updatedDetails[index] = {
+          ...updatedDetails[index],
+          [field]: value
+        };
+      }
+
+      return {
       ...prev,
-      unitDetails: prev.unitDetails.map((detail, i) =>
-        i === index ? { ...detail, [field]: value } : detail
-      ),
-    }));
+        unitDetails: updatedDetails
+      };
+    });
   };
   const handleAddNewClient = (newClient) => {
     // Update clients list
@@ -294,8 +342,8 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
       const formattedUnits = formData.unit === 'Single' 
         ? [{
             unit_type: formData.unitType,
-            start_date: formData.unitDetails[0]?.startDate || formData.date,
-            end_date: formData.unitDetails[0]?.endDate || formData.date,
+            start_date: formatDate(formData.unitDetails[0]?.startDate || formData.date),
+            end_date: formatDate(formData.unitDetails[0]?.endDate || formData.date),
             work_status: formData.unitDetails[0]?.workStatus || "Not Started",
             // Add type-specific fields
             ...(formData.unitType === 'Apartment' && {
@@ -342,8 +390,8 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
           }]
         : formData.unitDetails.map(detail => ({
           unit_type: detail.type,
-            start_date: detail.startDate || formData.date,
-            end_date: detail.endDate || formData.date,
+            start_date: formatDate(detail.startDate || formData.date),
+            end_date: formatDate(detail.endDate || formData.date),
             work_status: detail.workStatus || "Not Started",
             // Add type-specific fields based on unit type
             ...(detail.type === 'Apartment' && {
@@ -389,38 +437,38 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
             })
           }));
 
-      // Format LPO details
+      // Format LPO details with proper date format
       const formattedLPO = formData.lpoNumber === 'Single' 
         ? [{
             lpo_status: formData.lpoStatus || "",
             pr_no: formData.prNo || '', 
             lpo_no: formData.lpoNo || '', 
             lpo_amount: Number(formData.lpoAmount) || "",
-            lpo_date: formatDate(formData.lpoDate) || "",
+            lpo_date: formData.lpoDate ? formatDate(formData.lpoDate) : null,
           }]
         : formData.lpoDetails.map((lpo) => ({
             lpo_status: lpo.lpoStatus || "",
             pr_no: lpo.prNo || '',
             lpo_no: lpo.lpoNo || '',
             lpo_amount: Number(lpo.lpoAmount) || "",
-            lpo_date: formatDate(lpo.date) || "",
+            lpo_date: lpo.date ? formatDate(lpo.date) : null,
           }));
   
-      // Format invoice details
+      // Format invoice details with proper date formats
       const formattedInvoices = formData.invoiceDetails.map((invoice) => ({
-        invoice_status: formData.invoiceStatus || "", // Changed from invoice.invoiceStatus to formData.invoiceStatus
+        invoice_status: formData.invoiceStatus || "",
         invoice_no: invoice.invoiceNo || "",
-        invoice_date: invoice.invoiceDate || "",
+        invoice_date: invoice.invoiceDate ? formatDate(invoice.invoiceDate) : null,
         invoice_amount: Number(invoice.invoiceAmount) || "",
         grn_status: invoice.grnStatus || "",
         grn_no: invoice.grnNo || "",
-        grn_date: invoice.grnDate || "",
+        grn_date: invoice.grnDate ? formatDate(invoice.grnDate) : null,
         retention: invoice.retention || "",
         retention_amount: Number(invoice.retentionAmount) || "",
         due_after: invoice.dueAfter || "",
-        due_date: invoice.dueDate || "",
+        due_date: invoice.dueDate ? formatDate(invoice.dueDate) : null,
         retention_invoice: invoice.retentionInvoice || "",
-        retention_invoice_date: invoice.retentionInvoiceDate || '',
+        retention_invoice_date: invoice.retentionInvoiceDate ? formatDate(invoice.retentionInvoiceDate) : null,
         retention_invoice_no: invoice.retentionInvoiceNo || "",
         retention_invoice_amount: Number(invoice.retentionInvoiceAmount) || "",
       }));
@@ -448,7 +496,7 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
         project_status: formData.projectStatus || "",
         quotation_status: formData.quotationStatus,
         rfq_no: formData.rfqNo,
-        scheduled_hand_over_date: formData.scheduledHandOverDate || "",
+        scheduled_hand_over_date: formData.scheduledHandOverDate ? formatDate(formData.scheduledHandOverDate) : null,
         site_in_charge: formData.siteInCharge,
         subject: formData.subject,
         unit_option: formData.unit,
@@ -468,6 +516,18 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
           setShowProducts(true);
         }
       }
+  
+      // Store the quotation ID directly
+      dispatch(setQuotationDetails({
+        id: response.data.id,
+        quotationNo: response.data.quotation_no
+      }));
+
+      // Log to verify data is stored
+      console.log('Saved quotation details:', response.data);
+
+      // You might want to show a success message
+      toast.success('Work details saved successfully!');
   
     } catch (error) {
       // Debugging: Log any errors
@@ -1437,14 +1497,16 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={detail.buildingNo || ''}
-                              onChange={(e) =>
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.buildingNo || '') 
+                                : (detail.buildingNo || '')}
+                              onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
                                   'buildingNo',
                                   e.target.value
-                                )
-                              }
+                                );
+                              }}
                               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             />
                           </div>
@@ -1455,7 +1517,9 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <div className="relative">
                               <select
-                                value={detail.phase || ''}
+                                value={formData.unit === 'Single' 
+                                  ? (formData.unitDetails[0]?.phase || '') 
+                                  : (detail.phase || '')}
                                 onChange={(e) =>
                                   handleUnitTypeDetailChange(
                                     index,
@@ -1483,26 +1547,29 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={detail.apNo || ''}
-                              onChange={(e) =>
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.apNo || '') 
+                                : (detail.apNo || '')}
+                              onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
                                   'apNo',
                                   e.target.value
-                                )
-                              }
+                                );
+                              }}
                               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             />
                           </div>
 
-                          {/* Flat Type */}
                           <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-700 h-5 block">
                               Flat Type:
                             </label>
                             <div className="relative">
                               <select
-                                value={detail.flatType || ''}
+                                value={formData.unit === 'Single' 
+                                  ? (formData.unitDetails[0]?.flatType || '') 
+                                  : (detail.flatType || '')}
                                 onChange={(e) =>
                                   handleUnitTypeDetailChange(
                                     index,
@@ -1511,10 +1578,6 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                                   )
                                 }
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-                                style={{
-                                  maxHeight: '200px',
-                                  overflowY: 'auto',
-                                }}
                               >
                                 <option value="">Select</option>
                                 <option value="1BHK">1BHK</option>
@@ -1538,27 +1601,6 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                         </>
                       )}
 
-                      {/* Fields for Building */}
-                      {detail.type === 'Building' && (
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-gray-700 h-5 block">
-                            Building No:
-                          </label>
-                          <input
-                            type="text"
-                            value={detail.buildingNo || ''}
-                            onChange={(e) =>
-                              handleUnitTypeDetailChange(
-                                index,
-                                'buildingNo',
-                                e.target.value
-                              )
-                            }
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                          />
-                        </div>
-                      )}
-
                       {/* Community Center fields */}
                       {detail.type === 'Community Center' && (
                         <>
@@ -1568,14 +1610,16 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={detail.communityCenterNo || ''}
-                              onChange={(e) =>
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.communityCenterNo || '') 
+                                : (detail.communityCenterNo || '')}
+                              onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
                                   'communityCenterNo',
                                   e.target.value
-                                )
-                              }
+                                );
+                              }}
                               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             />
                           </div>
@@ -1586,7 +1630,9 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <div className="relative">
                               <select
-                                value={detail.communityCenterType || ''}
+                                value={formData.unit === 'Single' 
+                                  ? (formData.unitDetails[0]?.communityCenterType || '') 
+                                  : (detail.communityCenterType || '')}
                                 onChange={(e) =>
                                   handleUnitTypeDetailChange(
                                     index,
@@ -1620,14 +1666,16 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={detail.lcNo || ''}
-                              onChange={(e) =>
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.lcNo || '') 
+                                : (detail.lcNo || '')}
+                              onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
                                   'lcNo',
                                   e.target.value
-                                )
-                              }
+                                );
+                              }}
                               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             />
                           </div>
@@ -1638,7 +1686,9 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <div className="relative">
                               <select
-                                value={detail.lcLocation || ''}
+                                value={formData.unit === 'Single' 
+                                  ? (formData.unitDetails[0]?.lcLocation || '') 
+                                  : (detail.lcLocation || '')}
                                 onChange={(e) =>
                                   handleUnitTypeDetailChange(
                                     index,
@@ -1666,14 +1716,16 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={detail.roomNo || ''}
-                              onChange={(e) =>
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.roomNo || '') 
+                                : (detail.roomNo || '')}
+                              onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
                                   'roomNo',
                                   e.target.value
-                                )
-                              }
+                                );
+                              }}
                               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             />
                           </div>
@@ -1689,14 +1741,16 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={detail.mallNo || ''}
-                              onChange={(e) =>
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.mallNo || '') 
+                                : (detail.mallNo || '')}
+                              onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
                                   'mallNo',
                                   e.target.value
-                                )
-                              }
+                                );
+                              }}
                               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             />
                           </div>
@@ -1707,7 +1761,9 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <div className="relative">
                               <select
-                                value={detail.mallType || ''}
+                                value={formData.unit === 'Single' 
+                                  ? (formData.unitDetails[0]?.mallType || '') 
+                                  : (detail.mallType || '')}
                                 onChange={(e) =>
                                   handleUnitTypeDetailChange(
                                     index,
@@ -1732,27 +1788,6 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                         </>
                       )}
 
-                      {/* Swimming Pool fields */}
-                      {detail.type === 'Swimming Pool' && (
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-gray-700 h-5 block">
-                            Swimming Pool No:
-                          </label>
-                          <input
-                            type="text"
-                            value={detail.swimmingPoolNo || ''}
-                            onChange={(e) =>
-                              handleUnitTypeDetailChange(
-                                index,
-                                'swimmingPoolNo',
-                                e.target.value
-                              )
-                            }
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                          />
-                        </div>
-                      )}
-
                       {/* Villa fields */}
                       {detail.type === 'Villa' && (
                         <>
@@ -1762,14 +1797,16 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={detail.villaNo || ''}
-                              onChange={(e) =>
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.villaNo || '') 
+                                : (detail.villaNo || '')}
+                              onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
                                   'villaNo',
                                   e.target.value
-                                )
-                              }
+                                );
+                              }}
                               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             />
                           </div>
@@ -1780,7 +1817,9 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <div className="relative">
                               <select
-                                value={detail.villaType || ''}
+                                value={formData.unit === 'Single' 
+                                  ? (formData.unitDetails[0]?.villaType || '') 
+                                  : (detail.villaType || '')}
                                 onChange={(e) =>
                                   handleUnitTypeDetailChange(
                                     index,
@@ -1806,88 +1845,6 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                         </>
                       )}
 
-                      {/* Warehouse fields */}
-                      {detail.type === 'Warehouse' && (
-                        <>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 h-5 block">
-                              Warehouse No:
-                            </label>
-                            <input
-                              type="text"
-                              value={detail.warehouseNo || ''}
-                              onChange={(e) =>
-                                handleUnitTypeDetailChange(
-                                  index,
-                                  'warehouseNo',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 h-5 block">
-                              Location:
-                            </label>
-                            <input
-                              type="text"
-                              value={detail.warehouseLocation || ''}
-                              onChange={(e) =>
-                                handleUnitTypeDetailChange(
-                                  index,
-                                  'warehouseLocation',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            />
-                          </div>
-                        </>
-                      )}
-
-                      {/* Other fields */}
-                      {detail.type === 'Other' && (
-                        <>
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 h-5 block">
-                              Reference No:
-                            </label>
-                            <input
-                              type="text"
-                              value={detail.referenceNo || ''}
-                              onChange={(e) =>
-                                handleUnitTypeDetailChange(
-                                  index,
-                                  'referenceNo',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            />
-                          </div>
-
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700 h-5 block">
-                              Description:
-                            </label>
-                            <input
-                              type="text"
-                              value={detail.description || ''}
-                              onChange={(e) =>
-                                handleUnitTypeDetailChange(
-                                  index,
-                                  'description',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            />
-                          </div>
-                        </>
-                      )}
-
                       {/* Toilet fields */}
                       {detail.type === 'Toilet' && (
                         <>
@@ -1897,14 +1854,16 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={detail.toiletNo || ''}
-                              onChange={(e) =>
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.toiletNo || '') 
+                                : (detail.toiletNo || '')}
+                              onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
                                   'toiletNo',
                                   e.target.value
-                                )
-                              }
+                                );
+                              }}
                               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             />
                           </div>
@@ -1915,14 +1874,16 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <div className="relative">
                               <select
-                                value={detail.toiletType || ''}
-                                onChange={(e) =>
-                                  handleUnitTypeDetailChange(
-                                    index,
+                                value={formData.unit === 'Single' 
+                                  ? (formData.unitDetails[0]?.toiletType || '') 
+                                  : (detail.toiletType || '')}
+                              onChange={(e) =>
+                                handleUnitTypeDetailChange(
+                                  index,
                                     'toiletType',
-                                    e.target.value
-                                  )
-                                }
+                                  e.target.value
+                                )
+                              }
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
                               >
                                 <option value="">Select</option>
@@ -1939,75 +1900,142 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                         </>
                       )}
 
-                      {/* extra fields f the quotation s approved */}
-
-                      {/* Common fields for all types when quotation status is Approved or Urgent */}
-                      {(formData.quotationStatus === 'Approved' ||
-                        formData.quotationStatus ===
-                          'Approval Pending but Work Started on Urgent basis') && (
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 col-span-3">
+                      {/* Warehouse fields */}
+                      {detail.type === 'Warehouse' && (
+                        <>
                           <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-700 h-5 block">
-                              Start Date:
+                              Warehouse No:
                             </label>
                             <input
-                              type="date"
-                              value={detail.startDate || ''}
-                              onChange={(e) =>
+                              type="text"
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.warehouseNo || '') 
+                                : (detail.warehouseNo || '')}
+                              onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
-                                  'startDate',
+                                  'warehouseNo',
                                   e.target.value
-                                )
-                              }
+                                );
+                              }}
                               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             />
                           </div>
 
                           <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-700 h-5 block">
-                              End Date:
+                              Location:
                             </label>
                             <input
-                              type="date"
-                              value={detail.endDate || ''}
-                              onChange={(e) =>
+                              type="text"
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.warehouseLocation || '') 
+                                : (detail.warehouseLocation || '')}
+                              onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
-                                  'endDate',
+                                  'warehouseLocation',
                                   e.target.value
-                                )
-                              }
+                                );
+                              }}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {/* Swimming Pool fields */}
+                      {detail.type === 'Swimming Pool' && (
+                        <>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 h-5 block">
+                              Swimming Pool No:
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.swimmingPoolNo || '') 
+                                : (detail.swimmingPoolNo || '')}
+                              onChange={(e) => {
+                                handleUnitTypeDetailChange(
+                                  index,
+                                  'swimmingPoolNo',
+                                  e.target.value
+                                );
+                              }}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {/* Building fields */}
+                      {detail.type === 'Building' && (
+                        <>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 h-5 block">
+                              Building No:
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.buildingNo || '') 
+                                : (detail.buildingNo || '')}
+                              onChange={(e) => {
+                                handleUnitTypeDetailChange(
+                                  index,
+                                  'buildingNo',
+                                  e.target.value
+                                );
+                              }}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {/* Other fields */}
+                      {detail.type === 'Other' && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 h-5 block">
+                              Reference No:
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.referenceNo || '') 
+                                : (detail.referenceNo || '')}
+                              onChange={(e) => {
+                                handleUnitTypeDetailChange(
+                                  index,
+                                  'referenceNo',
+                                  e.target.value
+                                );
+                              }}
                               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                             />
                           </div>
 
                           <div className="space-y-2">
                             <label className="text-sm font-medium text-gray-700 h-5 block">
-                              Work Status:
+                              Description:
                             </label>
-                            <div className="relative">
-                              <select
-                                value={detail.workStatus || ''}
-                                onChange={(e) =>
-                                  handleUnitTypeDetailChange(
-                                    index,
-                                    'workStatus',
-                                    e.target.value
-                                  )
-                                }
-                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-                              >
-                                <option value="">Select</option>
-                                <option value="Not Started">Not Started</option>
-                                <option value="In Progress">In Progress</option>
-                                <option value="Completed">Completed</option>
-                              </select>
-                              <IoChevronDownOutline
-                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                                size={20}
-                              />
-                            </div>
+                            <input
+                              type="text"
+                              value={formData.unit === 'Single' 
+                                ? (formData.unitDetails[0]?.description || '') 
+                                : (detail.description || '')}
+                              onChange={(e) => {
+                                handleUnitTypeDetailChange(
+                                  index,
+                                  'description',
+                                  e.target.value
+                                );
+                              }}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
                           </div>
                         </div>
                       )}
