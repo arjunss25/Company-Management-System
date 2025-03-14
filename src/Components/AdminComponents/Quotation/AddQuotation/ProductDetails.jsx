@@ -10,7 +10,7 @@ import { toast } from 'react-hot-toast';
 const ProductDetails = ({ optionValue }) => {
   const dispatch = useDispatch();
   const quotationId = useSelector((state) => state.quotation.id);
-  
+
   const [selectedColumns, setSelectedColumns] = useState({
     Photo: false,
     Brand: false,
@@ -50,39 +50,68 @@ const ProductDetails = ({ optionValue }) => {
     }));
   };
 
-  const handleAddProduct = async (product) => {
+  const handleAddProduct = async (formData) => {
     try {
+      console.log('=== handleAddProduct Started ===');
+      console.log('QuotationId:', quotationId);
+
       if (!quotationId) {
         toast.error('Please save work details first');
         return;
       }
 
+      // Log FormData contents before dispatch
+      console.log('=== FormData Contents Before Dispatch ===');
+      for (let pair of formData.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`);
+      }
+
       const selectedOption =
         optionValue === 'Not Applicable'
           ? 'Default Products'
-          : product.selectedOption || 'Option 1';
+          : formData.get('option') || 'Option 1';
 
-      const productData = {
-        ...product,
-        quotation: quotationId.toString(),
-        grand_total: product.amount // Set grand_total same as amount for now
-      };
+      console.log('Selected Option:', selectedOption);
 
-      console.log('Sending product data:', productData);
+      const result = await dispatch(addQuotationProduct(formData)).unwrap();
+      console.log('API Response:', result);
 
-      const result = await dispatch(addQuotationProduct(productData)).unwrap();
-      
       if (result) {
         toast.success('Product added successfully');
-        setProductsByOption((prev) => ({
-          ...prev,
-          [selectedOption]: prev[selectedOption]
-            ? [
-                [...prev[selectedOption][0], product],
-                ...prev[selectedOption].slice(1),
-              ]
-            : [[product]],
-        }));
+
+        // Create object for table display
+        const productForTable = {
+          quotation: formData.get('quotation'),
+          heading: formData.get('heading'),
+          description: formData.get('description'),
+          unit: formData.get('unit'),
+          quantity: formData.get('quantity'),
+          unit_price: formData.get('unit_price'),
+          amount: formData.get('amount'),
+          option: selectedOption,
+          brand: formData.get('brand'),
+          location: formData.get('location'),
+          item_code: formData.get('item_code'),
+          work_order_number: formData.get('work_order_number'),
+          reference_number: formData.get('reference_number'),
+        };
+
+        console.log('Product for table:', productForTable);
+
+        setProductsByOption((prev) => {
+          const newState = {
+            ...prev,
+            [selectedOption]: prev[selectedOption]
+              ? [
+                  [...prev[selectedOption][0], productForTable],
+                  ...prev[selectedOption].slice(1),
+                ]
+              : [[productForTable]],
+          };
+          console.log('Updated products state:', newState);
+          return newState;
+        });
+
         setIsModalOpen(false);
       }
     } catch (error) {

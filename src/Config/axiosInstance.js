@@ -18,10 +18,25 @@ axiosInstance.interceptors.request.use(
       return config;
     }
 
+    // Check if the request contains FormData
+    if (config.data instanceof FormData) {
+      // Remove Content-Type header to let the browser set it with boundary
+      delete config.headers['Content-Type'];
+    }
+
     const token = TokenService.getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+
+    // Log the final request configuration
+    console.log('Final Request Config:', {
+      url: config.url,
+      method: config.method,
+      headers: config.headers,
+      isFormData: config.data instanceof FormData,
+    });
+
     return config;
   },
   (error) => {

@@ -140,4 +140,15 @@ export const addQuotationWorkDetails = async (payload) => {
   }
 };
 
+// Get units list
+export const getUnits = async () => {
+  try {
+    const response = await axiosInstance.get('/list-units/');
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching units:', error);
+    throw error;
+  }
+};
+
 

@@ -8,6 +8,9 @@ import {
   FaListOl,
 } from 'react-icons/fa';
 
+// Add import at the top
+import { getUnits } from '../../../../Services/QuotationApi';
+
 const ProductModal = ({
   isOpen,
   onClose,
@@ -16,7 +19,7 @@ const ProductModal = ({
   showOptions,
   quotationId,
 }) => {
-  // Move all useState hooks to the top, before any conditional returns
+  // All useState hooks grouped together at the top
   const [editorState, setEditorState] = useState({
     bold: false,
     italic: false,
@@ -24,7 +27,6 @@ const ProductModal = ({
     orderedList: false,
     unorderedList: false,
   });
-
   const [description, setDescription] = useState('');
   const [heading, setHeading] = useState('Not Applicable');
   const [brand, setBrand] = useState('');
@@ -38,10 +40,11 @@ const ProductModal = ({
   const [amount, setAmount] = useState('');
   const [selectedOption, setSelectedOption] = useState('Option 1');
   const [photo, setPhoto] = useState(null);
-
+  const [photoPreview, setPhotoPreview] = useState(null);
+  const [units, setUnits] = useState([]);
   const optionChoices = ['Option 1', 'Option 2', 'Option 3', 'Option 4']; // Valid option choices
 
-  // useEffect hook should also be before any conditional returns
+  // All useEffect hooks grouped together
   useEffect(() => {
     if (quantity && unitPrice) {
       setAmount((Number(quantity) * Number(unitPrice)).toString());
@@ -50,7 +53,28 @@ const ProductModal = ({
     }
   }, [quantity, unitPrice]);
 
-  // Now we can have the conditional return
+  useEffect(() => {
+    const fetchUnits = async () => {
+      try {
+        const unitsData = await getUnits();
+        setUnits(unitsData);
+      } catch (error) {
+        console.error('Error fetching units:', error);
+      }
+    };
+    fetchUnits();
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      // Cleanup preview URL when component unmounts
+      if (photoPreview) {
+        URL.revokeObjectURL(photoPreview);
+      }
+    };
+  }, [photoPreview]);
+
+  // Conditional return should come after all hooks
   if (!isOpen) return null;
 
   const handleFormat = (command) => {
@@ -209,36 +233,65 @@ const ProductModal = ({
   const handlePhotoChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      console.log('Photo selected:', file.name);
       setPhoto(file);
+      // Create a preview URL for the image
+      const previewUrl = URL.createObjectURL(file);
+      setPhotoPreview(previewUrl);
     }
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    console.log('Starting product submission...');
-    
-    const productData = {
-      quotation: quotationId?.toString() || '',
-      heading: heading || '',
-      description: description || '',
-      unit: unit || '',
-      quantity: quantity || '',
-      unit_price: unitPrice || '',
-      amount: amount || '',
-      grand_total: amount || '',
-      option: selectedOption || '',
-      photo: photo,
-      brand: brand || '',
-      location: location || '',
-      item_code: itemCode || '',
-      work_order_number: workOrderNumber || '',
-      reference_number: referenceNumber || ''
-    };
+    console.log('=== Form Submission Started ===');
 
-    console.log('Complete product data being submitted:', productData);
-    onAdd(productData);
+    // Create FormData manually instead of from form element
+    const formData = new FormData();
+
+    // Log all current state values
+    console.log('Current State Values:', {
+      quotationId,
+      heading,
+      description,
+      unit,
+      quantity,
+      unitPrice,
+      amount,
+      selectedOption,
+      brand,
+      location,
+      itemCode,
+      workOrderNumber,
+      referenceNumber,
+      photo,
+    });
+
+    // Manually append all values
+    formData.append('quotation', quotationId?.toString() || '');
+    formData.append('heading', heading || '');
+    formData.append('description', description || '');
+    formData.append('unit', unit || '');
+    formData.append('quantity', quantity || '');
+    formData.append('unit_price', unitPrice || '');
+    formData.append('amount', amount || '');
+    formData.append('grand_total', amount || '');
+    formData.append('option', selectedOption || '');
+    formData.append('brand', brand || '');
+    formData.append('location', location || '');
+    formData.append('item_code', itemCode || '');
+    formData.append('work_order_number', workOrderNumber || '');
+    formData.append('reference_number', referenceNumber || '');
+
+    if (photo instanceof File) {
+      formData.append('photo', photo);
+    }
+
+    // Log FormData entries
+    console.log('=== FormData Contents ===');
+    for (let pair of formData.entries()) {
+      console.log(`${pair[0]}: ${pair[1]}`);
+    }
+
+    onAdd(formData);
   };
 
   return (
@@ -265,375 +318,381 @@ const ProductModal = ({
             </button>
           </div>
 
-          {/* Content */}
-          <div className="p-6 space-y-6">
-            {/* Options dropdown when applicable */}
-            {showOptions && (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Options
-                </label>
-                <select
-                  value={selectedOption}
-                  onChange={(e) => setSelectedOption(e.target.value)}
-                  className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                  required
-                >
-                  {optionChoices.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
-            {/* Always show Heading and Description first */}
-            <div className="grid grid-cols-1 gap-6">
-              {/* Heading */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Heading
-                </label>
-                <select
-                  value={heading}
-                  onChange={(e) => setHeading(e.target.value)}
-                  className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                >
-                  <option value="Not Applicable">Not Applicable</option>
-                  <option value="Electrical">Electrical</option>
-                  <option value="Plumbing">Plumbing</option>
-                  <option value="Painting">Painting</option>
-                  <option value="Carpentry">Carpentry</option>
-                  <option value="Waterproofing">Waterproofing</option>
-                  <option value="Reinstatement">Reinstatement</option>
-                  <option value="Hvac">Hvac</option>
-                </select>
-              </div>
-
-              {/* Description with Text Editor */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Description
-                </label>
-                <div className="border border-gray-300 rounded-lg overflow-hidden">
-                  {/* Editor Container */}
-                  <div className="border rounded-lg">
-                    {/* Toolbar */}
-                    <div className="flex items-center gap-1 p-2 border-b bg-gray-50">
-                      <select
-                        className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        onChange={handleSelect}
-                        defaultValue="p"
-                      >
-                        <option value="p">Normal</option>
-                        <option value="h1">Heading 1</option>
-                      </select>
-                      <div className="h-6 w-px bg-gray-300 mx-2" />
-                      <button
-                        className={`p-1.5 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-200 ${
-                          editorState.bold ? 'bg-gray-200' : ''
-                        }`}
-                        onClick={() => handleFormat('bold')}
-                        type="button"
-                      >
-                        <FaBold className="w-4 h-4" />
-                      </button>
-                      <button
-                        className={`p-1.5 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-200 ${
-                          editorState.italic ? 'bg-gray-200' : ''
-                        }`}
-                        onClick={() => handleFormat('italic')}
-                        type="button"
-                      >
-                        <FaItalic className="w-4 h-4" />
-                      </button>
-                      <button
-                        className={`p-1.5 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-200 ${
-                          editorState.underline ? 'bg-gray-200' : ''
-                        }`}
-                        onClick={() => handleFormat('underline')}
-                        type="button"
-                      >
-                        <FaUnderline className="w-4 h-4" />
-                      </button>
-
-                      {/* Add divider */}
-                      <div className="h-6 w-px bg-gray-300 mx-2" />
-
-                      {/* Add list buttons */}
-                      <button
-                        className={`p-1.5 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-200 ${
-                          editorState.unorderedList ? 'bg-gray-200' : ''
-                        }`}
-                        onClick={() => handleFormat('unorderedList')}
-                        type="button"
-                      >
-                        <FaListUl className="w-4 h-4" />
-                      </button>
-                      <button
-                        className={`p-1.5 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-200 ${
-                          editorState.orderedList ? 'bg-gray-200' : ''
-                        }`}
-                        onClick={() => {
-                          console.log('Ordered list button clicked');
-                          handleFormat('orderedList');
-                        }}
-                        type="button"
-                      >
-                        <FaListOl className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    {/* Editor Area - Moved outside the toolbar */}
-                    <div
-                      id="editor"
-                      contentEditable="true"
-                      className="w-full focus:outline-none"
-                      style={editorStyles}
-                      onInput={handleEditorChange}
-                      onKeyDown={handleKeyDown}
-                      suppressContentEditableWarning={true}
-                      // dangerouslySetInnerHTML={{
-                      //   __html: description || '<p><br></p>',
-                      // }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {/* Photo Upload */}
-              {selectedColumns.Photo && (
+          {/* Form */}
+          <form onSubmit={handleSubmit} encType="multipart/form-data">
+            <div className="p-6 space-y-6">
+              {/* Options dropdown when applicable */}
+              {showOptions && (
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Photo
-                  </label>
-                  <div className="flex items-center justify-center w-full">
-                    <label className="w-full h-32 flex flex-col items-center justify-center border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-all group">
-                      <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                        {photo ? (
-                          <div className="text-sm text-gray-600">
-                            Selected: {photo.name}
-                          </div>
-                        ) : (
-                          <>
-                            <svg
-                              className="w-8 h-8 text-gray-400 group-hover:text-gray-500 transition-colors"
-                              fill="none"
-                              stroke="currentColor"
-                              viewBox="0 0 24 24"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth="2"
-                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
-                              />
-                            </svg>
-                            <p className="mt-2 text-sm text-gray-500 group-hover:text-gray-600 transition-colors">
-                              Click to upload
-                            </p>
-                          </>
-                        )}
-                      </div>
-                      <input
-                        type="file"
-                        className="hidden"
-                        accept="image/*"
-                        onChange={handlePhotoChange}
-                      />
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              {/* Brand */}
-              {selectedColumns.Brand && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Brand
-                  </label>
-                  <input
-                    type="text"
-                    name="brand"
-                    value={brand}
-                    onChange={(e) => setBrand(e.target.value)}
-                    className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    placeholder="Enter brand"
-                  />
-                </div>
-              )}
-
-              {/* Location */}
-              {selectedColumns.Location && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Location
-                  </label>
-                  <input
-                    type="text"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    placeholder="Enter location"
-                  />
-                </div>
-              )}
-
-              {/* Item Code */}
-              {selectedColumns.ItemCode && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Item Code
-                  </label>
-                  <input
-                    type="text"
-                    value={itemCode}
-                    onChange={(e) => setItemCode(e.target.value)}
-                    className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    placeholder="Enter item code"
-                  />
-                </div>
-              )}
-
-              {/* Work Order Number */}
-              {selectedColumns.WorkOrderNumber && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Work Order Number
-                  </label>
-                  <input
-                    type="text"
-                    value={workOrderNumber}
-                    onChange={(e) => setWorkOrderNumber(e.target.value)}
-                    className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    placeholder="Enter work order number"
-                  />
-                </div>
-              )}
-
-              {/* Reference Number */}
-              {selectedColumns.ReferenceNumber && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Reference Number
-                  </label>
-                  <input
-                    type="text"
-                    value={referenceNumber}
-                    onChange={(e) => setReferenceNumber(e.target.value)}
-                    className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    placeholder="Enter reference number"
-                  />
-                </div>
-              )}
-
-              {/* Unit */}
-              {selectedColumns.Unit && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Unit
+                    Options
                   </label>
                   <select
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
+                    name="option"
+                    value={selectedOption}
+                    onChange={(e) => setSelectedOption(e.target.value)}
                     className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    required
                   >
-                    <option value="">Select unit</option>
-                    <option value="box">1</option>
-                    <option value="box">Box</option>
-                    <option value="bundle">Bundle</option>
-                    <option value="bag">Bag</option>
-                    <option value="carton">Carton</option>
-                    <option value="can">Can</option>
-                    <option value="drum">Drum</option>
-                    <option value="each">Each</option>
-                    <option value="guage">Guage</option>
-                    <option value="inch">Inch</option>
-                    <option value="kilogram">Kilogram</option>
-                    <option value="ls">Ls</option>
-                    <option value="lm">LM</option>
-                    <option value="m2">M2</option>
-                    <option value="m3">M3</option>
-                    <option value="mtr">Mtr</option>
-                    <option value="nos">Nos</option>
-                    <option value="piece">Piece</option>
-                    <option value="roll">Roll</option>
-                    <option value="rm">Rm</option>
-                    <option value="sheet">Sheet</option>
-                    <option value="squareMetre">Square metre</option>
-                    <option value="sqmt">sqmt</option>
+                    {optionChoices.map((option) => (
+                      <option key={option} value={option}>
+                        {option}
+                      </option>
+                    ))}
                   </select>
                 </div>
               )}
 
-              {/* Quantity */}
-              {selectedColumns.Quantity && (
+              {/* Always show Heading and Description first */}
+              <div className="grid grid-cols-1 gap-6">
+                {/* Heading */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Quantity
+                    Heading
                   </label>
-                  <input
-                    type="number"
-                    value={quantity}
-                    onChange={(e) => setQuantity(e.target.value)}
+                  <select
+                    name="heading"
+                    value={heading}
+                    onChange={(e) => setHeading(e.target.value)}
                     className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    placeholder="Enter quantity"
-                  />
+                  >
+                    <option value="Not Applicable">Not Applicable</option>
+                    <option value="Electrical">Electrical</option>
+                    <option value="Plumbing">Plumbing</option>
+                    <option value="Painting">Painting</option>
+                    <option value="Carpentry">Carpentry</option>
+                    <option value="Waterproofing">Waterproofing</option>
+                    <option value="Reinstatement">Reinstatement</option>
+                    <option value="Hvac">Hvac</option>
+                  </select>
                 </div>
-              )}
 
-              {/* Unit Price */}
-              {selectedColumns.UnitPrice && (
+                {/* Description with Text Editor */}
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-700">
-                    Unit Price
+                    Description
                   </label>
-                  <input
-                    type="number"
-                    value={unitPrice}
-                    onChange={(e) => setUnitPrice(e.target.value)}
-                    className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    placeholder="Enter unit price"
-                  />
-                </div>
-              )}
+                  <div className="border border-gray-300 rounded-lg overflow-hidden">
+                    {/* Editor Container */}
+                    <div className="border rounded-lg">
+                      {/* Toolbar */}
+                      <div className="flex items-center gap-1 p-2 border-b bg-gray-50">
+                        <select
+                          className="px-3 py-1.5 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onChange={handleSelect}
+                          defaultValue="p"
+                        >
+                          <option value="p">Normal</option>
+                          <option value="h1">Heading 1</option>
+                        </select>
+                        <div className="h-6 w-px bg-gray-300 mx-2" />
+                        <button
+                          className={`p-1.5 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-200 ${
+                            editorState.bold ? 'bg-gray-200' : ''
+                          }`}
+                          onClick={() => handleFormat('bold')}
+                          type="button"
+                        >
+                          <FaBold className="w-4 h-4" />
+                        </button>
+                        <button
+                          className={`p-1.5 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-200 ${
+                            editorState.italic ? 'bg-gray-200' : ''
+                          }`}
+                          onClick={() => handleFormat('italic')}
+                          type="button"
+                        >
+                          <FaItalic className="w-4 h-4" />
+                        </button>
+                        <button
+                          className={`p-1.5 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-200 ${
+                            editorState.underline ? 'bg-gray-200' : ''
+                          }`}
+                          onClick={() => handleFormat('underline')}
+                          type="button"
+                        >
+                          <FaUnderline className="w-4 h-4" />
+                        </button>
 
-              {/* Amount */}
-              {selectedColumns.Amount && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Amount
-                  </label>
-                  <input
-                    type="number"
-                    value={amount}
-                    className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                    placeholder="Amount"
-                    disabled
-                  />
+                        {/* Add divider */}
+                        <div className="h-6 w-px bg-gray-300 mx-2" />
+
+                        {/* Add list buttons */}
+                        <button
+                          className={`p-1.5 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-200 ${
+                            editorState.unorderedList ? 'bg-gray-200' : ''
+                          }`}
+                          onClick={() => handleFormat('unorderedList')}
+                          type="button"
+                        >
+                          <FaListUl className="w-4 h-4" />
+                        </button>
+                        <button
+                          className={`p-1.5 rounded-lg transition-colors hover:bg-gray-100 active:bg-gray-200 ${
+                            editorState.orderedList ? 'bg-gray-200' : ''
+                          }`}
+                          onClick={() => {
+                            console.log('Ordered list button clicked');
+                            handleFormat('orderedList');
+                          }}
+                          type="button"
+                        >
+                          <FaListOl className="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      {/* Editor Area - Moved outside the toolbar */}
+                      <div
+                        id="editor"
+                        contentEditable="true"
+                        className="w-full focus:outline-none"
+                        style={editorStyles}
+                        onInput={handleEditorChange}
+                        onKeyDown={handleKeyDown}
+                        suppressContentEditableWarning={true}
+                      />
+                    </div>
+                  </div>
                 </div>
-              )}
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {/* Photo Upload */}
+                {selectedColumns.Photo && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Photo
+                    </label>
+                    <div className="flex items-center justify-center w-full">
+                      <label className="w-full h-32 flex flex-col items-center justify-center border-2 border-gray-300 border-dashed rounded-lg cursor-pointer hover:bg-gray-50 transition-all group">
+                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                          {photoPreview ? (
+                            <div className="relative w-full h-full flex items-center justify-center">
+                              <img
+                                src={photoPreview}
+                                alt="Preview"
+                                className="max-h-28 max-w-full object-contain"
+                              />
+                              <button
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  setPhoto(null);
+                                  setPhotoPreview(null);
+                                }}
+                                className="absolute top-0 right-0 bg-red-500 text-white rounded-full p-1 text-xs"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : (
+                            <>
+                              <svg
+                                className="w-8 h-8 text-gray-400 group-hover:text-gray-500 transition-colors"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                />
+                              </svg>
+                              <p className="mt-2 text-sm text-gray-500 group-hover:text-gray-600 transition-colors">
+                                Click to upload
+                              </p>
+                            </>
+                          )}
+                        </div>
+                        <input
+                          type="file"
+                          name="photo"
+                          className="hidden"
+                          accept="image/*"
+                          onChange={handlePhotoChange}
+                        />
+                      </label>
+                    </div>
+                  </div>
+                )}
+
+                {/* Brand */}
+                {selectedColumns.Brand && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Brand
+                    </label>
+                    <input
+                      type="text"
+                      name="brand"
+                      value={brand}
+                      onChange={(e) => setBrand(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      placeholder="Enter brand"
+                    />
+                  </div>
+                )}
+
+                {/* Location */}
+                {selectedColumns.Location && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Location
+                    </label>
+                    <input
+                      type="text"
+                      name="location"
+                      value={location}
+                      onChange={(e) => setLocation(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      placeholder="Enter location"
+                    />
+                  </div>
+                )}
+
+                {/* Item Code */}
+                {selectedColumns.ItemCode && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Item Code
+                    </label>
+                    <input
+                      type="text"
+                      name="item_code"
+                      value={itemCode}
+                      onChange={(e) => setItemCode(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      placeholder="Enter item code"
+                    />
+                  </div>
+                )}
+
+                {/* Work Order Number */}
+                {selectedColumns.WorkOrderNumber && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Work Order Number
+                    </label>
+                    <input
+                      type="text"
+                      name="work_order_number"
+                      value={workOrderNumber}
+                      onChange={(e) => setWorkOrderNumber(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      placeholder="Enter work order number"
+                    />
+                  </div>
+                )}
+
+                {/* Reference Number */}
+                {selectedColumns.ReferenceNumber && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Reference Number
+                    </label>
+                    <input
+                      type="text"
+                      name="reference_number"
+                      value={referenceNumber}
+                      onChange={(e) => setReferenceNumber(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      placeholder="Enter reference number"
+                    />
+                  </div>
+                )}
+
+                {/* Unit */}
+                {selectedColumns.Unit && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Unit
+                    </label>
+                    <select
+                      name="unit"
+                      value={unit}
+                      onChange={(e) => setUnit(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    >
+                      <option value="">Select unit</option>
+                      {units.map((unitItem) => (
+                        <option key={unitItem.id} value={unitItem.id}>
+                          {unitItem.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* Quantity */}
+                {selectedColumns.Quantity && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Quantity
+                    </label>
+                    <input
+                      type="number"
+                      name="quantity"
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      placeholder="Enter quantity"
+                    />
+                  </div>
+                )}
+
+                {/* Unit Price */}
+                {selectedColumns.UnitPrice && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Unit Price
+                    </label>
+                    <input
+                      type="number"
+                      name="unit_price"
+                      value={unitPrice}
+                      onChange={(e) => setUnitPrice(e.target.value)}
+                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                      placeholder="Enter unit price"
+                    />
+                  </div>
+                )}
+
+                {/* Amount */}
+                {selectedColumns.Amount && (
+                  <div className="space-y-2">
+                    <label className="block text-sm font-medium text-gray-700">
+                      Amount
+                    </label>
+                    <input
+                      type="number"
+                      name="amount"
+                      value={amount}
+                      readOnly
+                      className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                    />
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
 
-          {/* Footer with modern styling */}
-          <div className="flex items-center justify-end gap-4 p-6 border-t bg-gray-50 rounded-xl">
-            <button
-              onClick={onClose}
-              className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={handleSubmit}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Add Product
-            </button>
-          </div>
+            {/* Footer with modern styling */}
+            <div className="flex items-center justify-end gap-4 p-6 border-t bg-gray-50 rounded-xl">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              >
+                Add Product
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
