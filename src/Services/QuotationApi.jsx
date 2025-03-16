@@ -152,3 +152,51 @@ export const getUnits = async () => {
 };
 
 
+// Quotation Validity Terms
+export const listQuotationValidityTerms = async () => {
+  try {
+    const response = await axiosInstance.get('/quotationpostget/');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching quotation validity terms:', error);
+    throw error;
+  }
+};
+
+export const addQuotationValidityTerm = async (validityTerm) => {
+  try {
+    const response = await axiosInstance.post('/quotationpostget/', {
+      validity: validityTerm,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error adding quotation validity term:', error);
+    throw error;
+  }
+};
+
+
+// Warranty Terms
+export const listWarrantyTerms = async () => {
+  try {
+    const response = await axiosInstance.get('/warrantypost/');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching warranty terms:', error);
+    throw error;
+  }
+};
+
+export const addWarrantyTerm = async (warrantyTerm) => {
+  try {
+    const response = await axiosInstance.post('/warrantypost/', {
+      warranty: warrantyTerm,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error adding warranty term:', error);
+    throw error;
+  }
+};
+
+

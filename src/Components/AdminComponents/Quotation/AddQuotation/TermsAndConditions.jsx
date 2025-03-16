@@ -1,36 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   IoChevronDownOutline,
   IoAddOutline,
   IoSearchOutline,
 } from 'react-icons/io5';
+import { AdminApi } from '../../../../Services/AdminApi';
+import {
+  listQuotationValidityTerms,
+  addQuotationValidityTerm,
+  listWarrantyTerms,
+  addWarrantyTerm
+} from '../../../../Services/QuotationApi';
 
 const TermsAndConditions = () => {
-  const options = {
-    general: [
-      'Prices are excluding VAT',
-      'Transportation charges extra',
-      'Loading & unloading charges extra',
-      'Scaffolding charges extra',
-      'Civil work not included',
-      'Working time 8:00 AM to 5:00 PM',
-      'Friday working charges extra',
-      'Overtime charges extra',
-    ],
-    payment: [
-      '100% Advance',
-      '50% Advance & 50% Upon Completion',
-      '40% Advance, 30% Progress & 30% Upon Completion',
-      '30% Advance, 60% Progress & 10% Retention',
-    ],
-    completion: [
-      'Immediate',
-      '2-3 Working Days',
-      '1 Week',
-      '2 Weeks',
-      '3 Weeks',
-      '1 Month',
-    ],
+  const [options, setOptions] = useState({
+    general: [],
+    payment: [],
+    completion: [],
     validity: ['7 Days', '15 Days', '30 Days'],
     warranty: [
       '1 Year against manufacturing defects',
@@ -38,7 +24,7 @@ const TermsAndConditions = () => {
       '3 Years against manufacturing defects',
       'No Warranty',
     ],
-  };
+  });
 
   const sections = [
     {
@@ -77,6 +63,9 @@ const TermsAndConditions = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [newTerm, setNewTerm] = useState('');
   const [selectedModalItems, setSelectedModalItems] = useState([]);
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusMessage, setStatusMessage] = useState({ type: '', message: '' });
+  const [isLoading, setIsLoading] = useState(true);
 
   const toggleSection = (section) => {
     setOpenSection(openSection === section ? null : section);
@@ -110,90 +99,282 @@ const TermsAndConditions = () => {
     setNewTerm('');
   };
 
-  const handleCreateTerm = () => {
-    if (newTerm.trim()) {
-      options[currentSection] = [...options[currentSection], newTerm.trim()];
-      setSelectedTerms((prev) => ({
-        ...prev,
-        [currentSection]: [...prev[currentSection], newTerm.trim()],
-      }));
-      setIsCreateModalOpen(false);
-      setNewTerm('');
-    }
-  };
-
+  // Update the handleCreateTerm function
+  const handleCreateTerm = async () => {
+      if (newTerm.trim()) {
+        try {
+          let response;
+  
+          if (currentSection === 'general') {
+            response = await AdminApi.addTermsAndConditions({
+              title: newTerm.trim(),
+            });
+          } else if (currentSection === 'payment') {
+            response = await AdminApi.addPaymentTerms({
+              name: newTerm.trim(),
+            });
+          } else if (currentSection === 'completion') {
+            response = await AdminApi.addCompletionTerms({
+              delivery: newTerm.trim(),
+            });
+          } else if (currentSection === 'validity') {
+            response = await addQuotationValidityTerm(newTerm.trim());
+          } else if (currentSection === 'warranty') {
+            response = await addWarrantyTerm(newTerm.trim());
+          }
+  
+          setOptions((prevOptions) => ({
+            ...prevOptions,
+            [currentSection]: [...prevOptions[currentSection], newTerm.trim()],
+          }));
+  
+          setSelectedTerms((prev) => ({
+            ...prev,
+            [currentSection]: [...prev[currentSection], newTerm.trim()],
+          }));
+  
+          setStatusMessage({
+            type: 'success',
+            message: `${
+              currentSection.charAt(0).toUpperCase() + currentSection.slice(1)
+            } term added successfully!`,
+          });
+          setShowStatusModal(true);
+          setIsCreateModalOpen(false);
+          setNewTerm('');
+  
+          if (currentSection === 'general') {
+            const refreshResponse = await AdminApi.listTermsAndConditions();
+            if (refreshResponse.data) {
+              setOptions((prevOptions) => ({
+                ...prevOptions,
+                general: refreshResponse.data.map((term) => term.title),
+              }));
+            }
+          } else if (currentSection === 'payment') {
+            const refreshResponse = await AdminApi.listPaymentTerms();
+            if (refreshResponse.data) {
+              setOptions((prevOptions) => ({
+                ...prevOptions,
+                payment: refreshResponse.data.map((term) => term.name),
+              }));
+            }
+          } else if (currentSection === 'completion') {
+            const refreshResponse = await AdminApi.listCompletionTerms();
+            if (refreshResponse.data) {
+              setOptions((prevOptions) => ({
+                ...prevOptions,
+                completion: refreshResponse.data.map((term) => term.delivery),
+              }));
+            }
+          }
+        } catch (error) {
+          console.error('Error creating term:', error);
+          setStatusMessage({
+            type: 'error',
+            message:
+              error.response?.data?.message ||
+              `Failed to add ${currentSection} term`,
+          });
+          setShowStatusModal(true);
+        }
+      }
+    };
+  
+  // Update the useEffect hook that fetches initial data
+  useEffect(() => {
+      const fetchTerms = async () => {
+        try {
+          // Fetch general terms
+          const generalResponse = await AdminApi.listTermsAndConditions();
+          if (generalResponse.data) {
+            setOptions((prevOptions) => ({
+              ...prevOptions,
+              general: generalResponse.data.map((term) => term.title),
+            }));
+          }
+  
+          // Fetch payment terms
+          const paymentResponse = await AdminApi.listPaymentTerms();
+          console.log('Payment Terms Response:', paymentResponse); // For debugging
+          if (paymentResponse.data) {
+            setOptions((prevOptions) => ({
+              ...prevOptions,
+              payment: paymentResponse.data.map((term) => term.name),
+            }));
+          }
+  
+          // Fetch completion terms
+          const completionResponse = await AdminApi.listCompletionTerms();
+          console.log('Completion Terms Response:', completionResponse); // For debugging
+          if (completionResponse.data) {
+            setOptions((prevOptions) => ({
+              ...prevOptions,
+              completion: completionResponse.data.map((term) => term.delivery),
+            }));
+          }
+  
+          // Fetch quotation validity terms
+          const validityResponse = await listQuotationValidityTerms();
+          if (validityResponse.data) {
+            setOptions((prevOptions) => ({
+              ...prevOptions,
+              validity: validityResponse.data.map((term) => term.validity),
+            }));
+          }
+  
+          setIsLoading(false);
+        } catch (error) {
+          console.error('Error fetching terms:', error);
+          setStatusMessage({
+            type: 'error',
+            message: 'Failed to fetch terms',
+          });
+          setShowStatusModal(true);
+          setIsLoading(false);
+        }
+      };
+  
+      fetchTerms();
+    }, []);
+  
   const filteredOptions = currentSection
     ? options[currentSection].filter((option) =>
         option.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : [];
 
+  useEffect(() => {
+    const fetchTerms = async () => {
+      try {
+        // Fetch general terms
+        const generalResponse = await AdminApi.listTermsAndConditions();
+        if (generalResponse.data) {
+          setOptions((prevOptions) => ({
+            ...prevOptions,
+            general: generalResponse.data.map((term) => term.title),
+          }));
+        }
+
+        // Fetch payment terms
+        const paymentResponse = await AdminApi.listPaymentTerms();
+        console.log('Payment Terms Response:', paymentResponse); // For debugging
+        if (paymentResponse.data) {
+          setOptions((prevOptions) => ({
+            ...prevOptions,
+            payment: paymentResponse.data.map((term) => term.name),
+          }));
+        }
+
+        // Fetch completion terms
+        const completionResponse = await AdminApi.listCompletionTerms();
+        console.log('Completion Terms Response:', completionResponse); // For debugging
+        if (completionResponse.data) {
+          setOptions((prevOptions) => ({
+            ...prevOptions,
+            completion: completionResponse.data.map((term) => term.delivery),
+          }));
+        }
+
+        // Fetch warranty terms
+        const warrantyResponse = await listWarrantyTerms();
+        if (warrantyResponse.data) {
+          setOptions((prevOptions) => ({
+            ...prevOptions,
+            warranty: warrantyResponse.data.map((term) => term.warranty),
+          }));
+        }
+
+        setIsLoading(false);
+      } catch (error) {
+        console.error('Error fetching terms:', error);
+        setStatusMessage({
+          type: 'error',
+          message: 'Failed to fetch terms',
+        });
+        setShowStatusModal(true);
+        setIsLoading(false);
+      }
+    };
+
+    fetchTerms();
+  }, []);
+
   return (
     <>
       <div className="space-y-4">
-        {sections.map((section) => (
-          <div
-            key={section.id}
-            className={`border rounded-lg transition-all ${
-              openSection === section.id ? 'border-blue-500' : 'border-gray-200'
-            }`}
-          >
-            <button
-              className="w-full px-6 py-4 flex justify-between items-center text-left"
-              onClick={() => toggleSection(section.id)}
-            >
-              <span className="text-gray-700 font-medium">{section.title}</span>
-              <IoChevronDownOutline
-                className={`text-gray-500 transition-transform duration-200 ${
-                  openSection === section.id ? 'rotate-180' : ''
-                }`}
-                size={20}
-              />
-            </button>
-
-            {openSection === section.id && (
-              <div className="px-6 py-4 border-t space-y-4">
-                {selectedTerms[section.id].map((term, index) => (
-  <div key={index} className="flex gap-4 items-start">
-    <div className="flex-1">
-      <input
-        type="text"
-        value={term}
-        onChange={(e) =>
-          handleTermChange(section.id, index, e.target.value)
-        }
-        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
-      />
-    </div>
-    <button
-      onClick={() => handleRemoveTerm(section.id, index)}
-      className="px-3 py-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-    >
-      Remove
-    </button>
-  </div>
-))}
-
-
-                <div className="flex justify-end gap-3">
-                  <button
-                    onClick={() => handleOpenSelectModal(section.id)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors"
-                  >
-                    Select {section.title}
-                  </button>
-                  <button
-                    onClick={() => handleOpenCreateModal(section.id)}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-green-500 hover:text-green-700 hover:bg-green-50 transition-colors"
-                  >
-                    <IoAddOutline size={20} />
-                    Create New
-                  </button>
-                </div>
-              </div>
-            )}
+        {isLoading ? (
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
           </div>
-        ))}
+        ) : (
+          sections.map((section) => (
+            <div
+              key={section.id}
+              className={`border rounded-lg transition-all ${
+                openSection === section.id
+                  ? 'border-blue-500'
+                  : 'border-gray-200'
+              }`}
+            >
+              <button
+                className="w-full px-6 py-4 flex justify-between items-center text-left"
+                onClick={() => toggleSection(section.id)}
+              >
+                <span className="text-gray-700 font-medium">
+                  {section.title}
+                </span>
+                <IoChevronDownOutline
+                  className={`text-gray-500 transition-transform duration-200 ${
+                    openSection === section.id ? 'rotate-180' : ''
+                  }`}
+                  size={20}
+                />
+              </button>
+
+              {openSection === section.id && (
+                <div className="px-6 py-4 border-t space-y-4">
+                  {selectedTerms[section.id].map((term, index) => (
+                    <div key={index} className="flex gap-4 items-start">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={term}
+                          onChange={(e) =>
+                            handleTermChange(section.id, index, e.target.value)
+                          }
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white"
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleRemoveTerm(section.id, index)}
+                        className="px-3 py-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+
+                  <div className="flex justify-end gap-3">
+                    <button
+                      onClick={() => handleOpenSelectModal(section.id)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-blue-500 hover:text-blue-700 hover:bg-blue-50 transition-colors"
+                    >
+                      Select {section.title}
+                    </button>
+                    <button
+                      onClick={() => handleOpenCreateModal(section.id)}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-green-500 hover:text-green-700 hover:bg-green-50 transition-colors"
+                    >
+                      <IoAddOutline size={20} />
+                      Create New
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        )}
       </div>
 
       {/* Select Modal */}
@@ -369,6 +550,57 @@ const TermsAndConditions = () => {
                     }`}
                 >
                   Save
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+<div className="btn mt-5 w-full flex justify-end">
+  <button className="px-6 py-2.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-all">Save</button>
+</div>
+      {/* Status Modal */}
+      {showStatusModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-xl w-full max-w-md shadow-2xl transform transition-all">
+            <div className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3
+                  className={`text-xl font-semibold ${
+                    statusMessage.type === 'success'
+                      ? 'text-green-600'
+                      : 'text-red-600'
+                  }`}
+                >
+                  {statusMessage.type === 'success' ? 'Success' : 'Error'}
+                </h3>
+                <button
+                  onClick={() => setShowStatusModal(false)}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg
+                    className="w-6 h-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
+              <p className="text-gray-600 mb-6">{statusMessage.message}</p>
+              <div className="flex justify-end">
+                <button
+                  onClick={() => setShowStatusModal(false)}
+                  className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+                >
+                  Close
                 </button>
               </div>
             </div>
