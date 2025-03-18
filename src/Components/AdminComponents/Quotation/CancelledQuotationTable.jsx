@@ -53,7 +53,7 @@ const CancelledQuotationTable = () => {
   const [quotationToDelete, setQuotationToDelete] = useState(null);
 
   const handleEdit = (quotation) => {
-    navigate(`/edit-work-details/${quotation.id}`);
+    navigate(`/admin/edit-quotation/${quotation.id}`);
   };
 
   const handleDelete = (quotation) => {
@@ -88,7 +88,7 @@ const CancelledQuotationTable = () => {
           <div className="flex items-center justify-between mb-12">
             <div className="flex items-center space-x-8">
               <button
-                onClick={() => navigate('/quotation-dashboard')}
+                onClick={() => navigate('/admin/quotation-dashboard')}
                 className="group flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300"
               >
                 <IoArrowBack
