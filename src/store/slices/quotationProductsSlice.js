@@ -54,12 +54,63 @@ export const addQuotationProduct = createAsyncThunk(
   }
 );
 
+export const addQuotationMaterial = createAsyncThunk(
+  'quotationProducts/addQuotationMaterial',
+  async (materialData, { rejectWithValue }) => {
+    try {
+      // Format the payload with snake_case keys to match API requirements
+      const payload = {
+        material_mode: materialData.material_mode,
+        material_name: materialData.material_name,
+        building_no: materialData.building_no,
+        quantity: materialData.quantity,
+        quotation: materialData.quotation,
+        under: materialData.under,
+        unit: materialData.unit,
+      };
+
+      console.log('Sending payload:', payload); // For debugging
+
+      const response = await axiosInstance.post(
+        '/add-quotation-materials/',
+        payload
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error response:', error.response?.data); // For debugging
+      return rejectWithValue(
+        error.response?.data || { message: 'Failed to add material' }
+      );
+    }
+  }
+);
+
+// Add new thunk for fetching materials
+export const fetchQuotationMaterials = createAsyncThunk(
+  'quotationProducts/fetchMaterials',
+  async (quotationId, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.get(
+        `/list-quotation-materials/${quotationId}/`
+      );
+      console.log('Fetched materials:', response.data);
+      return response.data.data;
+    } catch (error) {
+      console.error('Error fetching materials:', error);
+      return rejectWithValue(
+        error.response?.data || { message: 'Failed to fetch materials' }
+      );
+    }
+  }
+);
+
 const quotationProductsSlice = createSlice({
   name: 'quotationProducts',
   initialState: {
     products: [], // Will store the array of option groups
     loading: false,
     error: null,
+    materials: [],
   },
   reducers: {},
   extraReducers: (builder) => {
@@ -86,6 +137,31 @@ const quotationProductsSlice = createSlice({
         state.products = action.payload; // Store the array of option groups
       })
       .addCase(fetchQuotationProducts.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      .addCase(addQuotationMaterial.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addQuotationMaterial.fulfilled, (state, action) => {
+        state.loading = false;
+        state.materials.push(action.payload);
+      })
+      .addCase(addQuotationMaterial.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Add cases for fetching materials
+      .addCase(fetchQuotationMaterials.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchQuotationMaterials.fulfilled, (state, action) => {
+        state.loading = false;
+        state.materials = action.payload;
+      })
+      .addCase(fetchQuotationMaterials.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

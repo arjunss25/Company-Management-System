@@ -42,7 +42,7 @@ const ProductModal = ({
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [units, setUnits] = useState([]);
-  const optionChoices = ['Option 1', 'Option 2', 'Option 3', 'Option 4']; // Valid option choices
+  const optionChoices = ['Option 1', 'Option 2', 'Option 3']; // Valid option choices
 
   // All useEffect hooks grouped together
   useEffect(() => {

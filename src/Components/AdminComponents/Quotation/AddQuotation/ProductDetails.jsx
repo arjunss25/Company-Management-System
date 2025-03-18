@@ -7,7 +7,10 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addQuotationProduct } from '../../../../store/slices/quotationProductsSlice';
 import { toast } from 'react-hot-toast';
 
-const ProductDetails = ({ optionValue, onProductsAdded }) => {
+const ProductDetails = ({ 
+  optionValue, 
+  onProductsAdded = () => {} // provide default empty function
+}) => {
   const dispatch = useDispatch();
   const quotationId = useSelector((state) => state.quotation.id);
 
@@ -57,34 +60,42 @@ const ProductDetails = ({ optionValue, onProductsAdded }) => {
         return;
       }
 
-      const selectedOption =
-        optionValue === 'Not Applicable'
-          ? 'Default Products'
-          : product.selectedOption || 'Option 1';
+      product.set('quotation', quotationId.toString());
+      console.log('Sending product data:', product);
 
-      const productData = {
-        ...product,
-        quotation: quotationId.toString(),
-        grand_total: product.amount, // Set grand_total same as amount for now
-      };
-
-      console.log('Sending product data:', productData);
-
-      const result = await dispatch(addQuotationProduct(productData)).unwrap();
+      const result = await dispatch(addQuotationProduct(product)).unwrap();
 
       if (result) {
         toast.success('Product added successfully');
+        
+        const productData = {
+          heading: product.get('heading'),
+          description: product.get('description'),
+          unit: product.get('unit'),
+          quantity: product.get('quantity'),
+          unit_price: product.get('unit_price'),
+          amount: product.get('amount'),
+          option: product.get('option'),
+          brand: product.get('brand'),
+          location: product.get('location'),
+          item_code: product.get('item_code'),
+          work_order_number: product.get('work_order_number'),
+          reference_number: product.get('reference_number'),
+        };
+
+        const selectedOption = optionValue === 'Not Applicable'
+          ? 'Default Products'
+          : product.get('option') || 'Option 1';
+
         setProductsByOption((prev) => ({
           ...prev,
-          [selectedOption]: prev[selectedOption]
-            ? [
-                [...prev[selectedOption][0], product],
-                ...prev[selectedOption].slice(1),
-              ]
-            : [[product]],
+          [selectedOption]: [...(prev[selectedOption] || []), productData]
         }));
+        
         setIsModalOpen(false);
-        onProductsAdded();
+        if (typeof onProductsAdded === 'function') {
+          onProductsAdded();
+        }
       }
     } catch (error) {
       console.error('Failed to add product:', error);
@@ -260,124 +271,110 @@ const ProductDetails = ({ optionValue, onProductsAdded }) => {
       </div>
 
       {/* Product Tables */}
-      {Object.entries(productsByOption).map(
-        ([option, tables]) =>
-          tables.length > 0 &&
-          tables[0].length > 0 && (
-            <div key={option} className="mt-6">
-              {/* Option Title */}
-              <div className="mb-4 border-b pb-2">
-                <h3 className="text-lg font-semibold text-gray-800">
-                  {option}
-                </h3>
-              </div>
+      {Object.entries(productsByOption).map(([option, products]) => (
+        <div key={option}>
+          <ProductTable
+            products={products}
+            selectedColumns={selectedColumns}
+            onEdit={handleEditProduct}
+            onDelete={(index) => handleDeleteProduct(option, index)}
+            optionName={option}
+          />
+          {/* Table Totals */}
+          <div className="flex flex-col gap-2 items-end mt-4 mb-6">
+            {(() => {
+              const baseTotal = calculateTableTotal(products);
+              const totals = calculateFinalTotal(baseTotal, option);
 
-              {/* Single table per option */}
-              <div className="mb-6">
-                <ProductTable
-                  products={tables[0]}
-                  selectedColumns={selectedColumns}
-                  onEdit={handleEditProduct}
-                  onDelete={(index) => handleDeleteProduct(option, index)}
-                />
+              return (
+                <>
+                  {dropdownValues.subTotal === 'Applicable' && (
+                    <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                      <span className="text-sm font-medium text-gray-600">
+                        Sub Total:
+                      </span>
+                      <span className="ml-2 text-sm font-semibold text-gray-900">
+                        ${baseTotal.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
 
-                {/* Table Totals */}
-                <div className="flex flex-col gap-2 items-end mt-4 mb-6">
-                  {(() => {
-                    const baseTotal = calculateTableTotal(tables[0]);
-                    const totals = calculateFinalTotal(baseTotal, option);
-
-                    return (
-                      <>
-                        {dropdownValues.subTotal === 'Applicable' && (
-                          <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                            <span className="text-sm font-medium text-gray-600">
-                              Sub Total:
-                            </span>
-                            <span className="ml-2 text-sm font-semibold text-gray-900">
-                              ${baseTotal.toFixed(2)}
-                            </span>
-                          </div>
-                        )}
-
-                        <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                          <span className="text-sm font-medium text-gray-600">
-                            Total Amount:
-                          </span>
-                          <span className="ml-2 text-sm font-semibold text-gray-900">
-                            ${baseTotal.toFixed(2)}
-                          </span>
-                        </div>
-
-                        {/* Discount input when applicable */}
-                        {dropdownValues.discount === 'Applicable' && (
-                          <div className="bg-gray-50 px-4 py-2 rounded-lg flex items-center">
-                            <span className="text-sm font-medium text-gray-600 mr-2">
-                              Discount:
-                            </span>
-                            <div className="flex items-center">
-                              <span className="text-gray-600 mr-1">$</span>
-                              <input
-                                type="number"
-                                value={discountAmounts[option] || ''}
-                                onChange={(e) =>
-                                  handleDiscountChange(option, e.target.value)
-                                }
-                                className="w-24 p-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                                placeholder="0.00"
-                                min="0"
-                                step="0.01"
-                              />
-                            </div>
-                          </div>
-                        )}
-
-                        {dropdownValues.discount === 'Applicable' && (
-                          <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                            <span className="text-sm font-medium text-gray-600">
-                              After Discount:
-                            </span>
-                            <span className="ml-2 text-sm font-semibold text-gray-900">
-                              ${totals.afterDiscount.toFixed(2)}
-                            </span>
-                          </div>
-                        )}
-
-                        {/* VAT when applicable */}
-                        {dropdownValues.vat === 'Applicable' && (
-                          <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                            <span className="text-sm font-medium text-gray-600">
-                              VAT (5%):
-                            </span>
-                            <span className="ml-2 text-sm font-semibold text-gray-900">
-                              ${totals.vat.toFixed(2)}
-                            </span>
-                          </div>
-                        )}
-                      </>
-                    );
-                  })()}
-                </div>
-
-                {/* Option Grand Total */}
-                <div className="flex justify-end mt-6 mb-8 border-t pt-4">
-                  <div className="bg-blue-50 px-6 py-3 rounded-lg">
-                    <span className="text-base font-medium text-blue-700">
-                      {option} Grand Total:
+                  <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                    <span className="text-sm font-medium text-gray-600">
+                      Total Amount:
                     </span>
-                    <span className="ml-3 text-lg font-semibold text-blue-900">
-                      $
-                      {calculateFinalTotal(
-                        calculateTableTotal(tables[0]),
-                        option
-                      ).finalTotal.toFixed(2)}
+                    <span className="ml-2 text-sm font-semibold text-gray-900">
+                      ${baseTotal.toFixed(2)}
                     </span>
                   </div>
-                </div>
-              </div>
+
+                  {/* Discount input when applicable */}
+                  {dropdownValues.discount === 'Applicable' && (
+                    <div className="bg-gray-50 px-4 py-2 rounded-lg flex items-center">
+                      <span className="text-sm font-medium text-gray-600 mr-2">
+                        Discount:
+                      </span>
+                      <div className="flex items-center">
+                        <span className="text-gray-600 mr-1">$</span>
+                        <input
+                          type="number"
+                          value={discountAmounts[option] || ''}
+                          onChange={(e) =>
+                            handleDiscountChange(option, e.target.value)
+                          }
+                          className="w-24 p-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                          placeholder="0.00"
+                          min="0"
+                          step="0.01"
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {dropdownValues.discount === 'Applicable' && (
+                    <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                      <span className="text-sm font-medium text-gray-600">
+                        After Discount:
+                      </span>
+                      <span className="ml-2 text-sm font-semibold text-gray-900">
+                        ${totals.afterDiscount.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* VAT when applicable */}
+                  {dropdownValues.vat === 'Applicable' && (
+                    <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                      <span className="text-sm font-medium text-gray-600">
+                        VAT (5%):
+                      </span>
+                      <span className="ml-2 text-sm font-semibold text-gray-900">
+                        ${totals.vat.toFixed(2)}
+                      </span>
+                    </div>
+                  )}
+                </>
+              );
+            })()}
+          </div>
+
+          {/* Option Grand Total */}
+          <div className="flex justify-end mt-6 mb-8 border-t pt-4">
+            <div className="bg-blue-50 px-6 py-3 rounded-lg">
+              <span className="text-base font-medium text-blue-700">
+                {option} Grand Total:
+              </span>
+              <span className="ml-3 text-lg font-semibold text-blue-900">
+                $
+                {calculateFinalTotal(
+                  calculateTableTotal(products),
+                  option
+                ).finalTotal.toFixed(2)}
+              </span>
             </div>
-          )
-      )}
+          </div>
+        </div>
+      ))}
 
       {/* Product Modal */}
       <ProductModal

@@ -1,11 +1,10 @@
 import axiosInstance from '../Config/axiosInstance';
 
-
 // quotation number generation
 export const generateQuotationNumber = async () => {
   try {
     const response = await axiosInstance.get('/generate-quotation-no/');
-    return response.data.data; 
+    return response.data.data;
   } catch (error) {
     console.error('Error generating quotation number:', error);
     throw error;
@@ -14,27 +13,25 @@ export const generateQuotationNumber = async () => {
 
 // project-manager get
 export const getSalesPersons = async () => {
-    try {
-      const response = await axiosInstance.get('/list-sales-person/');
-      return response.data.data || [];
-    } catch (error) {
-      console.error('Error fetching sales persons:', error);
-      throw error;
-    }
-  };
-
+  try {
+    const response = await axiosInstance.get('/list-sales-person/');
+    return response.data.data || [];
+  } catch (error) {
+    console.error('Error fetching sales persons:', error);
+    throw error;
+  }
+};
 
 // job no
 export const generateJobNumber = async (pmId) => {
-    try {
-      const response = await axiosInstance.get(`/generate-job-no/${pmId}/`);
-      return response.data.data;
-    } catch (error) {
-      console.error('Error generating job number:', error);
-      throw error;
-    }
-  };
-
+  try {
+    const response = await axiosInstance.get(`/generate-job-no/${pmId}/`);
+    return response.data.data;
+  } catch (error) {
+    console.error('Error generating job number:', error);
+    throw error;
+  }
+};
 
 // client list
 export const getClients = async () => {
@@ -61,14 +58,15 @@ export const getLocations = async () => {
 // attention to list
 export const getAttentionsApplicable = async (clientId) => {
   try {
-    const response = await axiosInstance.get(`/list-attentions-applicable/${clientId}/`);
+    const response = await axiosInstance.get(
+      `/list-attentions-applicable/${clientId}/`
+    );
     return response.data.data;
   } catch (error) {
     console.error('Error fetching attentions:', error);
     throw error;
   }
 };
-
 
 // site in charge list
 export const getStaffList = async () => {
@@ -80,7 +78,6 @@ export const getStaffList = async () => {
     throw error;
   }
 };
-
 
 // wcr attachment
 export const uploadWCRAttachment = async (quotationNo, wcrAttachment) => {
@@ -100,15 +97,18 @@ export const uploadWCRAttachment = async (quotationNo, wcrAttachment) => {
   }
 };
 
-
 // register sales person
 export const registerStaff = async (formData) => {
   try {
-    const response = await axiosInstance.post('/register-staff-by-admin/', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    const response = await axiosInstance.post(
+      '/register-staff-by-admin/',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
     return response.data;
   } catch (error) {
     console.error('Error registering staff:', error);
@@ -116,23 +116,13 @@ export const registerStaff = async (formData) => {
   }
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 // work details form submission
 export const addQuotationWorkDetails = async (payload) => {
   try {
-    const response = await axiosInstance.post('/add-quotation-work-details/', payload);
+    const response = await axiosInstance.post(
+      '/add-quotation-work-details/',
+      payload
+    );
     return response.data;
   } catch (error) {
     console.error('Error adding quotation work details:', error);
@@ -150,7 +140,6 @@ export const getUnits = async () => {
     throw error;
   }
 };
-
 
 // Quotation Validity Terms
 export const listQuotationValidityTerms = async () => {
@@ -175,7 +164,6 @@ export const addQuotationValidityTerm = async (validityTerm) => {
   }
 };
 
-
 // Warranty Terms
 export const listWarrantyTerms = async () => {
   try {
@@ -199,4 +187,13 @@ export const addWarrantyTerm = async (warrantyTerm) => {
   }
 };
 
-
+// Get materials list
+export const getMaterialsList = async () => {
+  try {
+    const response = await axiosInstance.get('/list-materials/');
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching materials list:', error);
+    throw error;
+  }
+};

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { IoIosArrowDown } from 'react-icons/io';
 import WorkDetails from './WorkDetails';
-import AddMaterials from './materials/addmaterials';
+import AddMaterials from './materials/AddMaterials';
 import WorkCompletionReport from './materials/WorkCompletionReport';
 import PhotoReport from './materials/PhotoReport';
 import Attachment from './materials/Attachment';
