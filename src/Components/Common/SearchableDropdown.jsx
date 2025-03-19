@@ -53,7 +53,9 @@ const SearchableDropdown = ({
   }, [isOpen]);
 
   const filteredOptions = options.filter((option) =>
-    option.name.toLowerCase().includes(searchTerm.toLowerCase())
+    (typeof option.name === 'string' ? option.name : option.name.toString())
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
   );
 
   const handleSelect = (option) => {

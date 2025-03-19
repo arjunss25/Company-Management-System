@@ -9,21 +9,20 @@ import {
   listQuotationValidityTerms,
   addQuotationValidityTerm,
   listWarrantyTerms,
-  addWarrantyTerm
+  addWarrantyTerm,
+  addQuotationTerms,
+  addNarration,
 } from '../../../../Services/QuotationApi';
+import { useSelector } from 'react-redux';
+import { selectQuotationId } from '../../../../store/slices/quotationSlice';
 
 const TermsAndConditions = () => {
   const [options, setOptions] = useState({
     general: [],
     payment: [],
     completion: [],
-    validity: ['7 Days', '15 Days', '30 Days'],
-    warranty: [
-      '1 Year against manufacturing defects',
-      '2 Years against manufacturing defects',
-      '3 Years against manufacturing defects',
-      'No Warranty',
-    ],
+    validity: [],
+    warranty: [],
   });
 
   const sections = [
@@ -66,6 +65,15 @@ const TermsAndConditions = () => {
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [statusMessage, setStatusMessage] = useState({ type: '', message: '' });
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedTermIds, setSelectedTermIds] = useState({
+    terms: [],
+    payment: [],
+    delivery: [],
+    validity: [],
+    warranty: [],
+  });
+  const [narration, setNarration] = useState('');
+  const quotationId = useSelector(selectQuotationId);
 
   const toggleSection = (section) => {
     setOpenSection(openSection === section ? null : section);
@@ -99,150 +107,101 @@ const TermsAndConditions = () => {
     setNewTerm('');
   };
 
-  // Update the handleCreateTerm function
   const handleCreateTerm = async () => {
-      if (newTerm.trim()) {
-        try {
-          let response;
-  
-          if (currentSection === 'general') {
-            response = await AdminApi.addTermsAndConditions({
-              title: newTerm.trim(),
-            });
-          } else if (currentSection === 'payment') {
-            response = await AdminApi.addPaymentTerms({
-              name: newTerm.trim(),
-            });
-          } else if (currentSection === 'completion') {
-            response = await AdminApi.addCompletionTerms({
-              delivery: newTerm.trim(),
-            });
-          } else if (currentSection === 'validity') {
-            response = await addQuotationValidityTerm(newTerm.trim());
-          } else if (currentSection === 'warranty') {
-            response = await addWarrantyTerm(newTerm.trim());
-          }
-  
-          setOptions((prevOptions) => ({
-            ...prevOptions,
-            [currentSection]: [...prevOptions[currentSection], newTerm.trim()],
-          }));
-  
-          setSelectedTerms((prev) => ({
-            ...prev,
-            [currentSection]: [...prev[currentSection], newTerm.trim()],
-          }));
-  
-          setStatusMessage({
-            type: 'success',
-            message: `${
-              currentSection.charAt(0).toUpperCase() + currentSection.slice(1)
-            } term added successfully!`,
+    if (newTerm.trim()) {
+      try {
+        let response;
+
+        if (currentSection === 'general') {
+          response = await AdminApi.addTermsAndConditions({
+            title: newTerm.trim(),
           });
-          setShowStatusModal(true);
-          setIsCreateModalOpen(false);
-          setNewTerm('');
-  
-          if (currentSection === 'general') {
-            const refreshResponse = await AdminApi.listTermsAndConditions();
-            if (refreshResponse.data) {
-              setOptions((prevOptions) => ({
-                ...prevOptions,
-                general: refreshResponse.data.map((term) => term.title),
-              }));
-            }
-          } else if (currentSection === 'payment') {
-            const refreshResponse = await AdminApi.listPaymentTerms();
-            if (refreshResponse.data) {
-              setOptions((prevOptions) => ({
-                ...prevOptions,
-                payment: refreshResponse.data.map((term) => term.name),
-              }));
-            }
-          } else if (currentSection === 'completion') {
-            const refreshResponse = await AdminApi.listCompletionTerms();
-            if (refreshResponse.data) {
-              setOptions((prevOptions) => ({
-                ...prevOptions,
-                completion: refreshResponse.data.map((term) => term.delivery),
-              }));
-            }
-          }
-        } catch (error) {
-          console.error('Error creating term:', error);
-          setStatusMessage({
-            type: 'error',
-            message:
-              error.response?.data?.message ||
-              `Failed to add ${currentSection} term`,
+        } else if (currentSection === 'payment') {
+          response = await AdminApi.addPaymentTerms({
+            name: newTerm.trim(),
           });
-          setShowStatusModal(true);
+        } else if (currentSection === 'completion') {
+          response = await AdminApi.addCompletionTerms({
+            delivery: newTerm.trim(),
+          });
+        } else if (currentSection === 'validity') {
+          response = await addQuotationValidityTerm(newTerm.trim());
+        } else if (currentSection === 'warranty') {
+          response = await addWarrantyTerm(newTerm.trim());
         }
+
+        setOptions((prevOptions) => ({
+          ...prevOptions,
+          [currentSection]: [
+            ...prevOptions[currentSection],
+            { id: response.data.id, title: response.data.title },
+          ],
+        }));
+
+        setSelectedTerms((prev) => ({
+          ...prev,
+          [currentSection]: [
+            ...prev[currentSection],
+            { id: response.data.id, title: response.data.title },
+          ],
+        }));
+
+        setStatusMessage({
+          type: 'success',
+          message: `${
+            currentSection.charAt(0).toUpperCase() + currentSection.slice(1)
+          } term added successfully!`,
+        });
+        setShowStatusModal(true);
+        setIsCreateModalOpen(false);
+        setNewTerm('');
+
+        if (currentSection === 'general') {
+          const refreshResponse = await AdminApi.listTermsAndConditions();
+          if (refreshResponse.data) {
+            setOptions((prevOptions) => ({
+              ...prevOptions,
+              general: refreshResponse.data.map((term) => ({
+                id: term.id,
+                title: term.title,
+              })),
+            }));
+          }
+        } else if (currentSection === 'payment') {
+          const refreshResponse = await AdminApi.listPaymentTerms();
+          if (refreshResponse.data) {
+            setOptions((prevOptions) => ({
+              ...prevOptions,
+              payment: refreshResponse.data.map((term) => ({
+                id: term.id,
+                name: term.name,
+              })),
+            }));
+          }
+        } else if (currentSection === 'completion') {
+          const refreshResponse = await AdminApi.listCompletionTerms();
+          if (refreshResponse.data) {
+            setOptions((prevOptions) => ({
+              ...prevOptions,
+              completion: refreshResponse.data.map((term) => ({
+                id: term.id,
+                delivery: term.delivery,
+              })),
+            }));
+          }
+        }
+      } catch (error) {
+        console.error('Error creating term:', error);
+        setStatusMessage({
+          type: 'error',
+          message:
+            error.response?.data?.message ||
+            `Failed to add ${currentSection} term`,
+        });
+        setShowStatusModal(true);
       }
-    };
-  
-  // Update the useEffect hook that fetches initial data
-  useEffect(() => {
-      const fetchTerms = async () => {
-        try {
-          // Fetch general terms
-          const generalResponse = await AdminApi.listTermsAndConditions();
-          if (generalResponse.data) {
-            setOptions((prevOptions) => ({
-              ...prevOptions,
-              general: generalResponse.data.map((term) => term.title),
-            }));
-          }
-  
-          // Fetch payment terms
-          const paymentResponse = await AdminApi.listPaymentTerms();
-          console.log('Payment Terms Response:', paymentResponse); // For debugging
-          if (paymentResponse.data) {
-            setOptions((prevOptions) => ({
-              ...prevOptions,
-              payment: paymentResponse.data.map((term) => term.name),
-            }));
-          }
-  
-          // Fetch completion terms
-          const completionResponse = await AdminApi.listCompletionTerms();
-          console.log('Completion Terms Response:', completionResponse); // For debugging
-          if (completionResponse.data) {
-            setOptions((prevOptions) => ({
-              ...prevOptions,
-              completion: completionResponse.data.map((term) => term.delivery),
-            }));
-          }
-  
-          // Fetch quotation validity terms
-          const validityResponse = await listQuotationValidityTerms();
-          if (validityResponse.data) {
-            setOptions((prevOptions) => ({
-              ...prevOptions,
-              validity: validityResponse.data.map((term) => term.validity),
-            }));
-          }
-  
-          setIsLoading(false);
-        } catch (error) {
-          console.error('Error fetching terms:', error);
-          setStatusMessage({
-            type: 'error',
-            message: 'Failed to fetch terms',
-          });
-          setShowStatusModal(true);
-          setIsLoading(false);
-        }
-      };
-  
-      fetchTerms();
-    }, []);
-  
-  const filteredOptions = currentSection
-    ? options[currentSection].filter((option) =>
-        option.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : [];
+    }
+  };
 
   useEffect(() => {
     const fetchTerms = async () => {
@@ -252,27 +211,46 @@ const TermsAndConditions = () => {
         if (generalResponse.data) {
           setOptions((prevOptions) => ({
             ...prevOptions,
-            general: generalResponse.data.map((term) => term.title),
+            general: generalResponse.data.map((term) => ({
+              id: term.id,
+              title: term.title,
+            })),
           }));
         }
 
         // Fetch payment terms
         const paymentResponse = await AdminApi.listPaymentTerms();
-        console.log('Payment Terms Response:', paymentResponse); // For debugging
         if (paymentResponse.data) {
           setOptions((prevOptions) => ({
             ...prevOptions,
-            payment: paymentResponse.data.map((term) => term.name),
+            payment: paymentResponse.data.map((term) => ({
+              id: term.id,
+              name: term.name,
+            })),
           }));
         }
 
         // Fetch completion terms
         const completionResponse = await AdminApi.listCompletionTerms();
-        console.log('Completion Terms Response:', completionResponse); // For debugging
         if (completionResponse.data) {
           setOptions((prevOptions) => ({
             ...prevOptions,
-            completion: completionResponse.data.map((term) => term.delivery),
+            completion: completionResponse.data.map((term) => ({
+              id: term.id,
+              delivery: term.delivery,
+            })),
+          }));
+        }
+
+        // Fetch validity terms
+        const validityResponse = await listQuotationValidityTerms();
+        if (validityResponse.data) {
+          setOptions((prevOptions) => ({
+            ...prevOptions,
+            validity: validityResponse.data.map((term) => ({
+              id: term.id,
+              validity: term.validity,
+            })),
           }));
         }
 
@@ -281,7 +259,10 @@ const TermsAndConditions = () => {
         if (warrantyResponse.data) {
           setOptions((prevOptions) => ({
             ...prevOptions,
-            warranty: warrantyResponse.data.map((term) => term.warranty),
+            warranty: warrantyResponse.data.map((term) => ({
+              id: term.id,
+              warranty: term.warranty,
+            })),
           }));
         }
 
@@ -299,6 +280,111 @@ const TermsAndConditions = () => {
 
     fetchTerms();
   }, []);
+
+  const filteredOptions = currentSection
+    ? options[currentSection].filter((option) => {
+        const text =
+          option.title ||
+          option.name ||
+          option.delivery ||
+          option.validity ||
+          option.warranty;
+        return text.toLowerCase().includes(searchQuery.toLowerCase());
+      })
+    : [];
+
+  const getOptionText = (option) => {
+    return (
+      option.title ||
+      option.name ||
+      option.delivery ||
+      option.validity ||
+      option.warranty
+    );
+  };
+
+  const handleSaveTerms = async () => {
+    try {
+      const payload = {
+        terms: selectedTermIds.terms,
+        payment: selectedTermIds.payment,
+        delivery: selectedTermIds.delivery,
+        validity: selectedTermIds.validity,
+        warranty: selectedTermIds.warranty,
+      };
+
+      const response = await addQuotationTerms(payload);
+      setStatusMessage({
+        type: 'success',
+        message: 'Terms and conditions saved successfully!',
+      });
+      setShowStatusModal(true);
+    } catch (error) {
+      setStatusMessage({
+        type: 'error',
+        message:
+          error.response?.data?.message ||
+          'Failed to save terms and conditions',
+      });
+      setShowStatusModal(true);
+    }
+  };
+
+  const handleSelectModalSubmit = () => {
+    const selectedIds = selectedModalItems.map((item) => item.id);
+
+    const sectionToPayloadKey = {
+      general: 'terms',
+      payment: 'payment',
+      completion: 'delivery',
+      validity: 'validity',
+      warranty: 'warranty',
+    };
+
+    const payloadKey = sectionToPayloadKey[currentSection];
+
+    setSelectedTermIds((prev) => ({
+      ...prev,
+      [payloadKey]: selectedIds,
+    }));
+
+    setSelectedTerms((prev) => ({
+      ...prev,
+      [currentSection]: selectedModalItems.map(
+        (item) =>
+          item.title ||
+          item.name ||
+          item.delivery ||
+          item.validity ||
+          item.warranty
+      ),
+    }));
+
+    setSelectedModalItems([]);
+    setIsSelectModalOpen(false);
+  };
+
+  const handleSaveNarration = async () => {
+    try {
+      const payload = {
+        quotation: quotationId,
+        narration: narration.trim(),
+      };
+
+      const response = await addNarration(payload);
+      setStatusMessage({
+        type: 'success',
+        message: 'Narration saved successfully!',
+      });
+      setShowStatusModal(true);
+    } catch (error) {
+      setStatusMessage({
+        type: 'error',
+        message: error.response?.data?.message || 'Failed to save narration',
+      });
+      setShowStatusModal(true);
+    }
+  };
 
   return (
     <>
@@ -456,7 +542,9 @@ const TermsAndConditions = () => {
                         </svg>
                       )}
                     </div>
-                    <span className="text-gray-700 select-none">{option}</span>
+                    <span className="text-gray-700 select-none">
+                      {getOptionText(option)}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -472,19 +560,7 @@ const TermsAndConditions = () => {
                   Cancel
                 </button>
                 <button
-                  onClick={() => {
-                    setSelectedTerms((prev) => ({
-                      ...prev,
-                      [currentSection]: [
-                        ...new Set([
-                          ...prev[currentSection],
-                          ...selectedModalItems,
-                        ]),
-                      ],
-                    }));
-                    setSelectedModalItems([]);
-                    setIsSelectModalOpen(false);
-                  }}
+                  onClick={handleSelectModalSubmit}
                   className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium shadow-sm"
                 >
                   Submit
@@ -557,12 +633,42 @@ const TermsAndConditions = () => {
         </div>
       )}
 
-<div className="btn mt-5 w-full flex justify-end">
-  <button className="px-6 py-2.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-all">Save</button>
-</div>
+      <div className="btn mt-5 w-full flex justify-end">
+        <button
+          onClick={handleSaveTerms}
+          className="px-6 py-2.5 rounded-lg bg-blue-500 text-white hover:bg-blue-600 transition-all"
+        >
+          Save
+        </button>
+      </div>
+
+      {/* Add narration section */}
+      <div className="mt-8 space-y-4">
+        <h3 className="text-lg font-medium text-gray-700">Narration</h3>
+        <textarea
+          value={narration}
+          onChange={(e) => setNarration(e.target.value)}
+          placeholder="Enter narration..."
+          className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none min-h-[120px] resize-none transition-all"
+        />
+        <div className="flex justify-end">
+          <button
+            onClick={handleSaveNarration}
+            disabled={!narration.trim()}
+            className={`px-6 py-2.5 rounded-lg transition-all ${
+              narration.trim()
+                ? 'bg-blue-500 text-white hover:bg-blue-600'
+                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            Save Narration
+          </button>
+        </div>
+      </div>
+
       {/* Status Modal */}
       {showStatusModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-[2px] flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-xl w-full max-w-md shadow-2xl transform transition-all">
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">

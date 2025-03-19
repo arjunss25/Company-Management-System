@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   AiOutlineDashboard,
   AiOutlineSetting,
+  AiOutlineMenu,
 } from 'react-icons/ai';
 import { FaBuilding, FaFileContract, FaBoxOpen, FaUsers } from 'react-icons/fa';
 import { MdGavel } from 'react-icons/md';
@@ -10,6 +11,31 @@ import { AiOutlineFileText } from 'react-icons/ai';
 
 const AdminSidebar = () => {
   const location = useLocation();
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Close sidebar when clicking outside on mobile
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const sidebar = document.getElementById('admin-sidebar');
+      const menuButton = document.getElementById('admin-menu-button');
+      if (
+        isOpen &&
+        sidebar &&
+        !sidebar.contains(event.target) &&
+        !menuButton.contains(event.target)
+      ) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
+
+  // Close sidebar when route changes on mobile
+  useEffect(() => {
+    setIsOpen(false);
+  }, [location]);
 
   // Function to check if a path is material-related
   const isMaterialPath = (path) => {
@@ -81,7 +107,7 @@ const AdminSidebar = () => {
       '/admin/invoice-pending',
       '/admin/lpo-received',
       '/admin/grn-received',
-      '/admin/retention-overdue'
+      '/admin/retention-overdue',
     ];
     return quotationPaths.includes(path);
   };
@@ -126,47 +152,79 @@ const AdminSidebar = () => {
   ];
 
   return (
-    <div className="w-full lg:w-[300px] h-screen bg-black text-white">
-      <div className="flex flex-col items-center p-6 border-b border-gray-700">
-        <img
-          src="/admin_logo.png"
-          alt="Company Logo"
-          className="h-16 w-16 rounded-full mb-2"
-        />
-        <span className="text-lg font-bold">New company</span>
-      </div>
+    <>
+      {/* Menu Button - Only visible on mobile */}
+      <button
+        id="admin-menu-button"
+        className="lg:hidden fixed top-4 left-4 z-50 p-2 rounded-lg bg-black text-white hover:bg-gray-800 transition-colors"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <AiOutlineMenu size={24} />
+      </button>
 
-      <nav className="mt-6">
-        <ul className="space-y-2">
-          {menuItems.map((item) => (
-            <li key={item.path}>
-              <Link
-                to={item.path}
-                className={`flex items-center gap-4 px-6 py-3 hover:bg-gray-800 text-[#8E8E8E] rounded-[2px] transition-colors
-                  ${
-                    location.pathname === item.path ||
-                    (item.path === '/admin/material-dashboard' &&
-                      isMaterialPath(location.pathname)) ||
-                    (item.path === '/admin/client-location' &&
-                      isClientLocationPath(location.pathname)) ||
-                    (item.path === '/admin/terms-and-conditions-dashboard' &&
-                      isTermsPath(location.pathname)) ||
-                    (item.path === '/admin/contract-dashboard' &&
-                      isContractPath(location.pathname)) ||
-                    (item.path === '/admin/quotation-dashboard' &&
-                      isQuotationPath(location.pathname))
-                      ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black'
-                      : ''
-                  }`}
-              >
-                <span>{item.icon}</span>
-                <span>{item.label}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </div>
+      {/* Sidebar */}
+      <aside
+        id="admin-sidebar"
+        className={`
+          fixed top-0 left-0
+          h-full w-[300px]
+          bg-black text-white
+          transform transition-transform duration-300 ease-in-out
+          lg:translate-x-0
+          ${isOpen ? 'translate-x-0' : '-translate-x-full'}
+          lg:relative lg:block
+          z-40
+        `}
+      >
+        <div className="flex flex-col items-center p-6 border-b border-gray-700">
+          <img
+            src="/admin_logo.png"
+            alt="Company Logo"
+            className="h-16 w-16 rounded-full mb-2"
+          />
+          <span className="text-lg font-bold">New company</span>
+        </div>
+
+        <nav className="mt-6">
+          <ul className="space-y-2">
+            {menuItems.map((item) => (
+              <li key={item.path}>
+                <Link
+                  to={item.path}
+                  className={`flex items-center gap-4 px-6 py-3 hover:bg-gray-800 text-[#8E8E8E] rounded-[2px] transition-colors
+                    ${
+                      location.pathname === item.path ||
+                      (item.path === '/admin/material-dashboard' &&
+                        isMaterialPath(location.pathname)) ||
+                      (item.path === '/admin/client-location' &&
+                        isClientLocationPath(location.pathname)) ||
+                      (item.path === '/admin/terms-and-conditions-dashboard' &&
+                        isTermsPath(location.pathname)) ||
+                      (item.path === '/admin/contract-dashboard' &&
+                        isContractPath(location.pathname)) ||
+                      (item.path === '/admin/quotation-dashboard' &&
+                        isQuotationPath(location.pathname))
+                        ? 'border-l-[3px] border-white text-gray-100 bg-gradient-to-r from-slate-600 to-black'
+                        : ''
+                    }`}
+                >
+                  <span>{item.icon}</span>
+                  <span>{item.label}</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+      </aside>
+
+      {/* Overlay - Only visible on mobile when sidebar is open */}
+      {isOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-sm z-30"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+    </>
   );
 };
 

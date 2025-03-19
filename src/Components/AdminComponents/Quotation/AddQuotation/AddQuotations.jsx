@@ -23,7 +23,7 @@ const AddQuotations = () => {
           </h1>
         </div>
 
-        <div className="max-w-[90%] mx-auto py-8">
+        <div className="max-w-[90%] mx-auto py-8 beg-white">
           {/* Work Details Section */}
           <div className="bg-white rounded-lg shadow-sm mb-6">
             <button

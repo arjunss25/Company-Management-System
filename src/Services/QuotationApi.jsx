@@ -197,3 +197,228 @@ export const getMaterialsList = async () => {
     throw error;
   }
 };
+
+// Add Terms and Conditions to Quotation
+export const addQuotationTerms = async (payload) => {
+  try {
+    const response = await axiosInstance.patch(
+      '/add-terms-paymentsapi/',
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error adding quotation terms:', error);
+    throw error;
+  }
+};
+
+// Add narration to quotation
+export const addNarration = async (payload) => {
+  try {
+    const response = await axiosInstance.post('/add-narration/', payload);
+    return response.data;
+  } catch (error) {
+    console.error('Error adding narration:', error);
+    throw error;
+  }
+};
+
+// Get building numbers
+export const getBuildingNumbers = async (quotationId) => {
+  try {
+    const response = await axiosInstance.get(`/list-building/${quotationId}/`);
+    return response.data.data.building_numbers;
+  } catch (error) {
+    console.error('Error fetching building numbers:', error);
+    throw error;
+  }
+};
+
+// Add photo report
+export const addPhotoReport = async (formData) => {
+  try {
+    const response = await axiosInstance.post('/add-photo-report/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error adding photo report:', error);
+    throw error;
+  }
+};
+
+// Edit material
+export const editMaterial = async (materialId, quotationId, payload) => {
+  try {
+    const response = await axiosInstance.patch(
+      `/edit-delete-materials/${quotationId}/${materialId}/`,
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error editing material:', error);
+    throw error;
+  }
+};
+
+// Delete material
+export const deleteMaterial = async (materialId, quotationId) => {
+  try {
+    const response = await axiosInstance.delete(
+      `/edit-delete-materials/${quotationId}/${materialId}/`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting material:', error);
+    throw error;
+  }
+};
+
+// Edit photo report
+export const editPhotoReport = async (reportId, quotationId, formData) => {
+  try {
+    const response = await axiosInstance.patch(
+      `/edit-delete-photo-report/${quotationId}/${reportId}/`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error editing photo report:', error);
+    throw error;
+  }
+};
+
+// Delete photo report
+export const deletePhotoReport = async (reportId, quotationId) => {
+  try {
+    const response = await axiosInstance.delete(
+      `/edit-delete-photo-report/${quotationId}/${reportId}/`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting photo report:', error);
+    throw error;
+  }
+};
+// Get photo reports
+export const getPhotoReports = async (quotationId) => {
+  try {
+    const response = await axiosInstance.get(
+      `/list-photo-report/${quotationId}/`
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching photo reports:', error);
+    throw error;
+  }
+};
+
+// Export photo report functions
+export const exportPhotoReportPDF = async (quotationId) => {
+  try {
+    const response = await axiosInstance.get(
+      `/export-quotation-photo-report/pdf/${quotationId}/`,
+      {
+        responseType: 'blob',
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error exporting photo report as PDF:', error);
+    throw error;
+  }
+};
+
+export const exportPhotoReportExcel = async (quotationId) => {
+  try {
+    const response = await axiosInstance.get(
+      `/export-quotation-photo-report/excel/${quotationId}/`,
+      {
+        responseType: 'blob',
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error exporting photo report as Excel:', error);
+    throw error;
+  }
+};
+
+export const exportPhotoReportWord = async (quotationId) => {
+  try {
+    const response = await axiosInstance.get(
+      `/export-quotation-photo-report/word/${quotationId}/`,
+      {
+        responseType: 'blob',
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error exporting photo report as Word:', error);
+    throw error;
+  }
+};
+
+// Attachment APIs
+export const addAttachment = async (formData) => {
+  try {
+    const response = await axiosInstance.post('/add-attachment/', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error adding attachment:', error);
+    throw error;
+  }
+};
+
+export const getAttachments = async (quotationId) => {
+  try {
+    const response = await axiosInstance.get(
+      `/list-attachment/${quotationId}/`
+    );
+    return response.data.data;
+  } catch (error) {
+    console.error('Error fetching attachments:', error);
+    throw error;
+  }
+};
+
+export const editAttachment = async (quotationId, attachmentId, formData) => {
+  try {
+    const response = await axiosInstance.patch(
+      `/edit-delete-attachments/${quotationId}/${attachmentId}/`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error editing attachment:', error);
+    throw error;
+  }
+};
+
+export const deleteAttachment = async (quotationId, attachmentId) => {
+  try {
+    const response = await axiosInstance.delete(
+      `/edit-delete-attachments/${quotationId}/${attachmentId}/`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting attachment:', error);
+    throw error;
+  }
+};

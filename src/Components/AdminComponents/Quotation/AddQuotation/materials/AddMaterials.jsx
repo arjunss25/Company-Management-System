@@ -12,6 +12,9 @@ import { selectQuotationId } from '../../../../../store/slices/quotationSlice';
 import {
   getMaterialsList,
   getUnits,
+  getBuildingNumbers,
+  editMaterial,
+  deleteMaterial,
 } from '../../../../../Services/QuotationApi';
 import { IoIosArrowDown } from 'react-icons/io';
 import { IoSearchOutline } from 'react-icons/io5';
@@ -26,6 +29,8 @@ const AddMaterials = () => {
   const [unitsList, setUnitsList] = useState([]);
   const [materialsLoading, setMaterialsLoading] = useState(false);
   const [unitsLoading, setUnitsLoading] = useState(false);
+  const [buildingNumbers, setBuildingNumbers] = useState([]);
+  const [buildingsLoading, setBuildingsLoading] = useState(false);
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -41,6 +46,17 @@ const AddMaterials = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const dropdownRef = useRef(null);
+
+  // Add these new state variables
+  const [showStatusModal, setShowStatusModal] = useState(false);
+  const [statusMessage, setStatusMessage] = useState({
+    type: '',
+    message: '',
+  });
+
+  // Add new state for delete confirmation modal
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [materialToDelete, setMaterialToDelete] = useState(null);
 
   useEffect(() => {
     if (quotationId) {
@@ -70,6 +86,30 @@ const AddMaterials = () => {
 
     fetchData();
   }, []);
+
+  // Add this useEffect to fetch building numbers
+  useEffect(() => {
+    const fetchBuildingNumbers = async () => {
+      if (quotationId) {
+        setBuildingsLoading(true);
+        try {
+          const numbers = await getBuildingNumbers(quotationId);
+          setBuildingNumbers(
+            numbers.map((building) => ({
+              id: building.id,
+              name: building.building_number.toString(),
+            }))
+          );
+        } catch (error) {
+          console.error('Error fetching building numbers:', error);
+        } finally {
+          setBuildingsLoading(false);
+        }
+      }
+    };
+
+    fetchBuildingNumbers();
+  }, [quotationId]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -114,16 +154,62 @@ const AddMaterials = () => {
     }));
   };
 
+  const handleEdit = async (material) => {
+    setFormData({
+      materialMode: material.material_mode,
+      materialName: material.material_name,
+      under: material.under,
+      quantity: material.quantity,
+      unit: material.unit,
+      BuildingNo: material.building_no,
+    });
+    setIsEditMode(true);
+    setEditIndex(material.id);
+    setIsModalOpen(true);
+  };
+
+  // Update handleDelete to show confirmation modal
+  const handleDelete = (material) => {
+    setMaterialToDelete(material);
+    setShowDeleteModal(true);
+  };
+
+  // Add new function to handle delete confirmation
+  const confirmDelete = async () => {
+    try {
+      await deleteMaterial(materialToDelete.id, quotationId);
+      await dispatch(fetchQuotationMaterials(quotationId));
+      setStatusMessage({
+        type: 'success',
+        message: 'Material deleted successfully',
+      });
+      setShowStatusModal(true);
+    } catch (error) {
+      setStatusMessage({
+        type: 'error',
+        message: error.response?.data?.message || 'Failed to delete material',
+      });
+      setShowStatusModal(true);
+    } finally {
+      setShowDeleteModal(false);
+      setMaterialToDelete(null);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!quotationId) {
-      alert('Please fill work details first to get quotation ID');
+      setStatusMessage({
+        type: 'error',
+        message: 'Please fill work details first to get quotation ID',
+      });
+      setShowStatusModal(true);
       return;
     }
 
     const payload = {
-      material_mode: 'Not Applicable',
+      material_mode: formData.materialMode,
       material_name: formData.materialName,
       building_no: formData.BuildingNo || '',
       quantity: formData.quantity || '',
@@ -133,7 +219,12 @@ const AddMaterials = () => {
     };
 
     try {
-      await dispatch(addQuotationMaterial(payload)).unwrap();
+      if (isEditMode) {
+        await editMaterial(editIndex, quotationId, payload);
+      } else {
+        await dispatch(addQuotationMaterial(payload)).unwrap();
+      }
+
       await dispatch(fetchQuotationMaterials(quotationId));
 
       setFormData({
@@ -145,80 +236,35 @@ const AddMaterials = () => {
         BuildingNo: '',
       });
       setIsModalOpen(false);
-    } catch (error) {
-      console.error('Failed to add material:', error);
-      alert(JSON.stringify(error.message || 'Failed to add material', null, 2));
-    }
-  };
-
-  const handleSave = () => {
-    if (isEditMode) {
-      const updatedMaterials = materials.map((material, index) =>
-        index === editIndex ? formData : material
-      );
-      setMaterials(updatedMaterials);
       setIsEditMode(false);
       setEditIndex(null);
-    } else {
-      setMaterials((prev) => [...prev, formData]);
+
+      setStatusMessage({
+        type: 'success',
+        message: isEditMode
+          ? 'Material updated successfully'
+          : 'Material added successfully',
+      });
+      setShowStatusModal(true);
+    } catch (error) {
+      console.error('Failed to handle material:', error);
+      setStatusMessage({
+        type: 'error',
+        message:
+          error.response?.data?.message ||
+          `Failed to ${isEditMode ? 'update' : 'add'} material`,
+      });
+      setShowStatusModal(true);
     }
-    setFormData({
-      materialMode: 'Applicable',
-      materialName: '',
-      under: '',
-      quantity: '',
-      unit: '',
-      BuildingNo: '',
-    });
-    setIsModalOpen(false);
   };
 
-  const handleEdit = (index) => {
-    setFormData(materials[index]);
-    setIsEditMode(true);
-    setEditIndex(index);
-    setIsModalOpen(true);
-  };
-
-  const handleDelete = (index) => {
-    const updatedMaterials = materials.filter((_, i) => i !== index);
-    setMaterials(updatedMaterials);
-  };
-
+  // Add this function back if it was accidentally removed
   const getMaterialName = (materialId) => {
     const material = materialsList.find((m) => m.id === parseInt(materialId));
     return material ? material.name : materialId;
   };
 
-  // Add these styles to the dropdown container for smooth animation
-  const dropdownAnimation = {
-    initial: { opacity: 0, y: -10 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -10 },
-    transition: { duration: 0.2 },
-  };
-
-  // Add keyboard navigation
-  const handleKeyDown = (e) => {
-    if (e.key === 'Escape') {
-      setIsDropdownOpen(false);
-    }
-  };
-
-  const handleMaterialChange = (material) => {
-    setFormData((prev) => ({
-      ...prev,
-      materialName: material.id,
-    }));
-  };
-
-  const handleUnitChange = (unit) => {
-    setFormData((prev) => ({
-      ...prev,
-      unit: unit.id,
-    }));
-  };
-
+  // Enhanced table UI
   return (
     <div className="p-8">
       <button
@@ -261,18 +307,19 @@ const AddMaterials = () => {
                   </button>
                 </div>
                 <div className="grid grid-cols-1 gap-4">
-                  <label className="block">
-                    <span className="text-sm font-medium text-gray-700">
-                      Building No
-                    </span>
-                    <input
-                      type="text"
-                      name="BuildingNo"
-                      value={formData.BuildingNo}
-                      onChange={handleInputChange}
-                      className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500"
-                    />
-                  </label>
+                  <SearchableDropdown
+                    options={buildingNumbers}
+                    value={formData.BuildingNo}
+                    onChange={(building) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        BuildingNo: building.id,
+                      }));
+                    }}
+                    placeholder="Select a building number"
+                    isLoading={buildingsLoading}
+                    label="Building No"
+                  />
                   <label className="block">
                     <span className="text-sm font-medium text-gray-700">
                       Material Mode
@@ -291,7 +338,12 @@ const AddMaterials = () => {
                   <SearchableDropdown
                     options={materialsList}
                     value={formData.materialName}
-                    onChange={handleMaterialChange}
+                    onChange={(material) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        materialName: material.id,
+                      }));
+                    }}
                     placeholder="Select a material"
                     isLoading={materialsLoading}
                     label="Material Name"
@@ -326,7 +378,12 @@ const AddMaterials = () => {
                   <SearchableDropdown
                     options={unitsList}
                     value={formData.unit}
-                    onChange={handleUnitChange}
+                    onChange={(unit) => {
+                      setFormData((prev) => ({
+                        ...prev,
+                        unit: unit.id,
+                      }));
+                    }}
                     placeholder="Select a unit"
                     isLoading={unitsLoading}
                     label="Unit"
@@ -352,88 +409,263 @@ const AddMaterials = () => {
         )}
       </AnimatePresence>
 
-      {/* Materials Table */}
-      <div className="mt-8">
-        <table className="w-full min-w-[600px] bg-white rounded-lg shadow-md overflow-hidden">
-          <thead>
-            <tr className="bg-gray-100 border-b">
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">
-                Sl. No
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">
-                Building No
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">
-                Material Mode
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">
-                Material Name
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">
-                Under
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">
-                Quantity
-              </th>
-              <th className="px-4 py-2 text-left text-sm font-semibold text-gray-600">
-                Unit
-              </th>
-              <th className="px-4 py-2 text-center text-sm font-semibold text-gray-600">
-                Action
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+      {/* Enhanced Materials Table */}
+      <div className="mt-8 overflow-hidden bg-white rounded-lg shadow">
+        <div className="sm:flex sm:items-center sm:justify-between p-4 bg-gray-50">
+          <div>
+            <h3 className="text-lg font-medium leading-6 text-gray-900">
+              Materials List
+            </h3>
+            <p className="mt-1 text-sm text-gray-500">
+              A list of all materials added to this quotation
+            </p>
+          </div>
+          <div className="mt-4 sm:mt-0 sm:ml-16 sm:flex-none">
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="inline-flex items-center justify-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              Add Material
+            </button>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
               <tr>
-                <td colSpan="8" className="px-4 py-2 text-center text-gray-500">
-                  Loading materials...
-                </td>
+                {[
+                  'Sl. No',
+                  'Building No',
+                  'Material Mode',
+                  'Material Name',
+                  'Under',
+                  'Quantity',
+                  'Unit',
+                  'Actions',
+                ].map((header, index) => (
+                  <th
+                    key={index}
+                    scope="col"
+                    className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >
+                    {header}
+                  </th>
+                ))}
               </tr>
-            ) : materials.length === 0 ? (
-              <tr>
-                <td colSpan="8" className="px-4 py-2 text-center text-gray-500">
-                  No materials added
-                </td>
-              </tr>
-            ) : (
-              materials.map((material, index) => (
-                <tr key={material.id} className="border-b hover:bg-gray-50">
-                  <td className="px-4 py-2 text-gray-700">{index + 1}</td>
-                  <td className="px-4 py-2 text-gray-700">
-                    {material.building_no}
-                  </td>
-                  <td className="px-4 py-2 text-gray-700">
-                    {material.material_mode}
-                  </td>
-                  <td className="px-4 py-2 text-gray-700">
-                    {getMaterialName(material.material_name)}
-                  </td>
-                  <td className="px-4 py-2 text-gray-700">{material.under}</td>
-                  <td className="px-4 py-2 text-gray-700">
-                    {material.quantity}
-                  </td>
-                  <td className="px-4 py-2 text-gray-700">{material.unit}</td>
-                  <td className="px-4 py-2 text-center">
-                    <button
-                      onClick={() => handleEdit(index)}
-                      className="px-2 py-1 text-blue-600 hover:text-blue-800"
-                    >
-                      <FiEdit size={18} />
-                    </button>
-                    <button
-                      onClick={() => handleDelete(index)}
-                      className="px-2 py-1 text-red-600 hover:text-red-800"
-                    >
-                      <RiDeleteBin6Line size={18} />
-                    </button>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan="8"
+                    className="px-6 py-4 text-center text-sm text-gray-500"
+                  >
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                      <span className="ml-2">Loading materials...</span>
+                    </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : materials.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="8"
+                    className="px-6 py-4 text-center text-sm text-gray-500"
+                  >
+                    No materials added
+                  </td>
+                </tr>
+              ) : (
+                materials.map((material, index) => (
+                  <tr
+                    key={material.id}
+                    className="hover:bg-gray-50 transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {index + 1}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {material.building_no}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <span
+                        className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                          material.material_mode === 'Applicable'
+                            ? 'bg-green-100 text-green-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}
+                      >
+                        {material.material_mode}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {getMaterialName(material.material_name)}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {material.under}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {material.quantity}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {material.unit}
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                      <div className="flex items-center justify-center space-x-3">
+                        <button
+                          onClick={() => handleEdit(material)}
+                          className="text-blue-600 hover:text-blue-900 transition-colors"
+                        >
+                          <FiEdit size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(material)}
+                          className="text-red-600 hover:text-red-900 transition-colors"
+                        >
+                          <RiDeleteBin6Line size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <>
+            {/* Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowDeleteModal(false)}
+              className="fixed inset-0 bg-black z-50"
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ type: 'spring', duration: 0.3 }}
+              className="fixed inset-0 flex items-center justify-center z-50 p-6"
+            >
+              <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-md">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-xl font-semibold text-gray-900">
+                    Confirm Delete
+                  </h3>
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+                <div className="mb-6">
+                  <p className="text-gray-600">
+                    Are you sure you want to delete this material?
+                  </p>
+                  {materialToDelete && (
+                    <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+                      <p className="text-sm text-gray-700">
+                        <span className="font-medium">Material Name:</span>{' '}
+                        {getMaterialName(materialToDelete.material_name)}
+                      </p>
+                      <p className="text-sm text-gray-700 mt-1">
+                        <span className="font-medium">Building No:</span>{' '}
+                        {materialToDelete.building_no}
+                      </p>
+                      <p className="text-sm text-gray-700 mt-1">
+                        <span className="font-medium">Quantity:</span>{' '}
+                        {materialToDelete.quantity} {materialToDelete.unit}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-end space-x-4">
+                  <button
+                    onClick={() => setShowDeleteModal(false)}
+                    className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDelete}
+                    className="px-4 py-2 text-white bg-red-600 rounded-lg hover:bg-red-700 transition-colors flex items-center"
+                  >
+                    <RiDeleteBin6Line className="mr-2" />
+                    Delete
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      {/* Status Modal */}
+      <AnimatePresence>
+        {showStatusModal && (
+          <>
+            {/* Overlay */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.4 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowStatusModal(false)}
+              className="fixed inset-0 bg-black z-50"
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              transition={{ type: 'spring', duration: 0.3 }}
+              className="fixed inset-0 flex items-center justify-center z-50 p-6"
+            >
+              <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-md">
+                <div className="flex items-center justify-between mb-4">
+                  <h3
+                    className={`text-xl font-semibold ${
+                      statusMessage.type === 'success'
+                        ? 'text-green-600'
+                        : 'text-red-600'
+                    }`}
+                  >
+                    {statusMessage.type === 'success' ? 'Success' : 'Error'}
+                  </h3>
+                  <button
+                    onClick={() => setShowStatusModal(false)}
+                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  >
+                    <X className="w-5 h-5 text-gray-500" />
+                  </button>
+                </div>
+                <p className="text-gray-600 mb-6">{statusMessage.message}</p>
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => setShowStatusModal(false)}
+                    className={`px-4 py-2 rounded-lg text-white ${
+                      statusMessage.type === 'success'
+                        ? 'bg-green-500 hover:bg-green-600'
+                        : 'bg-red-500 hover:bg-red-600'
+                    } transition-colors`}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

@@ -2715,7 +2715,7 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </div>
                           </div>
 
-                          {/* Third row - Additional fields when Retention Invoice is Submitted */}
+
                           {detail.retentionInvoice === 'Submitted' && (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
                               {/* Invoice Date */}
