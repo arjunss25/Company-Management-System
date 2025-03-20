@@ -422,3 +422,50 @@ export const deleteAttachment = async (quotationId, attachmentId) => {
     throw error;
   }
 };
+
+// Add these new functions
+export const calculateSubTotal = async (payload) => {
+  try {
+    const response = await axiosInstance.post(
+      '/subtotal-calculation/',
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error calculating subtotal:', error);
+    throw error;
+  }
+};
+
+export const calculateVAT = async (payload) => {
+  try {
+    console.log('Making VAT API call with payload:', payload);
+    const response = await axiosInstance.post('/vat-calculation/', payload);
+    console.log('VAT API raw response:', response);
+
+    if (!response.data) {
+      throw new Error('No data received from VAT calculation API');
+    }
+
+    return {
+      data: response.data,
+      status: response.status,
+    };
+  } catch (error) {
+    console.error('Error in VAT calculation API:', error);
+    throw error;
+  }
+};
+
+export const calculateDiscount = async (payload) => {
+  try {
+    const response = await axiosInstance.post(
+      '/discount-calculation/',
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error calculating discount:', error);
+    throw error;
+  }
+};

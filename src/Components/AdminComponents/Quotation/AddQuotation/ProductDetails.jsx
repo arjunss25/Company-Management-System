@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { IoIosAdd } from 'react-icons/io';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import ProductModal from './ProductModal';
@@ -7,6 +7,12 @@ import ScopeModal from './ScopeModal';
 import { useDispatch, useSelector } from 'react-redux';
 import { addQuotationProduct } from '../../../../store/slices/quotationProductsSlice';
 import axiosInstance from '../../../../Config/axiosInstance';
+import {
+  calculateSubTotal,
+  calculateVAT,
+  calculateDiscount,
+} from '../../../../Services/QuotationApi';
+import debounce from 'lodash/debounce';
 
 const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
   const dispatch = useDispatch();
@@ -53,6 +59,9 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
   const [resultMessage, setResultMessage] = useState('');
   const [resultSuccess, setResultSuccess] = useState(true);
 
+  // Add new state to store product IDs
+  const [productIds, setProductIds] = useState({});
+
   // Column toggle handler
   const handleColumnToggle = (columnName) => {
     setSelectedColumns((prev) => ({
@@ -62,11 +71,169 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
   };
 
   // Dropdown change handler
-  const handleDropdownChange = (field, value) => {
+  const handleDropdownChange = async (field, value) => {
+    console.log(`Dropdown changed: ${field} = ${value}`);
+    console.log('Current productsByOption:', productsByOption);
+
     setDropdownValues((prev) => ({
       ...prev,
       [field]: value,
     }));
+
+    // Trigger relevant calculation when dropdown changes to Applicable
+    if (value === 'Applicable') {
+      Object.entries(productsByOption).forEach(async ([option, products]) => {
+        console.log(`Processing option: ${option}`, products);
+
+        // Check if products is an array and has items
+        if (!Array.isArray(products) || products.length === 0) {
+          console.log('No products found for option:', option);
+          return;
+        }
+
+        const productId = products[0]?.id;
+        console.log('Product ID found:', productId);
+
+        if (!productId) {
+          console.log('No product ID available for:', option);
+          return;
+        }
+
+        try {
+          switch (field) {
+            case 'subTotal':
+              const subTotalResponse = await calculateSubTotal({
+                product_id: productId.toString(),
+                sub_total: 'Applicable',
+              });
+              console.log('SubTotal API Response:', subTotalResponse);
+              if (subTotalResponse?.data) {
+                setCalculations((prev) => ({
+                  ...prev,
+                  [option]: {
+                    ...prev[option],
+                    subTotal: subTotalResponse.data,
+                  },
+                }));
+              }
+              break;
+
+            case 'vat':
+              console.log('Entering VAT case with:', {
+                option,
+                productId,
+                dropdownValue: value,
+              });
+
+              if (!productId) {
+                console.error('No product ID available for VAT calculation');
+                return;
+              }
+
+              try {
+                const vatPayload = {
+                  product_id: productId.toString(),
+                  vat: 'Applicable',
+                };
+
+                console.log('Sending VAT calculation request:', vatPayload);
+
+                const vatResponse = await calculateVAT(vatPayload);
+                console.log('Raw VAT Response:', vatResponse);
+
+                if (vatResponse?.data?.status === 'Success') {
+                  const responseData = vatResponse.data.data;
+                  console.log('VAT Response data:', responseData);
+
+                  if (
+                    responseData &&
+                    responseData.vat_amount &&
+                    responseData.grand_total
+                  ) {
+                    setCalculations((prev) => ({
+                      ...prev,
+                      [option]: {
+                        ...prev[option],
+                        vat: {
+                          vat_amount: responseData.vat_amount,
+                          grand_total: responseData.grand_total,
+                        },
+                      },
+                    }));
+                    console.log(
+                      'Successfully updated calculations with VAT data'
+                    );
+                  } else {
+                    console.error(
+                      'Invalid data structure in VAT response:',
+                      responseData
+                    );
+                  }
+                } else {
+                  console.error('Invalid VAT response:', vatResponse);
+                }
+              } catch (error) {
+                console.error('Error in VAT calculation:', error);
+                console.error('Error details:', {
+                  message: error.message,
+                  stack: error.stack,
+                  response: error.response,
+                });
+              }
+              break;
+
+            case 'discount':
+              if (discountAmounts[option]) {
+                try {
+                  const discountResponse = await calculateDiscount({
+                    product_id: productId.toString(),
+                    discount_amount: discountAmounts[option],
+                    discount: 'Applicable',
+                  });
+                  console.log('Discount API Response:', discountResponse);
+
+                  if (discountResponse?.data?.status === 'Success') {
+                    const responseData = discountResponse.data.data;
+                    console.log('Discount Response data:', responseData);
+
+                    if (responseData && responseData.grand_total) {
+                      setCalculations((prev) => ({
+                        ...prev,
+                        [option]: {
+                          ...prev[option],
+                          discount: {
+                            discount_amount: responseData.discount_amount,
+                            vat_amount: responseData.vat_amount,
+                            grand_total: responseData.grand_total,
+                          },
+                        },
+                      }));
+                      console.log(
+                        'Successfully updated calculations with discount data'
+                      );
+                    } else {
+                      console.error(
+                        'Invalid data structure in discount response:',
+                        responseData
+                      );
+                    }
+                  } else {
+                    console.error(
+                      'Invalid discount response:',
+                      discountResponse
+                    );
+                  }
+                } catch (error) {
+                  console.error('Error in discount calculation:', error);
+                }
+              }
+              break;
+          }
+        } catch (error) {
+          console.error(`Error calculating ${field}:`, error);
+        }
+      });
+    }
   };
 
   // Fetch scopes when component mounts or when quotationId changes
@@ -195,11 +362,18 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     });
   };
 
+  // Add this function to calculate initial total
+  const getInitialTotal = (products) => {
+    return products.reduce(
+      (sum, product) => sum + Number(product.amount || 0),
+      0
+    );
+  };
+
   // Product handling functions
   const handleAddProduct = async (product) => {
     try {
       if (!quotationId) {
-        // Show error modal
         setResultSuccess(false);
         setResultMessage('Please save work details first');
         setShowResultModal(true);
@@ -207,24 +381,29 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       }
 
       product.set('quotation', quotationId.toString());
-      console.log('Sending product data:', product);
+      console.log('Adding product with data:', {
+        quotationId,
+        productFormData: Object.fromEntries(product.entries()),
+      });
 
       const result = await dispatch(addQuotationProduct(product)).unwrap();
+      console.log('Add product API response:', result);
 
       if (result) {
-        // Show success modal
-        setResultSuccess(true);
-        setResultMessage('Product added successfully');
-        setShowResultModal(true);
+        const selectedOption =
+          optionValue === 'Not Applicable'
+            ? 'Default Products'
+            : product.get('option') || 'Option 1';
 
         const productData = {
+          id: result.data.id,
           heading: product.get('heading'),
           description: product.get('description'),
           unit: product.get('unit'),
           quantity: product.get('quantity'),
           unit_price: product.get('unit_price'),
           amount: product.get('amount'),
-          option: product.get('option'),
+          option: selectedOption,
           brand: product.get('brand'),
           location: product.get('location'),
           item_code: product.get('item_code'),
@@ -232,25 +411,27 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
           reference_number: product.get('reference_number'),
         };
 
-        const selectedOption =
-          optionValue === 'Not Applicable'
-            ? 'Default Products'
-            : product.get('option') || 'Option 1';
+        console.log('Setting productsByOption with:', {
+          option: selectedOption,
+          productData,
+        });
 
         setProductsByOption((prev) => ({
           ...prev,
           [selectedOption]: [...(prev[selectedOption] || []), productData],
         }));
 
+        // Store the product ID
+        setProductIds((prev) => ({
+          ...prev,
+          [selectedOption]: result.data.id,
+        }));
+
         setIsModalOpen(false);
-        if (typeof onProductsAdded === 'function') {
-          onProductsAdded();
-        }
+        onProductsAdded();
       }
     } catch (error) {
       console.error('Failed to add product:', error);
-
-      // Show error modal
       setResultSuccess(false);
       setResultMessage(error.message || 'Failed to add product');
       setShowResultModal(true);
@@ -265,18 +446,23 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     setProductsByOption((prev) => ({
       ...prev,
       [optionName]: [
-        // Filter out the product from the first table
         prev[optionName][0].filter((_, i) => i !== productIndex),
-        // Keep any other tables if they exist (though we won't create more now)
         ...prev[optionName].slice(1),
       ],
     }));
 
-    // If the table becomes empty, remove the option
+    // Remove the product ID when deleting the product
     if (productsByOption[optionName][0].length === 1) {
       const updatedProducts = { ...productsByOption };
       delete updatedProducts[optionName];
       setProductsByOption(updatedProducts);
+
+      // Also remove the product ID
+      setProductIds((prev) => {
+        const updated = { ...prev };
+        delete updated[optionName];
+        return updated;
+      });
     }
   };
 
@@ -289,24 +475,23 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
   };
 
   // Calculate VAT amount (5% of amount after discount)
-  const calculateVAT = (amount) => {
+  const calculateLocalVAT = (amount) => {
     return amount * 0.05;
   };
 
   // Calculate final total with discount and VAT
   const calculateFinalTotal = (baseTotal, option) => {
-    // Get discount amount (if applicable)
     const discount =
       dropdownValues.discount === 'Applicable'
         ? Number(discountAmounts[option] || 0)
         : 0;
 
-    // Apply discount
     const afterDiscount = baseTotal - discount;
 
-    // Calculate and apply VAT if applicable
     const vat =
-      dropdownValues.vat === 'Applicable' ? calculateVAT(afterDiscount) : 0;
+      dropdownValues.vat === 'Applicable'
+        ? calculateLocalVAT(afterDiscount)
+        : 0;
 
     return {
       baseTotal,
@@ -323,7 +508,47 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       ...prev,
       [option]: value,
     }));
+  
+    // Only trigger calculation if discount is applicable
+    if (dropdownValues.discount === 'Applicable') {
+      const productId = productsByOption[option]?.[0]?.id;
+      if (productId) {
+        debouncedDiscountCalculation(productId, value, option);
+      }
+    }
   };
+  
+  // Update the debounced discount calculation
+  const debouncedDiscountCalculation = useCallback(
+    debounce(async (productId, discountAmount, option) => {
+      try {
+        const response = await calculateDiscount({
+          product_id: productId.toString(),
+          discount_amount: discountAmount,
+          discount: 'Applicable',
+        });
+  
+        if (response?.status === 'Success' && response?.data) {
+          setCalculations((prev) => ({
+            ...prev,
+            [option]: {
+              ...prev[option],
+              discount: {
+                discount_amount: response.data.discount_amount,
+                vat_amount: response.data.vat_amount,
+                grand_total: response.data.grand_total,
+              },
+            },
+          }));
+        }
+      } catch (error) {
+        console.error('Error calculating discount:', error);
+      }
+    }, 500),
+    []
+  );
+
+  const [calculations, setCalculations] = useState({});
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6 space-y-4 sm:space-y-8">
@@ -433,96 +658,66 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
             optionName={option}
           />
 
-          {/* Table Totals */}
           <div className="flex flex-col gap-2 items-end mt-4 mb-6">
-            {(() => {
-              const baseTotal = calculateTableTotal(products);
-              const totals = calculateFinalTotal(baseTotal, option);
+            {/* Sub Total */}
+            {dropdownValues.subTotal === 'Applicable' && (
+              <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                <span className="text-sm font-medium text-gray-600">
+                  Sub Total:
+                </span>
+                <span className="ml-2 text-sm font-semibold text-gray-900">
+                  $
+                  {calculations[option]?.subTotal ||
+                    getInitialTotal(products).toFixed(2)}
+                </span>
+              </div>
+            )}
 
-              return (
-                <>
-                  {dropdownValues.subTotal === 'Applicable' && (
-                    <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                      <span className="text-sm font-medium text-gray-600">
-                        Sub Total:
-                      </span>
-                      <span className="ml-2 text-sm font-semibold text-gray-900">
-                        ${baseTotal.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
+            {/* Discount input */}
+            {dropdownValues.discount === 'Applicable' && (
+              <div className="bg-gray-50 px-4 py-2 rounded-lg flex items-center">
+                <span className="text-sm font-medium text-gray-600 mr-2">
+                  Discount:
+                </span>
+                <div className="flex items-center">
+                  <span className="text-gray-600 mr-1">$</span>
+                  <input
+                    type="number"
+                    value={discountAmounts[option] || ''}
+                    onChange={(e) =>
+                      handleDiscountChange(option, e.target.value)
+                    }
+                    className="w-24 p-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              </div>
+            )}
 
-                  <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                    <span className="text-sm font-medium text-gray-600">
-                      Total Amount:
-                    </span>
-                    <span className="ml-2 text-sm font-semibold text-gray-900">
-                      ${baseTotal.toFixed(2)}
-                    </span>
-                  </div>
+            {/* VAT */}
+            {dropdownValues.vat === 'Applicable' && (
+              <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                <span className="text-sm font-medium text-gray-600">
+                  VAT (5%):
+                </span>
+                <span className="ml-2 text-sm font-semibold text-gray-900">
+                  ${calculations[option]?.vat?.vat_amount || '0.00'}
+                </span>
+              </div>
+            )}
 
-                  {/* Discount input when applicable */}
-                  {dropdownValues.discount === 'Applicable' && (
-                    <div className="bg-gray-50 px-4 py-2 rounded-lg flex items-center">
-                      <span className="text-sm font-medium text-gray-600 mr-2">
-                        Discount:
-                      </span>
-                      <div className="flex items-center">
-                        <span className="text-gray-600 mr-1">$</span>
-                        <input
-                          type="number"
-                          value={discountAmounts[option] || ''}
-                          onChange={(e) =>
-                            handleDiscountChange(option, e.target.value)
-                          }
-                          className="w-24 p-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                          placeholder="0.00"
-                          min="0"
-                          step="0.01"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {dropdownValues.discount === 'Applicable' && (
-                    <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                      <span className="text-sm font-medium text-gray-600">
-                        After Discount:
-                      </span>
-                      <span className="ml-2 text-sm font-semibold text-gray-900">
-                        ${totals.afterDiscount.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* VAT when applicable */}
-                  {dropdownValues.vat === 'Applicable' && (
-                    <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                      <span className="text-sm font-medium text-gray-600">
-                        VAT (5%):
-                      </span>
-                      <span className="ml-2 text-sm font-semibold text-gray-900">
-                        ${totals.vat.toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-                </>
-              );
-            })()}
-          </div>
-
-          {/* Option Grand Total */}
-          <div className="flex justify-end mt-6 mb-8 border-t pt-4">
+            {/* Grand Total */}
             <div className="bg-blue-50 px-6 py-3 rounded-lg">
               <span className="text-base font-medium text-blue-700">
                 {option} Grand Total:
               </span>
               <span className="ml-3 text-lg font-semibold text-blue-900">
                 $
-                {calculateFinalTotal(
-                  calculateTableTotal(products),
-                  option
-                ).finalTotal.toFixed(2)}
+                {(calculations[option]?.discount?.grand_total ||
+                  calculations[option]?.vat?.grand_total ||
+                  getInitialTotal(products))?.toFixed(2)}
               </span>
             </div>
           </div>

@@ -134,8 +134,7 @@ const ProductTable = ({
         </div>
       </div>
 
-      {/* Only show scopes if we have a quotation ID */}
-      {quotationId && <ScopesList optionName={optionName} />}
+      {/* {quotationId && <ScopesList optionName={optionName} />} */}
     </div>
   );
 };
