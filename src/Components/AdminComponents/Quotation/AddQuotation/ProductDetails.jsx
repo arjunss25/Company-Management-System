@@ -1,16 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoIosAdd } from 'react-icons/io';
+import { FaEdit, FaTrash } from 'react-icons/fa';
 import ProductModal from './ProductModal';
 import ProductTable from './ProductTable';
 import ScopeModal from './ScopeModal';
 import { useDispatch, useSelector } from 'react-redux';
 import { addQuotationProduct } from '../../../../store/slices/quotationProductsSlice';
-import { toast } from 'react-hot-toast';
+import axiosInstance from '../../../../Config/axiosInstance';
 
-const ProductDetails = ({ 
-  optionValue, 
-  onProductsAdded = () => {} // provide default empty function
-}) => {
+const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
   const dispatch = useDispatch();
   const quotationId = useSelector((state) => state.quotation.id);
 
@@ -39,6 +37,23 @@ const ProductDetails = ({
   const [discountAmounts, setDiscountAmounts] = useState({});
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
 
+  // Scope related states
+  const [scopes, setScopes] = useState([]);
+  const [loadingScopes, setLoadingScopes] = useState(false);
+  const [scopeError, setScopeError] = useState(null);
+  const [selectedOption, setSelectedOption] = useState('Option 1');
+  const [editingScope, setEditingScope] = useState(null);
+
+  // Confirmation modal states
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [scopeToDelete, setScopeToDelete] = useState(null);
+
+  // Result modal states
+  const [showResultModal, setShowResultModal] = useState(false);
+  const [resultMessage, setResultMessage] = useState('');
+  const [resultSuccess, setResultSuccess] = useState(true);
+
+  // Column toggle handler
   const handleColumnToggle = (columnName) => {
     setSelectedColumns((prev) => ({
       ...prev,
@@ -46,6 +61,7 @@ const ProductDetails = ({
     }));
   };
 
+  // Dropdown change handler
   const handleDropdownChange = (field, value) => {
     setDropdownValues((prev) => ({
       ...prev,
@@ -53,10 +69,140 @@ const ProductDetails = ({
     }));
   };
 
+  // Fetch scopes when component mounts or when quotationId changes
+  useEffect(() => {
+    if (quotationId) {
+      fetchScopes();
+    }
+  }, [quotationId]);
+
+  // Function to fetch scopes
+  const fetchScopes = async () => {
+    if (!quotationId) return;
+
+    setLoadingScopes(true);
+    setScopeError(null);
+
+    try {
+      const response = await axiosInstance.get(
+        `/list-scopeof-work/${quotationId}/`
+      );
+      if (response.data && response.data.data) {
+        setScopes(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching scopes:', error);
+      setScopeError('Failed to load scopes');
+    } finally {
+      setLoadingScopes(false);
+    }
+  };
+
+  // Function to handle adding a scope
+  const handleAddScope = async (scopeData) => {
+    try {
+      setIsScopeModalOpen(false);
+
+      // Refresh scopes after adding
+      await fetchScopes();
+
+      // Show success modal
+      setResultSuccess(true);
+      setResultMessage('Scope added successfully');
+      setShowResultModal(true);
+    } catch (error) {
+      console.error('Error adding scope:', error);
+
+      // Show error modal
+      setResultSuccess(false);
+      setResultMessage('Failed to add scope');
+      setShowResultModal(true);
+    }
+  };
+
+  // Function to handle editing a scope
+  const handleEditScope = async (scope) => {
+    setSelectedOption(scope.options);
+    setEditingScope(scope);
+    setIsScopeModalOpen(true);
+  };
+
+  // Function to initiate scope deletion
+  const handleDeleteInitiate = (scope) => {
+    setScopeToDelete(scope);
+    setShowConfirmModal(true);
+  };
+
+  // Function to handle scope deletion
+  const handleDeleteScope = async () => {
+    if (!scopeToDelete || !quotationId) return;
+
+    setShowConfirmModal(false);
+
+    try {
+      await axiosInstance.delete(
+        `/edit-delete-scope/${quotationId}/${scopeToDelete.id}/`
+      );
+
+      // Refresh scopes
+      await fetchScopes();
+
+      // Show success modal
+      setResultSuccess(true);
+      setResultMessage('Scope deleted successfully');
+      setShowResultModal(true);
+    } catch (error) {
+      console.error('Error deleting scope:', error);
+
+      // Show error modal
+      setResultSuccess(false);
+      setResultMessage('Failed to delete scope');
+      setShowResultModal(true);
+    }
+  };
+
+  // Group scopes by option
+  const getScopesByOption = (optionName) => {
+    return scopes.filter((scope) => scope.options === optionName);
+  };
+
+  // Get unique options that have scopes, sorted in correct order
+  const getUniqueOptionsWithScopes = () => {
+    // Extract all options from scopes
+    const options = scopes.map((scope) => scope.options);
+    // Get unique options
+    const uniqueOptions = [...new Set(options)];
+
+    // Define the correct order for options
+    const optionOrder = {
+      'Option 1': 1,
+      'Option 2': 2,
+      'Option 3': 3,
+      'Option 4': 4,
+    };
+
+    // Sort options based on predefined order
+    return uniqueOptions.sort((a, b) => {
+      // If both options are in our order map, sort by the order values
+      if (optionOrder[a] && optionOrder[b]) {
+        return optionOrder[a] - optionOrder[b];
+      }
+      // If only one is in our order map, prioritize the one in the map
+      if (optionOrder[a]) return -1;
+      if (optionOrder[b]) return 1;
+      // If neither is in our map, sort alphabetically
+      return a.localeCompare(b);
+    });
+  };
+
+  // Product handling functions
   const handleAddProduct = async (product) => {
     try {
       if (!quotationId) {
-        toast.error('Please save work details first');
+        // Show error modal
+        setResultSuccess(false);
+        setResultMessage('Please save work details first');
+        setShowResultModal(true);
         return;
       }
 
@@ -66,8 +212,11 @@ const ProductDetails = ({
       const result = await dispatch(addQuotationProduct(product)).unwrap();
 
       if (result) {
-        toast.success('Product added successfully');
-        
+        // Show success modal
+        setResultSuccess(true);
+        setResultMessage('Product added successfully');
+        setShowResultModal(true);
+
         const productData = {
           heading: product.get('heading'),
           description: product.get('description'),
@@ -83,15 +232,16 @@ const ProductDetails = ({
           reference_number: product.get('reference_number'),
         };
 
-        const selectedOption = optionValue === 'Not Applicable'
-          ? 'Default Products'
-          : product.get('option') || 'Option 1';
+        const selectedOption =
+          optionValue === 'Not Applicable'
+            ? 'Default Products'
+            : product.get('option') || 'Option 1';
 
         setProductsByOption((prev) => ({
           ...prev,
-          [selectedOption]: [...(prev[selectedOption] || []), productData]
+          [selectedOption]: [...(prev[selectedOption] || []), productData],
         }));
-        
+
         setIsModalOpen(false);
         if (typeof onProductsAdded === 'function') {
           onProductsAdded();
@@ -99,7 +249,11 @@ const ProductDetails = ({
       }
     } catch (error) {
       console.error('Failed to add product:', error);
-      toast.error(error.message || 'Failed to add product');
+
+      // Show error modal
+      setResultSuccess(false);
+      setResultMessage(error.message || 'Failed to add product');
+      setShowResultModal(true);
     }
   };
 
@@ -169,12 +323,6 @@ const ProductDetails = ({
       ...prev,
       [option]: value,
     }));
-  };
-
-  const handleAddScope = (scopeData) => {
-    console.log('Scope data:', scopeData);
-    // Add your scope handling logic here
-    setIsScopeModalOpen(false);
   };
 
   return (
@@ -261,7 +409,11 @@ const ProductDetails = ({
 
         {dropdownValues.scopeOfWork === 'Applicable' && (
           <button
-            onClick={() => setIsScopeModalOpen(true)}
+            onClick={() => {
+              setEditingScope(null);
+              setSelectedOption('Option 1'); // Default to Option 1 for new scopes
+              setIsScopeModalOpen(true);
+            }}
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
           >
             <IoIosAdd className="text-[1.5rem] sm:text-[2rem]" />
@@ -280,6 +432,7 @@ const ProductDetails = ({
             onDelete={(index) => handleDeleteProduct(option, index)}
             optionName={option}
           />
+
           {/* Table Totals */}
           <div className="flex flex-col gap-2 items-end mt-4 mb-6">
             {(() => {
@@ -376,6 +529,187 @@ const ProductDetails = ({
         </div>
       ))}
 
+      {/* Separate Scope of Work section - only show if applicable */}
+      {dropdownValues.scopeOfWork === 'Applicable' && (
+        <div className="mt-8">
+          {loadingScopes ? (
+            <div className="text-center py-4 text-gray-500">
+              Loading scopes...
+            </div>
+          ) : scopeError ? (
+            <div className="text-center py-4 text-red-500">{scopeError}</div>
+          ) : scopes.length === 0 ? (
+            <div className="bg-gray-50 p-4 rounded-lg text-center text-gray-500 border border-gray-200">
+              No scope of work items added yet. Click "Add Scope" to add scope
+              of work.
+            </div>
+          ) : (
+            // Only map through options that actually have scopes, and sort them
+            getUniqueOptionsWithScopes().map((option) => {
+              const optionScopes = getScopesByOption(option);
+
+              return (
+                <div key={option} className="mb-6">
+                  <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-b">
+                      <h3 className="font-semibold text-gray-700">
+                        Scope Of Work: {option}
+                      </h3>
+                      <button
+                        onClick={() => {
+                          setSelectedOption(option);
+                          setEditingScope(null);
+                          setIsScopeModalOpen(true);
+                        }}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                      >
+                        <IoIosAdd className="text-lg" />
+                        <span>Add Scope</span>
+                      </button>
+                    </div>
+
+                    <div className="p-6">
+                      <div className="space-y-4">
+                        {optionScopes.map((scope, index) => (
+                          <div
+                            key={scope.id || index}
+                            className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                          >
+                            <div className="flex justify-between items-center mb-2">
+                              <h4 className="font-medium text-gray-800">
+                                Scope {index + 1}
+                              </h4>
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={() => handleEditScope(scope)}
+                                  className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                                  title="Edit scope"
+                                >
+                                  <FaEdit size={16} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteInitiate(scope)}
+                                  className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                                  title="Delete scope"
+                                >
+                                  <FaTrash size={16} />
+                                </button>
+                              </div>
+                            </div>
+                            <div
+                              className="prose prose-sm max-w-none text-gray-700"
+                              dangerouslySetInnerHTML={{
+                                __html: scope.scope_of_work,
+                              }}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-8 shadow-xl">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Confirm Deletion
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this scope of work? This action
+              cannot be undone.
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setShowConfirmModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteScope}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Result Modal */}
+      {showResultModal && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-8 shadow-xl">
+            <div
+              className={`w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center ${
+                resultSuccess
+                  ? 'bg-green-100 text-green-500'
+                  : 'bg-red-100 text-red-500'
+              }`}
+            >
+              {resultSuccess ? (
+                <svg
+                  className="w-8 h-8"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M5 13l4 4L19 7"
+                  ></path>
+                </svg>
+              ) : (
+                <svg
+                  className="w-8 h-8"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth="2"
+                    d="M6 18L18 6M6 6l12 12"
+                  ></path>
+                </svg>
+              )}
+            </div>
+            <h2
+              className={`text-xl font-semibold text-center mb-2 ${
+                resultSuccess ? 'text-green-600' : 'text-red-600'
+              }`}
+            >
+              {resultSuccess ? 'Success' : 'Error'}
+            </h2>
+            <p className="text-gray-600 text-center mb-6">{resultMessage}</p>
+            <div className="flex justify-center">
+              <button
+                onClick={() => setShowResultModal(false)}
+                className={`px-6 py-2 rounded-lg text-white ${
+                  resultSuccess
+                    ? 'bg-green-600 hover:bg-green-700'
+                    : 'bg-red-600 hover:bg-red-700'
+                }`}
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Product Modal */}
       <ProductModal
         isOpen={isModalOpen}
@@ -386,10 +720,14 @@ const ProductDetails = ({
         quotationId={quotationId}
       />
 
+      {/* Scope Modal */}
       <ScopeModal
         isOpen={isScopeModalOpen}
         onClose={() => setIsScopeModalOpen(false)}
         onAdd={handleAddScope}
+        initialData={editingScope}
+        defaultOption={selectedOption}
+        quotationId={quotationId}
       />
     </div>
   );

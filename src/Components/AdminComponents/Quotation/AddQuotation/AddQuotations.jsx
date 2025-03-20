@@ -5,6 +5,8 @@ import AddMaterials from './materials/AddMaterials';
 import WorkCompletionReport from './materials/WorkCompletionReport';
 import PhotoReport from './materials/PhotoReport';
 import Attachment from './materials/Attachment';
+import ScopeOfWorkSection from './ScopeOfWorkSection';
+import ProductDetails from './ProductDetails';
 
 const AddQuotations = () => {
   const [expandedSection, setExpandedSection] = useState(null);
@@ -15,7 +17,6 @@ const AddQuotations = () => {
 
   return (
     <div className="w-full flex">
-
       <div className="main-content w-full">
         <div className="title-sec w-full h-[12vh] flex items-center justify-center px-8 bg-white border-b">
           <h1 className="text-[1.8rem] font-semibold text-gray-800">
@@ -73,7 +74,7 @@ const AddQuotations = () => {
               }`}
             >
               <div className="border-t p-6">
-                <AddMaterials/>
+                <ProductDetails />
               </div>
             </div>
           </div>
@@ -103,7 +104,7 @@ const AddQuotations = () => {
               }`}
             >
               <div className="border-t p-6">
-                <WorkCompletionReport/>
+                <WorkCompletionReport />
               </div>
             </div>
           </div>
@@ -131,7 +132,7 @@ const AddQuotations = () => {
               }`}
             >
               <div className="border-t p-6">
-                <PhotoReport/>
+                <PhotoReport />
               </div>
             </div>
           </div>
@@ -159,7 +160,35 @@ const AddQuotations = () => {
               }`}
             >
               <div className="border-t p-6">
-                <Attachment/>
+                <Attachment />
+              </div>
+            </div>
+          </div>
+
+          {/* Scope of Work Section */}
+          <div className="bg-white rounded-lg shadow-sm mb-6">
+            <button
+              className={`w-full px-8 py-6 text-left flex justify-between items-center ${
+                expandedSection === 'scopeOfWork'
+                  ? 'rounded-t-lg'
+                  : 'rounded-lg'
+              }`}
+              onClick={() => toggleSection('scopeOfWork')}
+            >
+              <span className="text-[1.1rem] text-gray-700">Scope of Work</span>
+              <IoIosArrowDown
+                className={`text-gray-400 text-xl transition-transform duration-300 ${
+                  expandedSection === 'scopeOfWork' ? 'rotate-180' : ''
+                }`}
+              />
+            </button>
+            <div
+              className={`transition-all duration-300 ${
+                expandedSection === 'scopeOfWork' ? 'block' : 'hidden'
+              }`}
+            >
+              <div className="border-t">
+                <ScopeOfWorkSection />
               </div>
             </div>
           </div>

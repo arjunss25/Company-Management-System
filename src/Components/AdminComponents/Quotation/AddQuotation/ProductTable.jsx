@@ -3,8 +3,17 @@ import { FaEdit, FaTrash } from 'react-icons/fa';
 import { motion } from 'framer-motion';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchQuotationProducts } from '../../../../store/slices/quotationProductsSlice';
+import ScopesList from './ScopesList';
 
-const ProductTable = ({ selectedColumns, onEdit, onDelete, products, optionName }) => {
+const ProductTable = ({
+  selectedColumns,
+  onEdit,
+  onDelete,
+  products,
+  optionName,
+}) => {
+  const quotationId = useSelector((state) => state.quotation.id);
+
   const getVisibleColumns = () => {
     const defaultColumns = {
       'Sl. No': true,
@@ -97,29 +106,36 @@ const ProductTable = ({ selectedColumns, onEdit, onDelete, products, optionName 
   };
 
   return (
-    <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200">
-      <div className="bg-gray-50 px-8 py-4 border-b">
-        <h3 className="text-lg font-semibold text-gray-800">{optionName}</h3>
+    <div className="space-y-6">
+      <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200">
+        <div className="bg-gray-50 px-8 py-4 border-b">
+          <h3 className="text-lg font-semibold text-gray-800">{optionName}</h3>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[600px]">
+            <thead>
+              <tr className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
+                {visibleColumns.map((column) => (
+                  <th
+                    key={column}
+                    className="px-8 py-5 text-left text-sm font-semibold text-gray-600"
+                  >
+                    {column === 'Sl. No' ? 'ID' : column}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {products.map((product, index) =>
+                renderProductRow(product, index)
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
-      <div className="overflow-x-auto">
-        <table className="w-full min-w-[600px]">
-          <thead>
-            <tr className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
-              {visibleColumns.map((column) => (
-                <th
-                  key={column}
-                  className="px-8 py-5 text-left text-sm font-semibold text-gray-600"
-                >
-                  {column === 'Sl. No' ? 'ID' : column}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {products.map((product, index) => renderProductRow(product, index))}
-          </tbody>
-        </table>
-      </div>
+
+      {/* Only show scopes if we have a quotation ID */}
+      {quotationId && <ScopesList optionName={optionName} />}
     </div>
   );
 };

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoCloseOutline } from 'react-icons/io5';
 import {
   FaBold,
@@ -7,8 +7,17 @@ import {
   FaListUl,
   FaListOl,
 } from 'react-icons/fa';
+import { useSelector } from 'react-redux';
+import axiosInstance from '../../../../Config/axiosInstance';
 
-const ScopeModal = ({ isOpen, onClose, onAdd }) => {
+const ScopeModal = ({
+  isOpen,
+  onClose,
+  onAdd,
+  initialData = null,
+  defaultOption = 'Option 1',
+  quotationId = null,
+}) => {
   const [editorState, setEditorState] = useState({
     bold: false,
     italic: false,
@@ -18,7 +27,42 @@ const ScopeModal = ({ isOpen, onClose, onAdd }) => {
   });
 
   const [description, setDescription] = useState('');
-  const [selectedOption, setSelectedOption] = useState('Option 1');
+  const [selectedOption, setSelectedOption] = useState(defaultOption);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+
+  // Get quotation ID from Redux store
+  const quotationIdFromRedux = useSelector((state) => state.quotation.id);
+
+  // Update selected option when defaultOption prop changes
+  useEffect(() => {
+    if (defaultOption && !initialData) {
+      setSelectedOption(defaultOption);
+    }
+  }, [defaultOption, initialData]);
+
+  // Initialize data for editing if provided
+  useEffect(() => {
+    if (initialData) {
+      setDescription(initialData.scope_of_work || '');
+      setSelectedOption(initialData.options || defaultOption);
+
+      // Initialize editor with content if editing
+      const editor = document.getElementById('scope-editor');
+      if (editor) {
+        editor.innerHTML = initialData.scope_of_work || '';
+      }
+    } else {
+      setDescription('');
+      setSelectedOption(defaultOption);
+
+      // Clear editor content
+      const editor = document.getElementById('scope-editor');
+      if (editor) {
+        editor.innerHTML = '';
+      }
+    }
+  }, [initialData, isOpen, defaultOption]);
 
   if (!isOpen) return null;
 
@@ -132,13 +176,62 @@ const ScopeModal = ({ isOpen, onClose, onAdd }) => {
     listStylePosition: 'inside',
   };
 
-  const handleSubmit = () => {
-    const scopeData = {
-      description,
-      selectedOption,
-    };
-    onAdd(scopeData);
-    onClose();
+  const handleSubmit = async () => {
+    if (!description.trim()) {
+      setError('Scope description is required');
+      return;
+    }
+
+    if (!quotationId) {
+      setError(
+        'No quotation ID available. Please complete the work details first.'
+      );
+      return;
+    }
+
+    setIsSubmitting(true);
+    setError(null);
+
+    try {
+      // Format data according to API requirements
+      const scopeData = {
+        quotation_id: quotationId,
+        options: selectedOption,
+        scope_of_work: description,
+      };
+
+      console.log('Submitting scope data:', scopeData);
+
+      let response;
+
+      if (initialData) {
+        // Update existing scope using the same URL format as delete
+        // Use the correct URL format for editing
+        response = await axiosInstance.patch(
+          `/edit-delete-scope/${quotationId}/${initialData.id}/`,
+          scopeData
+        );
+      } else {
+        // Add new scope
+        response = await axiosInstance.post('/add-scopeof-work/', scopeData);
+      }
+
+      console.log('Scope API response:', response.data);
+
+      // Pass data back to parent component
+      onAdd({
+        ...scopeData,
+        id: response.data.id || initialData?.id,
+      });
+
+      // Close the modal
+      onClose();
+    } catch (err) {
+      console.error('Error saving scope of work:', err);
+      setError(err.response?.data?.message || 'Failed to save scope of work');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -152,7 +245,9 @@ const ScopeModal = ({ isOpen, onClose, onAdd }) => {
         <div className="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between p-6 border-b">
-            <h2 className="text-2xl font-semibold text-gray-800">Add Scope</h2>
+            <h2 className="text-2xl font-semibold text-gray-800">
+              {initialData ? 'Edit Scope' : 'Add Scope'}
+            </h2>
             <button
               onClick={onClose}
               className="p-2 text-gray-400 hover:text-gray-600 rounded-lg hover:bg-gray-100 transition-all"
@@ -163,6 +258,21 @@ const ScopeModal = ({ isOpen, onClose, onAdd }) => {
 
           {/* Content */}
           <div className="p-6 space-y-6">
+            {/* Display error if any */}
+            {error && (
+              <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200 mb-4">
+                {error}
+              </div>
+            )}
+
+            {/* Display quotation ID warning if missing */}
+            {!quotationId && (
+              <div className="p-4 bg-yellow-50 text-yellow-700 rounded-lg border border-yellow-200 mb-4">
+                Warning: No quotation ID available. You need to complete the
+                work details section first.
+              </div>
+            )}
+
             {/* Options dropdown */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
@@ -263,14 +373,24 @@ const ScopeModal = ({ isOpen, onClose, onAdd }) => {
             <button
               onClick={onClose}
               className="px-4 py-2 text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50"
+              disabled={isSubmitting}
             >
               Cancel
             </button>
             <button
               onClick={handleSubmit}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className={`px-4 py-2 bg-blue-600 text-white rounded-lg ${
+                isSubmitting
+                  ? 'opacity-70 cursor-not-allowed'
+                  : 'hover:bg-blue-700'
+              }`}
+              disabled={isSubmitting}
             >
-              Add Scope
+              {isSubmitting
+                ? 'Saving...'
+                : initialData
+                ? 'Update Scope'
+                : 'Add Scope'}
             </button>
           </div>
         </div>
