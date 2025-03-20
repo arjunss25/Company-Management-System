@@ -18,6 +18,8 @@ const ProductModal = ({
   onAdd,
   showOptions,
   quotationId,
+  initialData = null,
+  isEditing = false,
 }) => {
   // All useState hooks grouped together at the top
   const [editorState, setEditorState] = useState({
@@ -73,6 +75,35 @@ const ProductModal = ({
       }
     };
   }, [photoPreview]);
+
+  // Add useEffect to populate form with initial data when editing
+  useEffect(() => {
+    if (isEditing && initialData) {
+      setHeading(initialData.heading || 'Not Applicable');
+      setDescription(initialData.description || '');
+      setBrand(initialData.brand || '');
+      setLocation(initialData.location || '');
+      setItemCode(initialData.item_code || '');
+      setWorkOrderNumber(initialData.work_order_number || '');
+      setReferenceNumber(initialData.reference_number || '');
+      setUnit(initialData.unit?.toString() || '');
+      setQuantity(initialData.quantity?.toString() || '');
+      setUnitPrice(initialData.unit_price?.toString() || '');
+      setAmount(initialData.amount?.toString() || '');
+      setSelectedOption(initialData.option || 'Option 1');
+
+      // Reset photo preview if there's an existing photo
+      if (initialData.photo) {
+        setPhotoPreview(initialData.photo);
+      }
+
+      // Set the editor content
+      const editor = document.getElementById('editor');
+      if (editor) {
+        editor.innerHTML = initialData.description || '';
+      }
+    }
+  }, [isEditing, initialData, isOpen]);
 
   // Conditional return should come after all hooks
   if (!isOpen) return null;
@@ -689,7 +720,7 @@ const ProductModal = ({
                 type="submit"
                 className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
               >
-                Add Product
+                {isEditing ? 'Update Product' : 'Add Product'}
               </button>
             </div>
           </form>

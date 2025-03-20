@@ -1,22 +1,25 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoIosAdd } from 'react-icons/io';
 import { FaEdit, FaTrash } from 'react-icons/fa';
 import ProductModal from './ProductModal';
 import ProductTable from './ProductTable';
 import ScopeModal from './ScopeModal';
 import { useDispatch, useSelector } from 'react-redux';
-import { addQuotationProduct } from '../../../../store/slices/quotationProductsSlice';
-import axiosInstance from '../../../../Config/axiosInstance';
 import {
-  calculateSubTotal,
-  calculateVAT,
-  calculateDiscount,
-} from '../../../../Services/QuotationApi';
-import debounce from 'lodash/debounce';
+  addQuotationProduct,
+  fetchQuotationProducts,
+  deleteQuotationProduct,
+  updateQuotationProduct,
+} from '../../../../store/slices/quotationProductsSlice';
+import axiosInstance from '../../../../Config/axiosInstance';
 
 const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
   const dispatch = useDispatch();
   const quotationId = useSelector((state) => state.quotation.id);
+  const quotationProducts = useSelector(
+    (state) => state.quotationProducts.products
+  );
+  const loading = useSelector((state) => state.quotationProducts.loading);
 
   const [selectedColumns, setSelectedColumns] = useState({
     Photo: false,
@@ -59,8 +62,11 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
   const [resultMessage, setResultMessage] = useState('');
   const [resultSuccess, setResultSuccess] = useState(true);
 
-  // Add new state to store product IDs
-  const [productIds, setProductIds] = useState({});
+  // Add these new state variables
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [productToEdit, setProductToEdit] = useState(null);
 
   // Column toggle handler
   const handleColumnToggle = (columnName) => {
@@ -71,169 +77,11 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
   };
 
   // Dropdown change handler
-  const handleDropdownChange = async (field, value) => {
-    console.log(`Dropdown changed: ${field} = ${value}`);
-    console.log('Current productsByOption:', productsByOption);
-
+  const handleDropdownChange = (field, value) => {
     setDropdownValues((prev) => ({
       ...prev,
       [field]: value,
     }));
-
-    // Trigger relevant calculation when dropdown changes to Applicable
-    if (value === 'Applicable') {
-      Object.entries(productsByOption).forEach(async ([option, products]) => {
-        console.log(`Processing option: ${option}`, products);
-
-        // Check if products is an array and has items
-        if (!Array.isArray(products) || products.length === 0) {
-          console.log('No products found for option:', option);
-          return;
-        }
-
-        const productId = products[0]?.id;
-        console.log('Product ID found:', productId);
-
-        if (!productId) {
-          console.log('No product ID available for:', option);
-          return;
-        }
-
-        try {
-          switch (field) {
-            case 'subTotal':
-              const subTotalResponse = await calculateSubTotal({
-                product_id: productId.toString(),
-                sub_total: 'Applicable',
-              });
-              console.log('SubTotal API Response:', subTotalResponse);
-              if (subTotalResponse?.data) {
-                setCalculations((prev) => ({
-                  ...prev,
-                  [option]: {
-                    ...prev[option],
-                    subTotal: subTotalResponse.data,
-                  },
-                }));
-              }
-              break;
-
-            case 'vat':
-              console.log('Entering VAT case with:', {
-                option,
-                productId,
-                dropdownValue: value,
-              });
-
-              if (!productId) {
-                console.error('No product ID available for VAT calculation');
-                return;
-              }
-
-              try {
-                const vatPayload = {
-                  product_id: productId.toString(),
-                  vat: 'Applicable',
-                };
-
-                console.log('Sending VAT calculation request:', vatPayload);
-
-                const vatResponse = await calculateVAT(vatPayload);
-                console.log('Raw VAT Response:', vatResponse);
-
-                if (vatResponse?.data?.status === 'Success') {
-                  const responseData = vatResponse.data.data;
-                  console.log('VAT Response data:', responseData);
-
-                  if (
-                    responseData &&
-                    responseData.vat_amount &&
-                    responseData.grand_total
-                  ) {
-                    setCalculations((prev) => ({
-                      ...prev,
-                      [option]: {
-                        ...prev[option],
-                        vat: {
-                          vat_amount: responseData.vat_amount,
-                          grand_total: responseData.grand_total,
-                        },
-                      },
-                    }));
-                    console.log(
-                      'Successfully updated calculations with VAT data'
-                    );
-                  } else {
-                    console.error(
-                      'Invalid data structure in VAT response:',
-                      responseData
-                    );
-                  }
-                } else {
-                  console.error('Invalid VAT response:', vatResponse);
-                }
-              } catch (error) {
-                console.error('Error in VAT calculation:', error);
-                console.error('Error details:', {
-                  message: error.message,
-                  stack: error.stack,
-                  response: error.response,
-                });
-              }
-              break;
-
-            case 'discount':
-              if (discountAmounts[option]) {
-                try {
-                  const discountResponse = await calculateDiscount({
-                    product_id: productId.toString(),
-                    discount_amount: discountAmounts[option],
-                    discount: 'Applicable',
-                  });
-                  console.log('Discount API Response:', discountResponse);
-
-                  if (discountResponse?.data?.status === 'Success') {
-                    const responseData = discountResponse.data.data;
-                    console.log('Discount Response data:', responseData);
-
-                    if (responseData && responseData.grand_total) {
-                      setCalculations((prev) => ({
-                        ...prev,
-                        [option]: {
-                          ...prev[option],
-                          discount: {
-                            discount_amount: responseData.discount_amount,
-                            vat_amount: responseData.vat_amount,
-                            grand_total: responseData.grand_total,
-                          },
-                        },
-                      }));
-                      console.log(
-                        'Successfully updated calculations with discount data'
-                      );
-                    } else {
-                      console.error(
-                        'Invalid data structure in discount response:',
-                        responseData
-                      );
-                    }
-                  } else {
-                    console.error(
-                      'Invalid discount response:',
-                      discountResponse
-                    );
-                  }
-                } catch (error) {
-                  console.error('Error in discount calculation:', error);
-                }
-              }
-              break;
-          }
-        } catch (error) {
-          console.error(`Error calculating ${field}:`, error);
-        }
-      });
-    }
   };
 
   // Fetch scopes when component mounts or when quotationId changes
@@ -362,16 +210,157 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     });
   };
 
-  // Add this function to calculate initial total
-  const getInitialTotal = (products) => {
-    return products.reduce(
-      (sum, product) => sum + Number(product.amount || 0),
-      0
-    );
-  };
+  // Fetch products when component mounts or quotationId changes
+  useEffect(() => {
+    if (quotationId) {
+      dispatch(fetchQuotationProducts(quotationId));
+    }
+  }, [dispatch, quotationId]);
+
+  // Transform API response to match component's data structure format
+  useEffect(() => {
+    if (quotationProducts && quotationProducts.length > 0) {
+      const formattedProducts = {};
+
+      quotationProducts.forEach((optionGroup) => {
+        formattedProducts[optionGroup.option] = optionGroup.products || [];
+      });
+
+      setProductsByOption(formattedProducts);
+    }
+  }, [quotationProducts]);
 
   // Product handling functions
   const handleAddProduct = async (product) => {
+    try {
+      if (!quotationId) {
+        // Show error modal
+        setResultSuccess(false);
+        setResultMessage('Please save work details first');
+        setShowResultModal(true);
+        return;
+      }
+
+      product.set('quotation', quotationId.toString());
+      console.log('Sending product data:', product);
+
+      const result = await dispatch(addQuotationProduct(product)).unwrap();
+
+      if (result) {
+        // Show success modal
+        setResultSuccess(true);
+        setResultMessage('Product added successfully');
+        setShowResultModal(true);
+
+        const productData = {
+          heading: product.get('heading'),
+          description: product.get('description'),
+          unit: product.get('unit'),
+          quantity: product.get('quantity'),
+          unit_price: product.get('unit_price'),
+          amount: product.get('amount'),
+          option: product.get('option'),
+          brand: product.get('brand'),
+          location: product.get('location'),
+          item_code: product.get('item_code'),
+          work_order_number: product.get('work_order_number'),
+          reference_number: product.get('reference_number'),
+        };
+
+        const selectedOption =
+          optionValue === 'Not Applicable'
+            ? 'Default Products'
+            : product.get('option') || 'Option 1';
+
+        setProductsByOption((prev) => ({
+          ...prev,
+          [selectedOption]: [...(prev[selectedOption] || []), productData],
+        }));
+
+        setIsModalOpen(false);
+        if (typeof onProductsAdded === 'function') {
+          onProductsAdded();
+        }
+      }
+    } catch (error) {
+      console.error('Failed to add product:', error);
+
+      // Show error modal
+      setResultSuccess(false);
+      setResultMessage(error.message || 'Failed to add product');
+      setShowResultModal(true);
+    }
+  };
+
+  // Update the handleEditProduct function
+  const handleEditProduct = (product) => {
+    setProductToEdit(product);
+    setIsEditModalOpen(true);
+  };
+
+  // Update the handleDeleteProduct function to show confirmation modal first
+  const handleDeleteInitiateProduct = (option, product) => {
+    setProductToDelete({
+      id: product.id,
+      option: option,
+    });
+    setShowDeleteConfirmModal(true);
+  };
+
+  // Add new function to execute the deletion
+  const handleDeleteProduct = async () => {
+    if (!productToDelete || !quotationId) return;
+
+    setShowDeleteConfirmModal(false);
+
+    try {
+      await dispatch(
+        deleteQuotationProduct({
+          quotationId,
+          productId: productToDelete.id,
+        })
+      ).unwrap();
+
+      // Show success modal
+      setResultSuccess(true);
+      setResultMessage('Product deleted successfully');
+      setShowResultModal(true);
+
+      // Refresh products list immediately
+      await dispatch(fetchQuotationProducts(quotationId));
+
+      // Also manually update the local state to remove the deleted product
+      if (productToDelete.option) {
+        setProductsByOption((prev) => {
+          const updated = { ...prev };
+
+          if (updated[productToDelete.option]) {
+            // Filter out the deleted product by ID
+            updated[productToDelete.option] = updated[
+              productToDelete.option
+            ].filter((product) => product.id !== productToDelete.id);
+
+            // If the option has no more products, remove the option
+            if (updated[productToDelete.option].length === 0) {
+              delete updated[productToDelete.option];
+            }
+          }
+
+          return updated;
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting product:', error);
+
+      // Show error modal
+      setResultSuccess(false);
+      setResultMessage(error.message || 'Failed to delete product');
+      setShowResultModal(true);
+    }
+  };
+
+  // Update the handleUpdateProduct function to properly close the modal
+  const handleUpdateProduct = async (updatedProduct) => {
     try {
       if (!quotationId) {
         setResultSuccess(false);
@@ -380,89 +369,43 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
         return;
       }
 
-      product.set('quotation', quotationId.toString());
-      console.log('Adding product with data:', {
-        quotationId,
-        productFormData: Object.fromEntries(product.entries()),
-      });
+      if (!productToEdit || !productToEdit.id) {
+        setResultSuccess(false);
+        setResultMessage('Invalid product data for update');
+        setShowResultModal(true);
+        return;
+      }
 
-      const result = await dispatch(addQuotationProduct(product)).unwrap();
-      console.log('Add product API response:', result);
+      updatedProduct.set('quotation', quotationId.toString());
+
+      // Close the modal first before the API call to improve UX
+      setIsEditModalOpen(false);
+
+      const result = await dispatch(
+        updateQuotationProduct({
+          quotationId,
+          productId: productToEdit.id,
+          formData: updatedProduct,
+        })
+      ).unwrap();
 
       if (result) {
-        const selectedOption =
-          optionValue === 'Not Applicable'
-            ? 'Default Products'
-            : product.get('option') || 'Option 1';
+        // Show success modal
+        setResultSuccess(true);
+        setResultMessage('Product updated successfully');
+        setShowResultModal(true);
 
-        const productData = {
-          id: result.data.id,
-          heading: product.get('heading'),
-          description: product.get('description'),
-          unit: product.get('unit'),
-          quantity: product.get('quantity'),
-          unit_price: product.get('unit_price'),
-          amount: product.get('amount'),
-          option: selectedOption,
-          brand: product.get('brand'),
-          location: product.get('location'),
-          item_code: product.get('item_code'),
-          work_order_number: product.get('work_order_number'),
-          reference_number: product.get('reference_number'),
-        };
+        // Reset edit state
+        setProductToEdit(null);
 
-        console.log('Setting productsByOption with:', {
-          option: selectedOption,
-          productData,
-        });
-
-        setProductsByOption((prev) => ({
-          ...prev,
-          [selectedOption]: [...(prev[selectedOption] || []), productData],
-        }));
-
-        // Store the product ID
-        setProductIds((prev) => ({
-          ...prev,
-          [selectedOption]: result.data.id,
-        }));
-
-        setIsModalOpen(false);
-        onProductsAdded();
+        // Refresh products list
+        dispatch(fetchQuotationProducts(quotationId));
       }
     } catch (error) {
-      console.error('Failed to add product:', error);
+      console.error('Failed to update product:', error);
       setResultSuccess(false);
-      setResultMessage(error.message || 'Failed to add product');
+      setResultMessage(error.message || 'Failed to update product');
       setShowResultModal(true);
-    }
-  };
-
-  const handleEditProduct = (product) => {
-    console.log('Edit product:', product);
-  };
-
-  const handleDeleteProduct = (optionName, productIndex) => {
-    setProductsByOption((prev) => ({
-      ...prev,
-      [optionName]: [
-        prev[optionName][0].filter((_, i) => i !== productIndex),
-        ...prev[optionName].slice(1),
-      ],
-    }));
-
-    // Remove the product ID when deleting the product
-    if (productsByOption[optionName][0].length === 1) {
-      const updatedProducts = { ...productsByOption };
-      delete updatedProducts[optionName];
-      setProductsByOption(updatedProducts);
-
-      // Also remove the product ID
-      setProductIds((prev) => {
-        const updated = { ...prev };
-        delete updated[optionName];
-        return updated;
-      });
     }
   };
 
@@ -475,23 +418,24 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
   };
 
   // Calculate VAT amount (5% of amount after discount)
-  const calculateLocalVAT = (amount) => {
+  const calculateVAT = (amount) => {
     return amount * 0.05;
   };
 
   // Calculate final total with discount and VAT
   const calculateFinalTotal = (baseTotal, option) => {
+    // Get discount amount (if applicable)
     const discount =
       dropdownValues.discount === 'Applicable'
         ? Number(discountAmounts[option] || 0)
         : 0;
 
+    // Apply discount
     const afterDiscount = baseTotal - discount;
 
+    // Calculate and apply VAT if applicable
     const vat =
-      dropdownValues.vat === 'Applicable'
-        ? calculateLocalVAT(afterDiscount)
-        : 0;
+      dropdownValues.vat === 'Applicable' ? calculateVAT(afterDiscount) : 0;
 
     return {
       baseTotal,
@@ -508,47 +452,29 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       ...prev,
       [option]: value,
     }));
-  
-    // Only trigger calculation if discount is applicable
-    if (dropdownValues.discount === 'Applicable') {
-      const productId = productsByOption[option]?.[0]?.id;
-      if (productId) {
-        debouncedDiscountCalculation(productId, value, option);
-      }
-    }
   };
-  
-  // Update the debounced discount calculation
-  const debouncedDiscountCalculation = useCallback(
-    debounce(async (productId, discountAmount, option) => {
-      try {
-        const response = await calculateDiscount({
-          product_id: productId.toString(),
-          discount_amount: discountAmount,
-          discount: 'Applicable',
-        });
-  
-        if (response?.status === 'Success' && response?.data) {
-          setCalculations((prev) => ({
-            ...prev,
-            [option]: {
-              ...prev[option],
-              discount: {
-                discount_amount: response.data.discount_amount,
-                vat_amount: response.data.vat_amount,
-                grand_total: response.data.grand_total,
-              },
-            },
-          }));
-        }
-      } catch (error) {
-        console.error('Error calculating discount:', error);
-      }
-    }, 500),
-    []
-  );
 
-  const [calculations, setCalculations] = useState({});
+  // Add this function to sort options in the correct order
+  const getSortedOptions = (productOptions) => {
+    const optionOrder = {
+      'Option 1': 1,
+      'Option 2': 2,
+      'Option 3': 3,
+      'Option 4': 4,
+    };
+
+    return Object.keys(productOptions).sort((a, b) => {
+      // If both options are in our order map, sort by the order values
+      if (optionOrder[a] && optionOrder[b]) {
+        return optionOrder[a] - optionOrder[b];
+      }
+      // If only one is in our order map, prioritize the one in the map
+      if (optionOrder[a]) return -1;
+      if (optionOrder[b]) return 1;
+      // If neither is in our map, sort alphabetically
+      return a.localeCompare(b);
+    });
+  };
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6 space-y-4 sm:space-y-8">
@@ -648,81 +574,123 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       </div>
 
       {/* Product Tables */}
-      {Object.entries(productsByOption).map(([option, products]) => (
-        <div key={option}>
-          <ProductTable
-            products={products}
-            selectedColumns={selectedColumns}
-            onEdit={handleEditProduct}
-            onDelete={(index) => handleDeleteProduct(option, index)}
-            optionName={option}
-          />
+      {loading ? (
+        <div className="flex justify-center items-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : Object.keys(productsByOption).length === 0 ? (
+        <div className="text-center py-8 text-gray-500">
+          No products added yet. Click "Add Line Item" to add products.
+        </div>
+      ) : (
+        getSortedOptions(productsByOption).map((option) => (
+          <div key={option}>
+            <ProductTable
+              products={productsByOption[option]}
+              selectedColumns={selectedColumns}
+              onEdit={handleEditProduct}
+              onDelete={(product) =>
+                handleDeleteInitiateProduct(option, product)
+              }
+              optionName={option}
+            />
 
-          <div className="flex flex-col gap-2 items-end mt-4 mb-6">
-            {/* Sub Total */}
-            {dropdownValues.subTotal === 'Applicable' && (
-              <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                <span className="text-sm font-medium text-gray-600">
-                  Sub Total:
+            {/* Table Totals */}
+            <div className="flex flex-col gap-2 items-end mt-4 mb-6">
+              {(() => {
+                const baseTotal = calculateTableTotal(productsByOption[option]);
+                const totals = calculateFinalTotal(baseTotal, option);
+
+                return (
+                  <>
+                    {dropdownValues.subTotal === 'Applicable' && (
+                      <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                        <span className="text-sm font-medium text-gray-600">
+                          Sub Total:
+                        </span>
+                        <span className="ml-2 text-sm font-semibold text-gray-900">
+                          ${baseTotal.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                      <span className="text-sm font-medium text-gray-600">
+                        Total Amount:
+                      </span>
+                      <span className="ml-2 text-sm font-semibold text-gray-900">
+                        ${baseTotal.toFixed(2)}
+                      </span>
+                    </div>
+
+                    {/* Discount input when applicable */}
+                    {dropdownValues.discount === 'Applicable' && (
+                      <div className="bg-gray-50 px-4 py-2 rounded-lg flex items-center">
+                        <span className="text-sm font-medium text-gray-600 mr-2">
+                          Discount:
+                        </span>
+                        <div className="flex items-center">
+                          <span className="text-gray-600 mr-1">$</span>
+                          <input
+                            type="number"
+                            value={discountAmounts[option] || ''}
+                            onChange={(e) =>
+                              handleDiscountChange(option, e.target.value)
+                            }
+                            className="w-24 p-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                            placeholder="0.00"
+                            min="0"
+                            step="0.01"
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    {dropdownValues.discount === 'Applicable' && (
+                      <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                        <span className="text-sm font-medium text-gray-600">
+                          After Discount:
+                        </span>
+                        <span className="ml-2 text-sm font-semibold text-gray-900">
+                          ${totals.afterDiscount.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* VAT when applicable */}
+                    {dropdownValues.vat === 'Applicable' && (
+                      <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                        <span className="text-sm font-medium text-gray-600">
+                          VAT (5%):
+                        </span>
+                        <span className="ml-2 text-sm font-semibold text-gray-900">
+                          ${totals.vat.toFixed(2)}
+                        </span>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Option Grand Total */}
+            <div className="flex justify-end mt-6 mb-8 border-t pt-4">
+              <div className="bg-blue-50 px-6 py-3 rounded-lg">
+                <span className="text-base font-medium text-blue-700">
+                  {option} Grand Total:
                 </span>
-                <span className="ml-2 text-sm font-semibold text-gray-900">
+                <span className="ml-3 text-lg font-semibold text-blue-900">
                   $
-                  {calculations[option]?.subTotal ||
-                    getInitialTotal(products).toFixed(2)}
+                  {calculateFinalTotal(
+                    calculateTableTotal(productsByOption[option]),
+                    option
+                  ).finalTotal.toFixed(2)}
                 </span>
               </div>
-            )}
-
-            {/* Discount input */}
-            {dropdownValues.discount === 'Applicable' && (
-              <div className="bg-gray-50 px-4 py-2 rounded-lg flex items-center">
-                <span className="text-sm font-medium text-gray-600 mr-2">
-                  Discount:
-                </span>
-                <div className="flex items-center">
-                  <span className="text-gray-600 mr-1">$</span>
-                  <input
-                    type="number"
-                    value={discountAmounts[option] || ''}
-                    onChange={(e) =>
-                      handleDiscountChange(option, e.target.value)
-                    }
-                    className="w-24 p-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                    placeholder="0.00"
-                    min="0"
-                    step="0.01"
-                  />
-                </div>
-              </div>
-            )}
-
-            {/* VAT */}
-            {dropdownValues.vat === 'Applicable' && (
-              <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                <span className="text-sm font-medium text-gray-600">
-                  VAT (5%):
-                </span>
-                <span className="ml-2 text-sm font-semibold text-gray-900">
-                  ${calculations[option]?.vat?.vat_amount || '0.00'}
-                </span>
-              </div>
-            )}
-
-            {/* Grand Total */}
-            <div className="bg-blue-50 px-6 py-3 rounded-lg">
-              <span className="text-base font-medium text-blue-700">
-                {option} Grand Total:
-              </span>
-              <span className="ml-3 text-lg font-semibold text-blue-900">
-                $
-                {(calculations[option]?.discount?.grand_total ||
-                  calculations[option]?.vat?.grand_total ||
-                  getInitialTotal(products))?.toFixed(2)}
-              </span>
             </div>
           </div>
-        </div>
-      ))}
+        ))
+      )}
 
       {/* Separate Scope of Work section - only show if applicable */}
       {dropdownValues.scopeOfWork === 'Applicable' && (
@@ -905,6 +873,35 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
         </div>
       )}
 
+      {/* Add Delete Product Confirmation Modal */}
+      {showDeleteConfirmModal && (
+        <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg max-w-md w-full mx-4 p-8 shadow-xl">
+            <h2 className="text-xl font-semibold text-gray-800 mb-4">
+              Confirm Product Deletion
+            </h2>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this product? This action cannot
+              be undone.
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => setShowDeleteConfirmModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteProduct}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Product Modal */}
       <ProductModal
         isOpen={isModalOpen}
@@ -923,6 +920,21 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
         initialData={editingScope}
         defaultOption={selectedOption}
         quotationId={quotationId}
+      />
+
+      {/* Edit Product Modal */}
+      <ProductModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setProductToEdit(null);
+        }}
+        selectedColumns={selectedColumns}
+        onAdd={handleUpdateProduct}
+        showOptions={optionValue === 'Applicable'}
+        quotationId={quotationId}
+        initialData={productToEdit}
+        isEditing={true}
       />
     </div>
   );

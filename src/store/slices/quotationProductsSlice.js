@@ -104,6 +104,60 @@ export const fetchQuotationMaterials = createAsyncThunk(
   }
 );
 
+export const deleteQuotationProduct = createAsyncThunk(
+  'quotationProducts/deleteQuotationProduct',
+  async ({ quotationId, productId }, { rejectWithValue }) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/edit-delete-quotation-products/${quotationId}/${productId}/`
+      );
+      console.log('Delete product response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      return rejectWithValue(
+        error.response?.data || { message: 'Failed to delete product' }
+      );
+    }
+  }
+);
+
+export const updateQuotationProduct = createAsyncThunk(
+  'quotationProducts/updateQuotationProduct',
+  async (
+    { quotationId, productId, formData },
+    { rejectWithValue, dispatch }
+  ) => {
+    try {
+      console.log('=== Sending Update FormData to API ===');
+      for (let pair of formData.entries()) {
+        console.log(`${pair[0]}: ${pair[1]}`);
+      }
+
+      const response = await axiosInstance.patch(
+        `/edit-delete-quotation-products/${quotationId}/${productId}/`,
+        formData
+      );
+      console.log('API Update Response:', response.data);
+
+      // After successfully updating the product, fetch updated list
+      if (quotationId) {
+        dispatch(fetchQuotationProducts(quotationId));
+      }
+
+      return response.data;
+    } catch (error) {
+      console.log('API Update Error:', error);
+      if (error.response) {
+        console.log('Error Response:', error.response.data);
+      }
+      return rejectWithValue(
+        error.response?.data || { message: 'Failed to update product' }
+      );
+    }
+  }
+);
+
 const quotationProductsSlice = createSlice({
   name: 'quotationProducts',
   initialState: {
@@ -162,6 +216,30 @@ const quotationProductsSlice = createSlice({
         state.materials = action.payload;
       })
       .addCase(fetchQuotationMaterials.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Delete product cases
+      .addCase(deleteQuotationProduct.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(deleteQuotationProduct.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(deleteQuotationProduct.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
+      // Update product cases
+      .addCase(updateQuotationProduct.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(updateQuotationProduct.fulfilled, (state) => {
+        state.loading = false;
+      })
+      .addCase(updateQuotationProduct.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       });

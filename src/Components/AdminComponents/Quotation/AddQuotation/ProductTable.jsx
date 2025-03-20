@@ -57,7 +57,7 @@ const ProductTable = ({
               <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => onDelete(index)}
+                onClick={() => onDelete(product)}
                 className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-300"
               >
                 <FaTrash size={18} />
