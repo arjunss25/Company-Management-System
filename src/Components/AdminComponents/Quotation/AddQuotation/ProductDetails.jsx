@@ -219,22 +219,27 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
 
   // Transform API response to match component's data structure format
   useEffect(() => {
-    if (quotationProducts && quotationProducts.length > 0) {
+    if (quotationProducts && Array.isArray(quotationProducts)) {
       const formattedProducts = {};
 
       quotationProducts.forEach((optionGroup) => {
-        formattedProducts[optionGroup.option] = optionGroup.products || [];
+        if (optionGroup && optionGroup.products) {
+          const optionKey =
+            optionValue === 'Not Applicable'
+              ? 'Default Products'
+              : optionGroup.option;
+          formattedProducts[optionKey] = optionGroup.products || [];
+        }
       });
 
       setProductsByOption(formattedProducts);
     }
-  }, [quotationProducts]);
+  }, [quotationProducts, optionValue]);
 
   // Product handling functions
   const handleAddProduct = async (product) => {
     try {
       if (!quotationId) {
-        // Show error modal
         setResultSuccess(false);
         setResultMessage('Please save work details first');
         setShowResultModal(true);
@@ -242,12 +247,17 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       }
 
       product.set('quotation', quotationId.toString());
-      console.log('Sending product data:', product);
 
+      // Only set option if optionValue is 'Applicable'
+      if (optionValue === 'Not Applicable') {
+        // Remove option from FormData if it exists
+        product.delete('option');
+      }
+
+      console.log('Sending product data:', product);
       const result = await dispatch(addQuotationProduct(product)).unwrap();
 
       if (result) {
-        // Show success modal
         setResultSuccess(true);
         setResultMessage('Product added successfully');
         setShowResultModal(true);
@@ -259,7 +269,6 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
           quantity: product.get('quantity'),
           unit_price: product.get('unit_price'),
           amount: product.get('amount'),
-          option: product.get('option'),
           brand: product.get('brand'),
           location: product.get('location'),
           item_code: product.get('item_code'),
@@ -267,14 +276,15 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
           reference_number: product.get('reference_number'),
         };
 
-        const selectedOption =
+        // For display purposes, use 'Default Products' as the key
+        const displayOption =
           optionValue === 'Not Applicable'
             ? 'Default Products'
-            : product.get('option') || 'Option 1';
+            : product.get('option');
 
         setProductsByOption((prev) => ({
           ...prev,
-          [selectedOption]: [...(prev[selectedOption] || []), productData],
+          [displayOption]: [...(prev[displayOption] || []), productData],
         }));
 
         setIsModalOpen(false);
@@ -284,8 +294,6 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       }
     } catch (error) {
       console.error('Failed to add product:', error);
-
-      // Show error modal
       setResultSuccess(false);
       setResultMessage(error.message || 'Failed to add product');
       setShowResultModal(true);
@@ -409,8 +417,11 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     }
   };
 
-  // Calculate base total for a single table
+  // Update the calculateTableTotal function
   const calculateTableTotal = (products) => {
+    if (!products || !Array.isArray(products)) {
+      return 0;
+    }
     return products.reduce(
       (sum, product) => sum + Number(product.amount || 0),
       0
@@ -454,8 +465,13 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     }));
   };
 
-  // Add this function to sort options in the correct order
+  // Update the getSortedOptions function
   const getSortedOptions = (productOptions) => {
+    // If option is Not Applicable, only show Default Products
+    if (optionValue === 'Not Applicable') {
+      return ['Default Products'];
+    }
+
     const optionOrder = {
       'Option 1': 1,
       'Option 2': 2,
@@ -583,113 +599,118 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
           No products added yet. Click "Add Line Item" to add products.
         </div>
       ) : (
-        getSortedOptions(productsByOption).map((option) => (
-          <div key={option}>
-            <ProductTable
-              products={productsByOption[option]}
-              selectedColumns={selectedColumns}
-              onEdit={handleEditProduct}
-              onDelete={(product) =>
-                handleDeleteInitiateProduct(option, product)
-              }
-              optionName={option}
-            />
+        getSortedOptions(productsByOption).map((option) => {
+          // Add null check for productsByOption[option]
+          const products = productsByOption[option] || [];
 
-            {/* Table Totals */}
-            <div className="flex flex-col gap-2 items-end mt-4 mb-6">
-              {(() => {
-                const baseTotal = calculateTableTotal(productsByOption[option]);
-                const totals = calculateFinalTotal(baseTotal, option);
+          return (
+            <div key={option}>
+              <ProductTable
+                products={products}
+                selectedColumns={selectedColumns}
+                onEdit={handleEditProduct}
+                onDelete={(product) =>
+                  handleDeleteInitiateProduct(option, product)
+                }
+                optionName={option}
+              />
 
-                return (
-                  <>
-                    {dropdownValues.subTotal === 'Applicable' && (
+              {/* Table Totals */}
+              <div className="flex flex-col gap-2 items-end mt-4 mb-6">
+                {(() => {
+                  const baseTotal = calculateTableTotal(products);
+                  const totals = calculateFinalTotal(baseTotal, option);
+
+                  return (
+                    <>
+                      {dropdownValues.subTotal === 'Applicable' && (
+                        <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                          <span className="text-sm font-medium text-gray-600">
+                            Sub Total:
+                          </span>
+                          <span className="ml-2 text-sm font-semibold text-gray-900">
+                            ${baseTotal.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+
                       <div className="bg-gray-50 px-4 py-2 rounded-lg">
                         <span className="text-sm font-medium text-gray-600">
-                          Sub Total:
+                          Total Amount:
                         </span>
                         <span className="ml-2 text-sm font-semibold text-gray-900">
                           ${baseTotal.toFixed(2)}
                         </span>
                       </div>
-                    )}
 
-                    <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                      <span className="text-sm font-medium text-gray-600">
-                        Total Amount:
-                      </span>
-                      <span className="ml-2 text-sm font-semibold text-gray-900">
-                        ${baseTotal.toFixed(2)}
-                      </span>
-                    </div>
-
-                    {/* Discount input when applicable */}
-                    {dropdownValues.discount === 'Applicable' && (
-                      <div className="bg-gray-50 px-4 py-2 rounded-lg flex items-center">
-                        <span className="text-sm font-medium text-gray-600 mr-2">
-                          Discount:
-                        </span>
-                        <div className="flex items-center">
-                          <span className="text-gray-600 mr-1">$</span>
-                          <input
-                            type="number"
-                            value={discountAmounts[option] || ''}
-                            onChange={(e) =>
-                              handleDiscountChange(option, e.target.value)
-                            }
-                            className="w-24 p-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
-                            placeholder="0.00"
-                            min="0"
-                            step="0.01"
-                          />
+                      {/* Discount input when applicable */}
+                      {dropdownValues.discount === 'Applicable' && (
+                        <div className="bg-gray-50 px-4 py-2 rounded-lg flex items-center">
+                          <span className="text-sm font-medium text-gray-600 mr-2">
+                            Discount:
+                          </span>
+                          <div className="flex items-center">
+                            <span className="text-gray-600 mr-1">$</span>
+                            <input
+                              type="number"
+                              value={discountAmounts[option] || ''}
+                              onChange={(e) =>
+                                handleDiscountChange(option, e.target.value)
+                              }
+                              className="w-24 p-1 border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                              placeholder="0.00"
+                              min="0"
+                              step="0.01"
+                            />
+                          </div>
                         </div>
-                      </div>
-                    )}
+                      )}
 
-                    {dropdownValues.discount === 'Applicable' && (
-                      <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                        <span className="text-sm font-medium text-gray-600">
-                          After Discount:
-                        </span>
-                        <span className="ml-2 text-sm font-semibold text-gray-900">
-                          ${totals.afterDiscount.toFixed(2)}
-                        </span>
-                      </div>
-                    )}
+                      {dropdownValues.discount === 'Applicable' && (
+                        <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                          <span className="text-sm font-medium text-gray-600">
+                            After Discount:
+                          </span>
+                          <span className="ml-2 text-sm font-semibold text-gray-900">
+                            ${totals.afterDiscount.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
 
-                    {/* VAT when applicable */}
-                    {dropdownValues.vat === 'Applicable' && (
-                      <div className="bg-gray-50 px-4 py-2 rounded-lg">
-                        <span className="text-sm font-medium text-gray-600">
-                          VAT (5%):
-                        </span>
-                        <span className="ml-2 text-sm font-semibold text-gray-900">
-                          ${totals.vat.toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-                  </>
-                );
-              })()}
-            </div>
+                      {/* VAT when applicable */}
+                      {dropdownValues.vat === 'Applicable' && (
+                        <div className="bg-gray-50 px-4 py-2 rounded-lg">
+                          <span className="text-sm font-medium text-gray-600">
+                            VAT (5%):
+                          </span>
+                          <span className="ml-2 text-sm font-semibold text-gray-900">
+                            ${totals.vat.toFixed(2)}
+                          </span>
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
+              </div>
 
-            {/* Option Grand Total */}
-            <div className="flex justify-end mt-6 mb-8 border-t pt-4">
-              <div className="bg-blue-50 px-6 py-3 rounded-lg">
-                <span className="text-base font-medium text-blue-700">
-                  {option} Grand Total:
-                </span>
-                <span className="ml-3 text-lg font-semibold text-blue-900">
-                  $
-                  {calculateFinalTotal(
-                    calculateTableTotal(productsByOption[option]),
-                    option
-                  ).finalTotal.toFixed(2)}
-                </span>
+              {/* Option Grand Total */}
+              <div className="flex justify-end mt-6 mb-8 border-t pt-4">
+                <div className="bg-blue-50 px-6 py-3 rounded-lg">
+                  <span className="text-base font-medium text-blue-700">
+                    {option} Grand Total:
+                  </span>
+                  <span className="ml-3 text-lg font-semibold text-blue-900">
+                    $
+                    {calculateFinalTotal(
+                      calculateTableTotal(products),
+                      option
+                    ).finalTotal.toFixed(2)}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        ))
+          );
+        })
       )}
 
       {/* Separate Scope of Work section - only show if applicable */}
@@ -706,11 +727,10 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
               No scope of work items added yet. Click "Add Scope" to add scope
               of work.
             </div>
-          ) : (
-            // Only map through options that actually have scopes, and sort them
+          ) : // Only map through options if optionValue is 'Applicable'
+          optionValue === 'Applicable' ? (
             getUniqueOptionsWithScopes().map((option) => {
               const optionScopes = getScopesByOption(option);
-
               return (
                 <div key={option} className="mb-6">
                   <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
@@ -773,6 +793,66 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
                 </div>
               );
             })
+          ) : (
+            // Render single scope section for Not Applicable
+            <div className="mb-6">
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-b">
+                  <h3 className="font-semibold text-gray-700">
+                    Default Scope Of Work
+                  </h3>
+                  <button
+                    onClick={() => {
+                      setEditingScope(null);
+                      setIsScopeModalOpen(true);
+                    }}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+                  >
+                    <IoIosAdd className="text-lg" />
+                    <span>Add Scope</span>
+                  </button>
+                </div>
+
+                <div className="p-6">
+                  <div className="space-y-4">
+                    {scopes.map((scope, index) => (
+                      <div
+                        key={scope.id || index}
+                        className="bg-gray-50 p-4 rounded-lg border border-gray-200 hover:shadow-md transition-shadow"
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <h4 className="font-medium text-gray-800">
+                            Scope {index + 1}
+                          </h4>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => handleEditScope(scope)}
+                              className="p-1 text-blue-600 hover:bg-blue-100 rounded transition-colors"
+                              title="Edit scope"
+                            >
+                              <FaEdit size={16} />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteInitiate(scope)}
+                              className="p-1 text-red-600 hover:bg-red-100 rounded transition-colors"
+                              title="Delete scope"
+                            >
+                              <FaTrash size={16} />
+                            </button>
+                          </div>
+                        </div>
+                        <div
+                          className="prose prose-sm max-w-none text-gray-700"
+                          dangerouslySetInnerHTML={{
+                            __html: scope.scope_of_work,
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -918,8 +998,9 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
         onClose={() => setIsScopeModalOpen(false)}
         onAdd={handleAddScope}
         initialData={editingScope}
-        defaultOption={selectedOption}
+        defaultOption={optionValue}
         quotationId={quotationId}
+        showOptions={optionValue === 'Applicable'}
       />
 
       {/* Edit Product Modal */}

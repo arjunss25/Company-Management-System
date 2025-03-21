@@ -17,7 +17,11 @@ const ScopeModal = ({
   initialData = null,
   defaultOption = 'Option 1',
   quotationId = null,
+  showOptions = true,
 }) => {
+  // Add this console log to see what's being received
+  console.log('ScopeModal received defaultOption:', defaultOption);
+
   const [editorState, setEditorState] = useState({
     bold: false,
     italic: false,
@@ -63,6 +67,11 @@ const ScopeModal = ({
       }
     }
   }, [initialData, isOpen, defaultOption]);
+
+  // Update the condition to check if options are "Applicable"
+  const shouldShowOptions = showOptions && defaultOption === 'Applicable';
+
+  console.log('Should show options dropdown:', shouldShowOptions);
 
   if (!isOpen) return null;
 
@@ -273,21 +282,23 @@ const ScopeModal = ({
               </div>
             )}
 
-            {/* Options dropdown */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Options
-              </label>
-              <select
-                value={selectedOption}
-                onChange={(e) => setSelectedOption(e.target.value)}
-                className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-              >
-                <option value="Option 1">Option 1</option>
-                <option value="Option 2">Option 2</option>
-                <option value="Option 3">Option 3</option>
-              </select>
-            </div>
+            {/* Options dropdown - only show if options are "Applicable" */}
+            {shouldShowOptions && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Options
+                </label>
+                <select
+                  value={selectedOption}
+                  onChange={(e) => setSelectedOption(e.target.value)}
+                  className="w-full p-2.5 bg-gray-50 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                >
+                  <option value="Option 1">Option 1</option>
+                  <option value="Option 2">Option 2</option>
+                  <option value="Option 3">Option 3</option>
+                </select>
+              </div>
+            )}
 
             {/* Rich Text Editor */}
             <div className="space-y-2">

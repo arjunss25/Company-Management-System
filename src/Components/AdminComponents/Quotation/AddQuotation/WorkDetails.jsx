@@ -15,16 +15,19 @@ import SiteInChargeModal from './SiteInChargeModal';
 import AddStaffModal from '../../../Common/AddStaffModal';
 import { useDispatch } from 'react-redux';
 import { setQuotationDetails } from '../../../../store/slices/quotationSlice';
+import ScopeModal from './ScopeModal';
 
 // api imports
 import {
   generateQuotationNumber,
   getSalesPersons,
   generateJobNumber,
-  getClients,getLocations,getAttentionsApplicable,getStaffList,addQuotationWorkDetails,
+  getClients,
+  getLocations,
+  getAttentionsApplicable,
+  getStaffList,
+  addQuotationWorkDetails,
 } from '../../../../Services/QuotationApi';
-
-
 
 const WorkDetails = () => {
   const [formData, setFormData] = useState({
@@ -60,7 +63,6 @@ const WorkDetails = () => {
     lpoDetails: [
       { lpoStatus: '', prNo: '', date: '', lpoNo: '', lpoAmount: '' },
     ],
-
 
     lpoDate: '',
     wcrAttachment: null,
@@ -106,13 +108,17 @@ const WorkDetails = () => {
   const [clients, setClients] = useState([]);
   const [clientsLoading, setClientsLoading] = useState(false);
   const [locations, setLocations] = useState([]);
-const [locationSearch, setLocationSearch] = useState('');
-const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
-const [attentionsList, setAttentionsList] = useState([]);
-const [staffList, setStaffList] = useState([]);
-const [isSiteInChargeDropdownOpen, setIsSiteInChargeDropdownOpen] = useState(false);
-const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
-const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [locationSearch, setLocationSearch] = useState('');
+  const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
+  const [attentionsList, setAttentionsList] = useState([]);
+  const [staffList, setStaffList] = useState([]);
+  const [isSiteInChargeDropdownOpen, setIsSiteInChargeDropdownOpen] =
+    useState(false);
+  const [siteInChargeSearch, setSiteInChargeSearch] = useState('');
+  const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
+  const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
+  const [option, setOption] = useState('Not Applicable');
+  const [quotationId, setQuotationId] = useState(null);
 
   const dispatch = useDispatch();
 
@@ -127,33 +133,40 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
     const { name, value } = e.target;
     console.log('handleInputChange called with:', { name, value });
 
+    if (name === 'option') {
+      setOption(value); // Update the option state
+    }
+
     setFormData((prev) => {
       if (name === 'unit') {
         // When changing unit type (Single/Multiple)
         return {
-      ...prev,
-      [name]: value,
-          unitDetails: value === 'Single' 
-            ? [{ type: prev.unitType || '', ...prev.unitDetails[0] }] 
-            : []
+          ...prev,
+          [name]: value,
+          unitDetails:
+            value === 'Single'
+              ? [{ type: prev.unitType || '', ...prev.unitDetails[0] }]
+              : [],
         };
       }
-      
+
       if (name === 'unitType' && prev.unit === 'Single') {
         // When changing unit type in Single mode
-      return {
-      ...prev,
-      [name]: value,
-          unitDetails: [{
-            ...prev.unitDetails[0] || {},
-            type: value
-          }]
+        return {
+          ...prev,
+          [name]: value,
+          unitDetails: [
+            {
+              ...(prev.unitDetails[0] || {}),
+              type: value,
+            },
+          ],
         };
       }
 
       return {
         ...prev,
-        [name]: value
+        [name]: value,
       };
     });
   };
@@ -161,7 +174,7 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   const handleSelectClick = (selectName) => {
     setOpenSelect(openSelect === selectName ? null : selectName);
   };
-  
+
   const handleAddLPO = () => {
     setFormData((prev) => ({
       ...prev,
@@ -185,10 +198,12 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
       setFormData((prev) => ({
         ...prev,
         [field]: value,
-        lpoDetails: [{
-          ...prev.lpoDetails[0],
-          [field]: value
-        }]
+        lpoDetails: [
+          {
+            ...prev.lpoDetails[0],
+            [field]: value,
+          },
+        ],
       }));
     } else {
       // For partial LPO, update only the LPO details array
@@ -196,7 +211,7 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
         ...prev,
         lpoDetails: prev.lpoDetails.map((detail, i) =>
           i === index ? { ...detail, [field]: value } : detail
-        )
+        ),
       }));
     }
   };
@@ -262,12 +277,16 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
   };
 
   const handleUnitTypeDetailChange = (index, field, value) => {
-    console.log('handleUnitTypeDetailChange called with:', { index, field, value });
-    
+    console.log('handleUnitTypeDetailChange called with:', {
+      index,
+      field,
+      value,
+    });
+
     setFormData((prev) => {
       // Create a copy of the current unitDetails array
       let updatedDetails = [...prev.unitDetails];
-      
+
       if (prev.unit === 'Single') {
         // For Single unit, ensure we have at least one item
         if (updatedDetails.length === 0) {
@@ -276,216 +295,228 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
         // Update the first item
         updatedDetails[0] = {
           ...updatedDetails[0],
-          [field]: value
+          [field]: value,
         };
       } else {
         // For Multiple units, update the specific index
         updatedDetails[index] = {
           ...updatedDetails[index],
-          [field]: value
+          [field]: value,
         };
       }
 
       return {
-      ...prev,
-        unitDetails: updatedDetails
+        ...prev,
+        unitDetails: updatedDetails,
       };
     });
   };
   const handleAddNewClient = (newClient) => {
     // Update clients list
-    setClients(prevClients => [...prevClients, newClient]);
-    
+    setClients((prevClients) => [...prevClients, newClient]);
+
     // Update the selected client in the form
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       // client: newClient.id,
-      clientName: newClient.clientName
+      clientName: newClient.clientName,
     }));
   };
   const handleAddNewLocation = (newLocation) => {
     // Update locations list
-    setLocations(prevLocations => [...prevLocations, newLocation]);
-    
+    setLocations((prevLocations) => [...prevLocations, newLocation]);
+
     // Update the selected location in the form
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      location: newLocation.locationName
+      location: newLocation.locationName,
     }));
   };
-  
+
   const handleAddNewStaff = (newStaff) => {
     // Update staff list
-    setPmNames(prevStaff => [...prevStaff, newStaff]);
-    
+    setPmNames((prevStaff) => [...prevStaff, newStaff]);
+
     // Update the selected staff in the form if needed
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
       projectManager: newStaff.id,
-      pmName: newStaff.staffName
+      pmName: newStaff.staffName,
     }));
-  };``
-
-
-
-
-
-
-
+  };
+  ``;
 
   const handleSaveAndContinue = async () => {
     try {
       // Debugging: Log the formData state before any processing
-      console.log("Initial formData:", formData);
-  
+      console.log('Initial formData:', formData);
+
       // Format unit details
-      const formattedUnits = formData.unit === 'Single' 
-        ? [{
-            unit_type: formData.unitType,
-            start_date: formatDate(formData.unitDetails[0]?.startDate || formData.date),
-            end_date: formatDate(formData.unitDetails[0]?.endDate || formData.date),
-            work_status: formData.unitDetails[0]?.workStatus || "Not Started",
-            // Add type-specific fields
-            ...(formData.unitType === 'Apartment' && {
-              building_no: formData.unitDetails[0]?.buildingNo || '',
-              phase: formData.unitDetails[0]?.phase || '',
-              ap_no: formData.unitDetails[0]?.apNo || '',
-              flat_type: formData.unitDetails[0]?.flatType || ''
-            }),
-            ...(formData.unitType === 'Building' && {
-              building_number: formData.unitDetails[0]?.buildingNo || ''
-            }),
-            ...(formData.unitType === 'Community Center' && {
-              communitycenter_no: formData.unitDetails[0]?.communityCenterNo || '',
-              community_center_type: formData.unitDetails[0]?.communityCenterType || ''
-            }),
-            ...(formData.unitType === 'Labour Camp' && {
-              lc_no: formData.unitDetails[0]?.lcNo || '',
-              lc_location: formData.unitDetails[0]?.lcLocation || '',
-              room_no: formData.unitDetails[0]?.roomNo || ''
-            }),
-            ...(formData.unitType === 'Mall' && {
-              mall_no: formData.unitDetails[0]?.mallNo || '',
-              type: formData.unitDetails[0]?.mallType || ''
-            }),
-            ...(formData.unitType === 'Swimming Pool' && {
-              pool_no: formData.unitDetails[0]?.swimmingPoolNo || ''
-            }),
-            ...(formData.unitType === 'Villa' && {
-              villa_no: formData.unitDetails[0]?.villaNo || '',
-              villa_type: formData.unitDetails[0]?.villaType || ''
-            }),
-            ...(formData.unitType === 'Warehouse' && {
-              warehouse_no: formData.unitDetails[0]?.warehouseNo || '',
-              warehouse_location: formData.unitDetails[0]?.warehouseLocation || ''
-            }),
-            ...(formData.unitType === 'Toilet' && {
-              toilet_no: formData.unitDetails[0]?.toiletNo || '',
-              toilet_type: formData.unitDetails[0]?.toiletType || ''
-            }),
-            ...(formData.unitType === 'Other' && {
-              reference_no: formData.unitDetails[0]?.referenceNo || '',
-              description: formData.unitDetails[0]?.description || ''
-            })
-          }]
-        : formData.unitDetails.map(detail => ({
-          unit_type: detail.type,
-            start_date: formatDate(detail.startDate || formData.date),
-            end_date: formatDate(detail.endDate || formData.date),
-            work_status: detail.workStatus || "Not Started",
-            // Add type-specific fields based on unit type
-            ...(detail.type === 'Apartment' && {
-              building_no: detail.buildingNo || '',
-              phase: detail.phase || '',
-              ap_no: detail.apNo || '',
-              flat_type: detail.flatType || ''
-            }),
-            ...(detail.type === 'Building' && {
-              building_number: detail.buildingNo || ''
-            }),
-            ...(detail.type === 'Community Center' && {
-              communitycenter_no: detail.communityCenterNo || '',
-              community_center_type: detail.communityCenterType || ''
-            }),
-            ...(detail.type === 'Labour Camp' && {
-              lc_no: detail.lcNo || '',
-              lc_location: detail.lcLocation || '',
-              room_no: detail.roomNo || ''
-            }),
-            ...(detail.type === 'Mall' && {
-              mall_no: detail.mallNo || '',
-              type: detail.mallType || ''
-            }),
-            ...(detail.type === 'Swimming Pool' && {
-              swimming_pool_no: detail.swimmingPoolNo || ''
-            }),
-            ...(detail.type === 'Villa' && {
-              villa_no: detail.villaNo || '',
-              villa_type: detail.villaType || ''
-            }),
-            ...(detail.type === 'Warehouse' && {
-              warehouse_no: detail.warehouseNo || '',
-              warehouse_location: detail.warehouseLocation || ''
-            }),
-            ...(detail.type === 'Toilet' && {
-              toilet_no: detail.toiletNo || '',
-              toilet_type: detail.toiletType || ''
-            }),
-            ...(detail.type === 'Other' && {
-              reference_no: detail.referenceNo || '',
-              description: detail.description || ''
-            })
-          }));
+      const formattedUnits =
+        formData.unit === 'Single'
+          ? [
+              {
+                unit_type: formData.unitType,
+                start_date: formatDate(
+                  formData.unitDetails[0]?.startDate || formData.date
+                ),
+                end_date: formatDate(
+                  formData.unitDetails[0]?.endDate || formData.date
+                ),
+                work_status:
+                  formData.unitDetails[0]?.workStatus || 'Not Started',
+                // Add type-specific fields
+                ...(formData.unitType === 'Apartment' && {
+                  building_no: formData.unitDetails[0]?.buildingNo || '',
+                  phase: formData.unitDetails[0]?.phase || '',
+                  ap_no: formData.unitDetails[0]?.apNo || '',
+                  flat_type: formData.unitDetails[0]?.flatType || '',
+                }),
+                ...(formData.unitType === 'Building' && {
+                  building_number: formData.unitDetails[0]?.buildingNo || '',
+                }),
+                ...(formData.unitType === 'Community Center' && {
+                  communitycenter_no:
+                    formData.unitDetails[0]?.communityCenterNo || '',
+                  community_center_type:
+                    formData.unitDetails[0]?.communityCenterType || '',
+                }),
+                ...(formData.unitType === 'Labour Camp' && {
+                  lc_no: formData.unitDetails[0]?.lcNo || '',
+                  lc_location: formData.unitDetails[0]?.lcLocation || '',
+                  room_no: formData.unitDetails[0]?.roomNo || '',
+                }),
+                ...(formData.unitType === 'Mall' && {
+                  mall_no: formData.unitDetails[0]?.mallNo || '',
+                  type: formData.unitDetails[0]?.mallType || '',
+                }),
+                ...(formData.unitType === 'Swimming Pool' && {
+                  pool_no: formData.unitDetails[0]?.swimmingPoolNo || '',
+                }),
+                ...(formData.unitType === 'Villa' && {
+                  villa_no: formData.unitDetails[0]?.villaNo || '',
+                  villa_type: formData.unitDetails[0]?.villaType || '',
+                }),
+                ...(formData.unitType === 'Warehouse' && {
+                  warehouse_no: formData.unitDetails[0]?.warehouseNo || '',
+                  warehouse_location:
+                    formData.unitDetails[0]?.warehouseLocation || '',
+                }),
+                ...(formData.unitType === 'Toilet' && {
+                  toilet_no: formData.unitDetails[0]?.toiletNo || '',
+                  toilet_type: formData.unitDetails[0]?.toiletType || '',
+                }),
+                ...(formData.unitType === 'Other' && {
+                  reference_no: formData.unitDetails[0]?.referenceNo || '',
+                  description: formData.unitDetails[0]?.description || '',
+                }),
+              },
+            ]
+          : formData.unitDetails.map((detail) => ({
+              unit_type: detail.type,
+              start_date: formatDate(detail.startDate || formData.date),
+              end_date: formatDate(detail.endDate || formData.date),
+              work_status: detail.workStatus || 'Not Started',
+              // Add type-specific fields based on unit type
+              ...(detail.type === 'Apartment' && {
+                building_no: detail.buildingNo || '',
+                phase: detail.phase || '',
+                ap_no: detail.apNo || '',
+                flat_type: detail.flatType || '',
+              }),
+              ...(detail.type === 'Building' && {
+                building_number: detail.buildingNo || '',
+              }),
+              ...(detail.type === 'Community Center' && {
+                communitycenter_no: detail.communityCenterNo || '',
+                community_center_type: detail.communityCenterType || '',
+              }),
+              ...(detail.type === 'Labour Camp' && {
+                lc_no: detail.lcNo || '',
+                lc_location: detail.lcLocation || '',
+                room_no: detail.roomNo || '',
+              }),
+              ...(detail.type === 'Mall' && {
+                mall_no: detail.mallNo || '',
+                type: detail.mallType || '',
+              }),
+              ...(detail.type === 'Swimming Pool' && {
+                swimming_pool_no: detail.swimmingPoolNo || '',
+              }),
+              ...(detail.type === 'Villa' && {
+                villa_no: detail.villaNo || '',
+                villa_type: detail.villaType || '',
+              }),
+              ...(detail.type === 'Warehouse' && {
+                warehouse_no: detail.warehouseNo || '',
+                warehouse_location: detail.warehouseLocation || '',
+              }),
+              ...(detail.type === 'Toilet' && {
+                toilet_no: detail.toiletNo || '',
+                toilet_type: detail.toiletType || '',
+              }),
+              ...(detail.type === 'Other' && {
+                reference_no: detail.referenceNo || '',
+                description: detail.description || '',
+              }),
+            }));
 
       // Format LPO details with proper date format
-      const formattedLPO = formData.lpoNumber === 'Single' 
-        ? [{
-            lpo_status: formData.lpoStatus || "",
-            pr_no: formData.prNo || '', 
-            lpo_no: formData.lpoNo || '', 
-            lpo_amount: Number(formData.lpoAmount) || "",
-            lpo_date: formData.lpoDate ? formatDate(formData.lpoDate) : null,
-          }]
-        : formData.lpoDetails.map((lpo) => ({
-            lpo_status: lpo.lpoStatus || "",
-            pr_no: lpo.prNo || '',
-            lpo_no: lpo.lpoNo || '',
-            lpo_amount: Number(lpo.lpoAmount) || "",
-            lpo_date: lpo.date ? formatDate(lpo.date) : null,
-          }));
-  
+      const formattedLPO =
+        formData.lpoNumber === 'Single'
+          ? [
+              {
+                lpo_status: formData.lpoStatus || '',
+                pr_no: formData.prNo || '',
+                lpo_no: formData.lpoNo || '',
+                lpo_amount: Number(formData.lpoAmount) || '',
+                lpo_date: formData.lpoDate
+                  ? formatDate(formData.lpoDate)
+                  : null,
+              },
+            ]
+          : formData.lpoDetails.map((lpo) => ({
+              lpo_status: lpo.lpoStatus || '',
+              pr_no: lpo.prNo || '',
+              lpo_no: lpo.lpoNo || '',
+              lpo_amount: Number(lpo.lpoAmount) || '',
+              lpo_date: lpo.date ? formatDate(lpo.date) : null,
+            }));
+
       // Format invoice details with proper date formats
       const formattedInvoices = formData.invoiceDetails.map((invoice) => ({
-        invoice_status: formData.invoiceStatus || "",
-        invoice_no: invoice.invoiceNo || "",
-        invoice_date: invoice.invoiceDate ? formatDate(invoice.invoiceDate) : null,
-        invoice_amount: Number(invoice.invoiceAmount) || "",
-        grn_status: invoice.grnStatus || "",
-        grn_no: invoice.grnNo || "",
+        invoice_status: formData.invoiceStatus || '',
+        invoice_no: invoice.invoiceNo || '',
+        invoice_date: invoice.invoiceDate
+          ? formatDate(invoice.invoiceDate)
+          : null,
+        invoice_amount: Number(invoice.invoiceAmount) || '',
+        grn_status: invoice.grnStatus || '',
+        grn_no: invoice.grnNo || '',
         grn_date: invoice.grnDate ? formatDate(invoice.grnDate) : null,
-        retention: invoice.retention || "",
-        retention_amount: Number(invoice.retentionAmount) || "",
-        due_after: invoice.dueAfter || "",
+        retention: invoice.retention || '',
+        retention_amount: Number(invoice.retentionAmount) || '',
+        due_after: invoice.dueAfter || '',
         due_date: invoice.dueDate ? formatDate(invoice.dueDate) : null,
-        retention_invoice: invoice.retentionInvoice || "",
-        retention_invoice_date: invoice.retentionInvoiceDate ? formatDate(invoice.retentionInvoiceDate) : null,
-        retention_invoice_no: invoice.retentionInvoiceNo || "",
-        retention_invoice_amount: Number(invoice.retentionInvoiceAmount) || "",
+        retention_invoice: invoice.retentionInvoice || '',
+        retention_invoice_date: invoice.retentionInvoiceDate
+          ? formatDate(invoice.retentionInvoiceDate)
+          : null,
+        retention_invoice_no: invoice.retentionInvoiceNo || '',
+        retention_invoice_amount: Number(invoice.retentionInvoiceAmount) || '',
       }));
-  
 
-   
       const payload = {
         quotation_no: formData.quotationNo,
         date: formatDate(formData.date),
         project_manager: formData.projectManager,
         attention: formData.attention,
-        attention_to: formData.attentionTo || "",
+        attention_to: formData.attentionTo || '',
         client: formData.client,
-        expected_labour_cost: Number(formData.expectedLabourCost) || "",
-        expected_material_cost: Number(formData.expectedMaterialCost) || "",
+        expected_labour_cost: Number(formData.expectedLabourCost) || '',
+        expected_material_cost: Number(formData.expectedMaterialCost) || '',
         invoice: formData.invoice,
-        invoice_status: formData.invoiceStatus || "",
+        invoice_status: formData.invoiceStatus || '',
         invoices: formattedInvoices,
         job_no: formData.jobNo,
         location: formData.location,
@@ -493,50 +524,51 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
         lpo_number: formData.lpoNumber,
         option: option,
         pm_name: formData.pmName,
-        project_status: formData.projectStatus || "",
+        project_status: formData.projectStatus || '',
         quotation_status: formData.quotationStatus,
         rfq_no: formData.rfqNo,
-        scheduled_hand_over_date: formData.scheduledHandOverDate ? formatDate(formData.scheduledHandOverDate) : null,
+        scheduled_hand_over_date: formData.scheduledHandOverDate
+          ? formatDate(formData.scheduledHandOverDate)
+          : null,
         site_in_charge: formData.siteInCharge,
         subject: formData.subject,
         unit_option: formData.unit,
         units: formattedUnits,
-        wcr_status: formData.wcrStatus || "",
+        wcr_status: formData.wcrStatus || '',
       };
 
       // Call the API
       const response = await addQuotationWorkDetails(payload);
-  
+
       // Debugging: Log the API response
-      console.log("API Response:", response);
-  
+      console.log('API Response:', response);
+
       if (response && response.status === 'Success') {
         // Only show ProductDetails if status is Pending
         if (formData.quotationStatus === 'Pending') {
           setShowProducts(true);
         }
       }
-  
+
       // Store the quotation ID directly
-      dispatch(setQuotationDetails({
-        id: response.data.id,
-        quotationNo: response.data.quotation_no
-      }));
+      dispatch(
+        setQuotationDetails({
+          id: response.data.id,
+          quotationNo: response.data.quotation_no,
+        })
+      );
 
       // Log to verify data is stored
       console.log('Saved quotation details:', response.data);
 
       // You might want to show a success message
       toast.success('Work details saved successfully!');
-  
     } catch (error) {
       // Debugging: Log any errors
       console.error('Error saving work details:', error);
       toast.error(error.response?.data?.message || 'Error saving work details');
       setShowProducts(false);
     }
-
-    
   };
 
   // date functionality in gnr
@@ -589,8 +621,6 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
       };
     });
   };
-
-  const [option, setOption] = useState('Not Applicable');
 
   const [isClientModalOpen, setIsClientModalOpen] = useState(false);
   const [isLocationModalOpen, setIsLocationModalOpen] = useState(false);
@@ -671,11 +701,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
         console.error('Failed to fetch locations:', error);
       }
     };
-  
+
     fetchLocations();
   }, []);
 
-// site in charge fetch
+  // site in charge fetch
   useEffect(() => {
     const fetchStaffList = async () => {
       try {
@@ -685,7 +715,7 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
         console.error('Failed to fetch staff list:', error);
       }
     };
-  
+
     fetchStaffList();
   }, []);
 
@@ -704,25 +734,31 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
       }),
       // Update lpoDetails array for Single LPO
       ...(prev.lpoNumber === 'Single' && {
-        lpoDetails: [{
-          ...prev.lpoDetails[0],
-          lpoStatus: name === 'lpoStatus' ? value : prev.lpoStatus,
-          prNo: name === 'prNo' ? value : prev.prNo,
-          lpoNo: name === 'lpoNo' ? value : prev.lpoNo,
-          lpoAmount: name === 'lpoAmount' ? value : prev.lpoAmount,
-          date: name === 'lpoDate' ? value : prev.lpoDate,
-        }]
-      })
+        lpoDetails: [
+          {
+            ...prev.lpoDetails[0],
+            lpoStatus: name === 'lpoStatus' ? value : prev.lpoStatus,
+            prNo: name === 'prNo' ? value : prev.prNo,
+            lpoNo: name === 'lpoNo' ? value : prev.lpoNo,
+            lpoAmount: name === 'lpoAmount' ? value : prev.lpoAmount,
+            date: name === 'lpoDate' ? value : prev.lpoDate,
+          },
+        ],
+      }),
     }));
   };
 
+  // When opening the scope modal, make sure you're passing the current option value
+  const handleOpenScopeModal = () => {
+    console.log('Opening scope modal with option:', option); // Add this log
+    setIsScopeModalOpen(true);
+  };
 
-
-
-
-
-
-
+  const handleAddScope = () => {
+    // Implement adding a new scope
+    console.log('Adding new scope');
+    setIsScopeModalOpen(false);
+  };
 
   return (
     <div className="space-y-6 p-5 md:p-10">
@@ -865,10 +901,10 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                 New
               </button>
               <AddStaffModal
-  isOpen={isStaffModalOpen}
-  onClose={() => setIsStaffModalOpen(false)}
-  handleAddStaff={handleAddNewStaff}
-/>
+                isOpen={isStaffModalOpen}
+                onClose={() => setIsStaffModalOpen(false)}
+                handleAddStaff={handleAddNewStaff}
+              />
             </div>
           </div>
         )}
@@ -971,29 +1007,33 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                     ) : (
                       filteredClientNames.map((client) => (
                         <div
-  key={client.id}
-  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-  onClick={async () => {
-    setFormData((prev) => ({
-      ...prev,
-      client: client.clientName,
-      clientId: client.id,
-      attentionTo: '' 
-    }));
-    setIsClientDropdownOpen(false);
-    setClientSearch('');
-    
-    // Fetch attentions 
-    try {
-      const attentionsData = await getAttentionsApplicable(client.id);
-      setAttentionsList(attentionsData || []);
-    } catch (error) {
-      console.error('Failed to fetch attentions:', error);
-    }
-  }}
->
-  {client.clientName}
-</div>
+                          key={client.id}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={async () => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              client: client.clientName,
+                              clientId: client.id,
+                              attentionTo: '',
+                            }));
+                            setIsClientDropdownOpen(false);
+                            setClientSearch('');
+
+                            // Fetch attentions
+                            try {
+                              const attentionsData =
+                                await getAttentionsApplicable(client.id);
+                              setAttentionsList(attentionsData || []);
+                            } catch (error) {
+                              console.error(
+                                'Failed to fetch attentions:',
+                                error
+                              );
+                            }
+                          }}
+                        >
+                          {client.clientName}
+                        </div>
                       ))
                     )}
                   </div>
@@ -1010,11 +1050,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
           </div>
           {/* Add the ClientModal component */}
           <ClientModal
-      isOpen={isClientModalOpen}
-      onClose={() => setIsClientModalOpen(false)}
-      handleAddClient={handleAddNewClient}
-      companyId={formData.companyId}
-    />
+            isOpen={isClientModalOpen}
+            onClose={() => setIsClientModalOpen(false)}
+            handleAddClient={handleAddNewClient}
+            companyId={formData.companyId}
+          />
         </div>
 
         {/* Location */}
@@ -1040,44 +1080,45 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                 size={20}
               />
 
-             
-    {isLocationDropdownOpen && (
-      <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-        <div className="p-2 border-b">
-          <input
-            type="text"
-            placeholder="Search Location..."
-            value={locationSearch}
-            onChange={(e) => setLocationSearch(e.target.value)}
-            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            onClick={(e) => e.stopPropagation()}
-          />
-        </div>
-        <div className="max-h-48 overflow-y-auto">
-          {locations
-            .filter((loc) =>
-              loc.location_name.toLowerCase().includes(locationSearch.toLowerCase())
-            )
-            .map((location) => (
-              <div
-                key={location.id}
-                className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                onClick={() => {
-                  setFormData((prev) => ({
-                    ...prev,
-                    location: location.location_name,
-                    locationId: location.id
-                  }));
-                  setIsLocationDropdownOpen(false);
-                  setLocationSearch('');
-                }}
-              >
-                {location.location_name}
-              </div>
-            ))}
-        </div>
-      </div>
-    )}
+              {isLocationDropdownOpen && (
+                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+                  <div className="p-2 border-b">
+                    <input
+                      type="text"
+                      placeholder="Search Location..."
+                      value={locationSearch}
+                      onChange={(e) => setLocationSearch(e.target.value)}
+                      className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  </div>
+                  <div className="max-h-48 overflow-y-auto">
+                    {locations
+                      .filter((loc) =>
+                        loc.location_name
+                          .toLowerCase()
+                          .includes(locationSearch.toLowerCase())
+                      )
+                      .map((location) => (
+                        <div
+                          key={location.id}
+                          className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                          onClick={() => {
+                            setFormData((prev) => ({
+                              ...prev,
+                              location: location.location_name,
+                              locationId: location.id,
+                            }));
+                            setIsLocationDropdownOpen(false);
+                            setLocationSearch('');
+                          }}
+                        >
+                          {location.location_name}
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
             <button
               type="button"
@@ -1088,10 +1129,10 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
             </button>
 
             <LocationModal
-  isOpen={isLocationModalOpen}
-  onClose={() => setIsLocationModalOpen(false)}
-  handleAddLocation={handleAddNewLocation}
-/>
+              isOpen={isLocationModalOpen}
+              onClose={() => setIsLocationModalOpen(false)}
+              handleAddLocation={handleAddNewLocation}
+            />
           </div>
         </div>
       </div>
@@ -1147,43 +1188,45 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                   size={20}
                 />
 
-{isAttentionDropdownOpen && (
-  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-    <div className="p-2 border-b">
-      <input
-        type="text"
-        placeholder="Search Contact Person..."
-        value={attentionSearch}
-        onChange={(e) => setAttentionSearch(e.target.value)}
-        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-        onClick={(e) => e.stopPropagation()}
-      />
-    </div>
-    <div className="max-h-48 overflow-y-auto">
-      {attentionsList
-        .filter((attention) =>
-          attention.name.toLowerCase().includes(attentionSearch.toLowerCase())
-        )
-        .map((attention) => (
-          <div
-            key={attention.id}
-            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-            onClick={() => {
-              setFormData((prev) => ({
-                ...prev,
-                attentionTo: attention.name,
-                attentionToId: attention.id
-              }));
-              setIsAttentionDropdownOpen(false);
-              setAttentionSearch('');
-            }}
-          >
-            {attention.name}
-          </div>
-        ))}
-    </div>
-  </div>
-)}
+                {isAttentionDropdownOpen && (
+                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+                    <div className="p-2 border-b">
+                      <input
+                        type="text"
+                        placeholder="Search Contact Person..."
+                        value={attentionSearch}
+                        onChange={(e) => setAttentionSearch(e.target.value)}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </div>
+                    <div className="max-h-48 overflow-y-auto">
+                      {attentionsList
+                        .filter((attention) =>
+                          attention.name
+                            .toLowerCase()
+                            .includes(attentionSearch.toLowerCase())
+                        )
+                        .map((attention) => (
+                          <div
+                            key={attention.id}
+                            className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                            onClick={() => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                attentionTo: attention.name,
+                                attentionToId: attention.id,
+                              }));
+                              setIsAttentionDropdownOpen(false);
+                              setAttentionSearch('');
+                            }}
+                          >
+                            {attention.name}
+                          </div>
+                        ))}
+                    </div>
+                  </div>
+                )}
               </div>
               {/* <button
                 type="button"
@@ -1247,7 +1290,7 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
             <select
               name="option"
               value={option}
-              onChange={(e) => setOption(e.target.value)}
+              onChange={handleInputChange}
               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
             >
               <option value="Not Applicable">Not Applicable</option>
@@ -1297,82 +1340,88 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
 
             {/* Site In Charge with New Button */}
             <div className="space-y-2">
-  <label className="text-sm font-medium text-gray-700 h-5 block">
-    Site In Charge <span className="text-red-500 ml-1">*</span> :
-  </label>
-  <div className="flex gap-2">
-    <div className="relative flex-1">
-      <div
-        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white cursor-pointer"
-        onClick={() => {
-          setIsSiteInChargeDropdownOpen(!isSiteInChargeDropdownOpen);
-          handleSelectClick('siteInCharge');
-        }}
-      >
-        {formData.siteInCharge || 'Select Site In Charge'}
-      </div>
-      <IoChevronDownOutline
-        className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none transition-transform duration-300 ${
-          openSelect === 'siteInCharge' ? 'rotate-180' : ''
-        }`}
-        size={20}
-      />
+              <label className="text-sm font-medium text-gray-700 h-5 block">
+                Site In Charge <span className="text-red-500 ml-1">*</span> :
+              </label>
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <div
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all bg-white cursor-pointer"
+                    onClick={() => {
+                      setIsSiteInChargeDropdownOpen(
+                        !isSiteInChargeDropdownOpen
+                      );
+                      handleSelectClick('siteInCharge');
+                    }}
+                  >
+                    {formData.siteInCharge || 'Select Site In Charge'}
+                  </div>
+                  <IoChevronDownOutline
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none transition-transform duration-300 ${
+                      openSelect === 'siteInCharge' ? 'rotate-180' : ''
+                    }`}
+                    size={20}
+                  />
 
-      {isSiteInChargeDropdownOpen && (
-        <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
-          <div className="p-2 border-b">
-            <input
-              type="text"
-              placeholder="Search Site In Charge..."
-              value={siteInChargeSearch}
-              onChange={(e) => setSiteInChargeSearch(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onClick={(e) => e.stopPropagation()}
-            />
-          </div>
-          <div className="max-h-48 overflow-y-auto">
-            {staffList
-              .filter((staff) =>
-                staff.staff_name.toLowerCase().includes(siteInChargeSearch.toLowerCase())
-              )
-              .map((staff) => (
-                <div
-                  key={staff.id}
-                  className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => {
-                    setFormData((prev) => ({
-                      ...prev,
-                      siteInCharge: staff.staff_name,
-                      siteInChargeId: staff.id
-                    }));
-                    setIsSiteInChargeDropdownOpen(false);
-                    setSiteInChargeSearch('');
-                  }}
-                >
-                  {staff.staff_name}
+                  {isSiteInChargeDropdownOpen && (
+                    <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg">
+                      <div className="p-2 border-b">
+                        <input
+                          type="text"
+                          placeholder="Search Site In Charge..."
+                          value={siteInChargeSearch}
+                          onChange={(e) =>
+                            setSiteInChargeSearch(e.target.value)
+                          }
+                          className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {staffList
+                          .filter((staff) =>
+                            staff.staff_name
+                              .toLowerCase()
+                              .includes(siteInChargeSearch.toLowerCase())
+                          )
+                          .map((staff) => (
+                            <div
+                              key={staff.id}
+                              className="px-3 py-2 hover:bg-gray-100 cursor-pointer"
+                              onClick={() => {
+                                setFormData((prev) => ({
+                                  ...prev,
+                                  siteInCharge: staff.staff_name,
+                                  siteInChargeId: staff.id,
+                                }));
+                                setIsSiteInChargeDropdownOpen(false);
+                                setSiteInChargeSearch('');
+                              }}
+                            >
+                              {staff.staff_name}
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-              ))}
-          </div>
-        </div>
-      )}
-    </div>
-    <button
-      type="button"
-      onClick={() => setIsSiteInChargeModalOpen(true)}
-      className="px-4 py-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap"
-    >
-      New
-    </button>
-    <SiteInChargeModal
-  isOpen={isSiteInChargeModalOpen}
-  onClose={() => setIsSiteInChargeModalOpen(false)}
-  handleAddStaff={(newStaff) => {
-        handleAddNewStaff(newStaff);
-        setIsSiteInChargeModalOpen(false);
-      }}
-              />
+                <button
+                  type="button"
+                  onClick={() => setIsSiteInChargeModalOpen(true)}
+                  className="px-4 py-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors whitespace-nowrap"
+                >
+                  New
+                </button>
+                <SiteInChargeModal
+                  isOpen={isSiteInChargeModalOpen}
+                  onClose={() => setIsSiteInChargeModalOpen(false)}
+                  handleAddStaff={(newStaff) => {
+                    handleAddNewStaff(newStaff);
+                    setIsSiteInChargeModalOpen(false);
+                  }}
+                />
+              </div>
             </div>
-          </div>
 
             {/* Scheduled Hand Over Date */}
             <div className="space-y-2">
@@ -1497,9 +1546,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.buildingNo || '') 
-                                : (detail.buildingNo || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.buildingNo || ''
+                                  : detail.buildingNo || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -1517,9 +1568,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <div className="relative">
                               <select
-                                value={formData.unit === 'Single' 
-                                  ? (formData.unitDetails[0]?.phase || '') 
-                                  : (detail.phase || '')}
+                                value={
+                                  formData.unit === 'Single'
+                                    ? formData.unitDetails[0]?.phase || ''
+                                    : detail.phase || ''
+                                }
                                 onChange={(e) =>
                                   handleUnitTypeDetailChange(
                                     index,
@@ -1547,9 +1600,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.apNo || '') 
-                                : (detail.apNo || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.apNo || ''
+                                  : detail.apNo || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -1567,9 +1622,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <div className="relative">
                               <select
-                                value={formData.unit === 'Single' 
-                                  ? (formData.unitDetails[0]?.flatType || '') 
-                                  : (detail.flatType || '')}
+                                value={
+                                  formData.unit === 'Single'
+                                    ? formData.unitDetails[0]?.flatType || ''
+                                    : detail.flatType || ''
+                                }
                                 onChange={(e) =>
                                   handleUnitTypeDetailChange(
                                     index,
@@ -1610,9 +1667,12 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.communityCenterNo || '') 
-                                : (detail.communityCenterNo || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]
+                                      ?.communityCenterNo || ''
+                                  : detail.communityCenterNo || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -1630,9 +1690,12 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <div className="relative">
                               <select
-                                value={formData.unit === 'Single' 
-                                  ? (formData.unitDetails[0]?.communityCenterType || '') 
-                                  : (detail.communityCenterType || '')}
+                                value={
+                                  formData.unit === 'Single'
+                                    ? formData.unitDetails[0]
+                                        ?.communityCenterType || ''
+                                    : detail.communityCenterType || ''
+                                }
                                 onChange={(e) =>
                                   handleUnitTypeDetailChange(
                                     index,
@@ -1666,9 +1729,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.lcNo || '') 
-                                : (detail.lcNo || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.lcNo || ''
+                                  : detail.lcNo || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -1686,9 +1751,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <div className="relative">
                               <select
-                                value={formData.unit === 'Single' 
-                                  ? (formData.unitDetails[0]?.lcLocation || '') 
-                                  : (detail.lcLocation || '')}
+                                value={
+                                  formData.unit === 'Single'
+                                    ? formData.unitDetails[0]?.lcLocation || ''
+                                    : detail.lcLocation || ''
+                                }
                                 onChange={(e) =>
                                   handleUnitTypeDetailChange(
                                     index,
@@ -1716,9 +1783,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.roomNo || '') 
-                                : (detail.roomNo || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.roomNo || ''
+                                  : detail.roomNo || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -1741,9 +1810,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.mallNo || '') 
-                                : (detail.mallNo || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.mallNo || ''
+                                  : detail.mallNo || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -1761,9 +1832,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <div className="relative">
                               <select
-                                value={formData.unit === 'Single' 
-                                  ? (formData.unitDetails[0]?.mallType || '') 
-                                  : (detail.mallType || '')}
+                                value={
+                                  formData.unit === 'Single'
+                                    ? formData.unitDetails[0]?.mallType || ''
+                                    : detail.mallType || ''
+                                }
                                 onChange={(e) =>
                                   handleUnitTypeDetailChange(
                                     index,
@@ -1797,9 +1870,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.villaNo || '') 
-                                : (detail.villaNo || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.villaNo || ''
+                                  : detail.villaNo || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -1817,9 +1892,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <div className="relative">
                               <select
-                                value={formData.unit === 'Single' 
-                                  ? (formData.unitDetails[0]?.villaType || '') 
-                                  : (detail.villaType || '')}
+                                value={
+                                  formData.unit === 'Single'
+                                    ? formData.unitDetails[0]?.villaType || ''
+                                    : detail.villaType || ''
+                                }
                                 onChange={(e) =>
                                   handleUnitTypeDetailChange(
                                     index,
@@ -1854,9 +1931,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.toiletNo || '') 
-                                : (detail.toiletNo || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.toiletNo || ''
+                                  : detail.toiletNo || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -1874,16 +1953,18 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <div className="relative">
                               <select
-                                value={formData.unit === 'Single' 
-                                  ? (formData.unitDetails[0]?.toiletType || '') 
-                                  : (detail.toiletType || '')}
-                              onChange={(e) =>
-                                handleUnitTypeDetailChange(
-                                  index,
+                                value={
+                                  formData.unit === 'Single'
+                                    ? formData.unitDetails[0]?.toiletType || ''
+                                    : detail.toiletType || ''
+                                }
+                                onChange={(e) =>
+                                  handleUnitTypeDetailChange(
+                                    index,
                                     'toiletType',
-                                  e.target.value
-                                )
-                              }
+                                    e.target.value
+                                  )
+                                }
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
                               >
                                 <option value="">Select</option>
@@ -1909,9 +1990,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.warehouseNo || '') 
-                                : (detail.warehouseNo || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.warehouseNo || ''
+                                  : detail.warehouseNo || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -1929,9 +2012,12 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.warehouseLocation || '') 
-                                : (detail.warehouseLocation || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]
+                                      ?.warehouseLocation || ''
+                                  : detail.warehouseLocation || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -1954,9 +2040,12 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.swimmingPoolNo || '') 
-                                : (detail.swimmingPoolNo || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.swimmingPoolNo ||
+                                    ''
+                                  : detail.swimmingPoolNo || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -1979,9 +2068,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.buildingNo || '') 
-                                : (detail.buildingNo || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.buildingNo || ''
+                                  : detail.buildingNo || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -2004,9 +2095,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.referenceNo || '') 
-                                : (detail.referenceNo || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.referenceNo || ''
+                                  : detail.referenceNo || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -2024,9 +2117,11 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </label>
                             <input
                               type="text"
-                              value={formData.unit === 'Single' 
-                                ? (formData.unitDetails[0]?.description || '') 
-                                : (detail.description || '')}
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.description || ''
+                                  : detail.description || ''
+                              }
                               onChange={(e) => {
                                 handleUnitTypeDetailChange(
                                   index,
@@ -2164,7 +2259,7 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                           type="number"
                           name="lpoAmount"
                           value={formData.lpoAmount}
-                          onChange={handleLPOChange}  // Changed from handleLPODetailChange
+                          onChange={handleLPOChange} // Changed from handleLPODetailChange
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                         />
                       </div>
@@ -2178,7 +2273,7 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                           type="date"
                           name="lpoDate"
                           value={formData.lpoDate}
-                          onChange={handleLPOChange}  // Changed from handleLPODetailChange
+                          onChange={handleLPOChange} // Changed from handleLPODetailChange
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                         />
                       </div>
@@ -2191,107 +2286,127 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
               {formData.lpoNumber === 'Partial' && (
                 <div className="space-y-4">
                   {formData.lpoDetails.map((detail, index) => (
-  <div key={index} className="border rounded-lg p-4 relative">
-    {/* Delete button for additional LPO details */}
-    {index > 0 && (
-      <button
-        type="button"
-        onClick={() => handleRemoveLPO(index)}
-        className="absolute top-2 right-2 text-red-500 hover:text-red-700"
-      >
-        <IoCloseOutline size={24} />
-      </button>
-    )}
+                    <div key={index} className="border rounded-lg p-4 relative">
+                      {/* Delete button for additional LPO details */}
+                      {index > 0 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveLPO(index)}
+                          className="absolute top-2 right-2 text-red-500 hover:text-red-700"
+                        >
+                          <IoCloseOutline size={24} />
+                        </button>
+                      )}
 
-    <div className="space-y-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* LPO Status */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            LPO Status:
-          </label>
-          <div className="relative">
-            <select
-              value={detail.lpoStatus}
-              onChange={(e) =>
-                handleLPODetailChange(index, 'lpoStatus', e.target.value)
-              }
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-            >
-              <option value="">Select</option>
-              <option value="Pending">Pending</option>
-              <option value="Received">Received</option>
-            </select>
-            <IoChevronDownOutline
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-              size={20}
-            />
-          </div>
-        </div>
+                      <div className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          {/* LPO Status */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">
+                              LPO Status:
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={detail.lpoStatus}
+                                onChange={(e) =>
+                                  handleLPODetailChange(
+                                    index,
+                                    'lpoStatus',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                              >
+                                <option value="">Select</option>
+                                <option value="Pending">Pending</option>
+                                <option value="Received">Received</option>
+                              </select>
+                              <IoChevronDownOutline
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                                size={20}
+                              />
+                            </div>
+                          </div>
 
-        {/* PR No */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            PR No:
-          </label>
-          <input
-            type="text"
-            value={detail.prNo || ''}
-            onChange={(e) =>
-              handleLPODetailChange(index, 'prNo', e.target.value)
-            }
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-          />
-        </div>
+                          {/* PR No */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">
+                              PR No:
+                            </label>
+                            <input
+                              type="text"
+                              value={detail.prNo || ''}
+                              onChange={(e) =>
+                                handleLPODetailChange(
+                                  index,
+                                  'prNo',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                          </div>
 
-        {/* LPO No */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            LPO No:
-          </label>
-          <input
-            type="text"
-            value={detail.lpoNo || ''}
-            onChange={(e) =>
-              handleLPODetailChange(index, 'lpoNo', e.target.value)
-            }
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-          />
-        </div>
+                          {/* LPO No */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">
+                              LPO No:
+                            </label>
+                            <input
+                              type="text"
+                              value={detail.lpoNo || ''}
+                              onChange={(e) =>
+                                handleLPODetailChange(
+                                  index,
+                                  'lpoNo',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                          </div>
 
-        {/* LPO Amount */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            LPO Amount:
-          </label>
-          <input
-            type="number"
-            value={detail.lpoAmount || ''}
-            onChange={(e) =>
-              handleLPODetailChange(index, 'lpoAmount', e.target.value)
-            }
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-          />
-        </div>
+                          {/* LPO Amount */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">
+                              LPO Amount:
+                            </label>
+                            <input
+                              type="number"
+                              value={detail.lpoAmount || ''}
+                              onChange={(e) =>
+                                handleLPODetailChange(
+                                  index,
+                                  'lpoAmount',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                          </div>
 
-        {/* Date */}
-        <div className="space-y-2">
-          <label className="text-sm font-medium text-gray-700">
-            Date:
-          </label>
-          <input
-            type="date"
-            value={detail.date || ''}
-            onChange={(e) =>
-              handleLPODetailChange(index, 'date', e.target.value)
-            }
-            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-          />
-        </div>
-      </div>
-    </div>
-  </div>
-))}
+                          {/* Date */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">
+                              Date:
+                            </label>
+                            <input
+                              type="date"
+                              value={detail.date || ''}
+                              onChange={(e) =>
+                                handleLPODetailChange(
+                                  index,
+                                  'date',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                   {/* Add LPO Button */}
                   <div className="flex justify-end">
                     <button
@@ -2715,7 +2830,6 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
                             </div>
                           </div>
 
-
                           {detail.retentionInvoice === 'Submitted' && (
                             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
                               {/* Invoice Date */}
@@ -2820,6 +2934,17 @@ const [isStaffModalOpen, setIsStaffModalOpen] = useState(false);
       <div className="border-t pt-6">
         <TermsAndConditions />
       </div>
+
+      {isScopeModalOpen && (
+        <ScopeModal
+          isOpen={isScopeModalOpen}
+          onClose={() => setIsScopeModalOpen(false)}
+          onAdd={handleAddScope}
+          defaultOption={option} // Pass the current option value
+          quotationId={quotationId}
+          showOptions={option !== 'Not Applicable'} // Only show options if not "Not Applicable"
+        />
+      )}
     </div>
   );
 };

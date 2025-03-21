@@ -74,7 +74,7 @@ const AddQuotations = () => {
               }`}
             >
               <div className="border-t p-6">
-                <ProductDetails />
+                <AddMaterials />
               </div>
             </div>
           </div>
