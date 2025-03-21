@@ -27,6 +27,7 @@ import {
   getAttentionsApplicable,
   getStaffList,
   addQuotationWorkDetails,
+  uploadWCRAttachment,
 } from '../../../../Services/QuotationApi';
 
 const WorkDetails = () => {
@@ -119,6 +120,10 @@ const WorkDetails = () => {
   const [isScopeModalOpen, setIsScopeModalOpen] = useState(false);
   const [option, setOption] = useState('Not Applicable');
   const [quotationId, setQuotationId] = useState(null);
+
+  // Add new state for WCR attachment status and ID
+  const [wcrUploadStatus, setWcrUploadStatus] = useState('upload'); // 'upload' | 'uploading' | 'submitted'
+  const [wcrAttachmentId, setWcrAttachmentId] = useState(null);
 
   const dispatch = useDispatch();
 
@@ -535,6 +540,7 @@ const WorkDetails = () => {
         unit_option: formData.unit,
         units: formattedUnits,
         wcr_status: formData.wcrStatus || '',
+        wcr_attachment_id: wcrAttachmentId, // Add this line
       };
 
       // Call the API
@@ -758,6 +764,33 @@ const WorkDetails = () => {
     // Implement adding a new scope
     console.log('Adding new scope');
     setIsScopeModalOpen(false);
+  };
+
+  // Add handler for WCR file upload
+  const handleWcrUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setWcrUploadStatus('uploading');
+      setFormData((prev) => ({
+        ...prev,
+        wcrAttachment: file,
+      }));
+
+      const formData = new FormData();
+      formData.append('wcr_attachment', file);
+      formData.append('quotation_no', formData.quotationNo);
+
+      const response = await uploadWCRAttachment(formData.quotationNo, file);
+
+      setWcrAttachmentId(response.data.attachment_id);
+      setWcrUploadStatus('submitted');
+    } catch (error) {
+      console.error('Error uploading WCR:', error);
+      setWcrUploadStatus('upload');
+      // Handle error appropriately
+    }
   };
 
   return (
@@ -2459,50 +2492,33 @@ const WorkDetails = () => {
                     type="file"
                     className="hidden"
                     id="wcrAttachment"
-                    onChange={(e) => {
-                      setFormData((prev) => ({
-                        ...prev,
-                        wcrAttachment: e.target.files[0],
-                      }));
-                    }}
+                    onChange={handleWcrUpload}
                   />
                   <label
                     htmlFor="wcrAttachment"
                     className="flex-1 cursor-pointer px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 flex items-center gap-2 transition-all hover:border-blue-500 hover:text-blue-500"
                   >
-                    {formData.wcrAttachment ? (
+                    {wcrUploadStatus === 'uploading' ? (
                       <>
-                        <IoDocumentOutline size={20} />
-                        <span className="truncate">
-                          {formData.wcrAttachment.name}
-                        </span>
+                        <IoCloudUploadOutline size={20} />
+                        <span>Uploading...</span>
+                      </>
+                    ) : wcrUploadStatus === 'submitted' ? (
+                      <>
+                        <IoCheckmarkCircleOutline
+                          size={20}
+                          className="text-green-500"
+                        />
+                        <span>WCR Submitted</span>
                       </>
                     ) : (
                       <>
                         <IoCloudUploadOutline size={20} />
-                        <span>Choose File</span>
+                        <span>Upload WCR</span>
                       </>
                     )}
                   </label>
-                  <button
-                    type="button"
-                    className={`px-4 py-2 rounded-lg transition-all flex items-center gap-2 ${
-                      formData.wcrAttachment
-                        ? 'bg-blue-500 text-white hover:bg-blue-600'
-                        : 'text-gray-400 bg-gray-100 cursor-not-allowed'
-                    }`}
-                    disabled={!formData.wcrAttachment}
-                  >
-                    <IoCheckmarkCircleOutline size={20} />
-                    Submit
-                  </button>
                 </div>
-                {formData.wcrAttachment && (
-                  <p className="text-sm text-gray-600 flex items-center gap-1">
-                    <IoDocumentOutline size={16} />
-                    Selected: {formData.wcrAttachment.name}
-                  </p>
-                )}
               </div>
             )}
           </div>

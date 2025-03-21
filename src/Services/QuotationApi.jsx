@@ -80,11 +80,11 @@ export const getStaffList = async () => {
 };
 
 // wcr attachment
-export const uploadWCRAttachment = async (quotationNo, wcrAttachment) => {
+export const uploadWCRAttachment = async (quotationNo, file) => {
   try {
     const formData = new FormData();
+    formData.append('wcr_attachment', file);
     formData.append('quotation_no', quotationNo);
-    formData.append('wcr_attachment', wcrAttachment);
 
     const response = await axiosInstance.post('/upload-wcr/', formData, {
       headers: {
@@ -93,6 +93,7 @@ export const uploadWCRAttachment = async (quotationNo, wcrAttachment) => {
     });
     return response.data;
   } catch (error) {
+    console.error('Error uploading WCR attachment:', error);
     throw error;
   }
 };

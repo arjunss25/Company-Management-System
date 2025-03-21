@@ -58,6 +58,13 @@ import InvoicePending from '../Components/AdminComponents/Quotation/Documentatio
 import LpoReceived from '../Components/AdminComponents/Quotation/DocumentationStatus/LpoReceived';
 import GrnReceived from '../Components/AdminComponents/Quotation/DocumentationStatus/GrnReceived';
 import RetentionOverDue from '../Components/AdminComponents/Quotation/Retention/RetentionOverDue';
+import PendingWorkStarted from '../Components/AdminComponents/Quotation/ApprovalPendingWorkStarted';
+import HandoverOverdue from '../Components/AdminComponents/Quotation/WorkStatus/OverDue';
+import ClosedProjects from '../Components/AdminComponents/Quotation/ClosedProjects';
+import RetentionInvoicePending from '../Components/AdminComponents/Quotation/Retention/RetentionInvoicePending';
+import RetentionInvoiceOverdue from '../Components/AdminComponents/Quotation/Retention/RetentionOverDue';
+import RetentionInvoiceSubmitted from '../Components/AdminComponents/Quotation/Retention/RetentionInvoiceSubmitted';
+import InvoiceSubmitted from '../Components/AdminComponents/Quotation/DocumentationStatus/InvoiceSubmitted';
 
 const AppRoutes = () => {
   return (
@@ -371,215 +378,335 @@ const AppRoutes = () => {
           }
         />
 
+        {/* Quotation Routes */}
+        <Route
+          path="quotation-dashboard"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[PERMISSIONS.VIEW_QUOTATIONS]}
+              element={<QuotationDashboard />}
+            />
+          }
+        />
+        <Route
+          path="add-quotations"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[PERMISSIONS.CREATE_QUOTATION]}
+              element={<AddQuotations />}
+            />
+          }
+        />
+        <Route
+          path="view-quotations"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_QUOTATIONS,
+                PERMISSIONS.EDIT_VIEW_QUOTATIONS,
+                PERMISSIONS.DELETE_VIEW_QUOTATIONS,
+                PERMISSIONS.PRINT_VIEW_QUOTATIONS,
+              ]}
+              element={<ViewQuotationTable />}
+            />
+          }
+        />
+        <Route
+          path="cancelled-quotations"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_CANCELLED_QUOTATIONS,
+                PERMISSIONS.EDIT_CANCELLED_QUOTATIONS,
+                PERMISSIONS.REVERT_CANCELLED_QUOTATIONS,
+                PERMISSIONS.PRINT_CANCELLED_QUOTATIONS,
+              ]}
+              element={<CancelledQuotationTable />}
+            />
+          }
+        />
+        <Route
+          path="active-quotations"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_ACTIVE_QUOTATIONS,
+                PERMISSIONS.EDIT_ACTIVE_QUOTATIONS,
+                PERMISSIONS.DELETE_ACTIVE_QUOTATIONS,
+                PERMISSIONS.PRINT_ACTIVE_QUOTATIONS,
+              ]}
+              element={<ActiveQuotationTable />}
+            />
+          }
+        />
+        <Route
+          path="pending-approval"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_PENDING_QUOTATIONS,
+                PERMISSIONS.EDIT_PENDING_QUOTATIONS,
+                PERMISSIONS.DELETE_PENDING_QUOTATIONS,
+                PERMISSIONS.PRINT_PENDING_QUOTATIONS,
+              ]}
+              element={<PendingForApproval />}
+            />
+          }
+        />
+        <Route
+          path="pending-workstarted"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_PENDING_WORKSTARTED,
+                PERMISSIONS.EDIT_PENDING_WORKSTARTED,
+                PERMISSIONS.DELETE_PENDING_WORKSTARTED,
+                PERMISSIONS.PRINT_PENDING_WORKSTARTED,
+              ]}
+              element={<PendingWorkStarted />}
+            />
+          }
+        />
+        <Route
+          path="closed-projects"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[PERMISSIONS.VIEW_CLOSED_PROJECTS]}
+              element={<ClosedProjects />}
+            />
+          }
+        />
 
+        {/* Work Status Routes */}
+        <Route
+          path="not-started"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_NOT_STARTED,
+                PERMISSIONS.EDIT_NOT_STARTED,
+                PERMISSIONS.DELETE_NOT_STARTED,
+                PERMISSIONS.PRINT_NOT_STARTED,
+              ]}
+              element={<NotStartedTable />}
+            />
+          }
+        />
+        <Route
+          path="in-progress"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_IN_PROGRESS,
+                PERMISSIONS.EDIT_IN_PROGRESS,
+                PERMISSIONS.DELETE_IN_PROGRESS,
+                PERMISSIONS.PRINT_IN_PROGRESS,
+              ]}
+              element={<InProgress />}
+            />
+          }
+        />
+        <Route
+          path="no-access"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_NO_ACCESS,
+                PERMISSIONS.EDIT_NO_ACCESS,
+                PERMISSIONS.DELETE_NO_ACCESS,
+                PERMISSIONS.PRINT_NO_ACCESS,
+              ]}
+              element={<NoAccess />}
+            />
+          }
+        />
+        <Route
+          path="on-hold"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_ON_HOLD,
+                PERMISSIONS.EDIT_ON_HOLD,
+                PERMISSIONS.DELETE_ON_HOLD,
+                PERMISSIONS.PRINT_ON_HOLD,
+              ]}
+              element={<OnHold />}
+            />
+          }
+        />
+        <Route
+          path="handover-overdue"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_HANDOVER_OVERDUE,
+                PERMISSIONS.EDIT_HANDOVER_OVERDUE,
+                PERMISSIONS.DELETE_HANDOVER_OVERDUE,
+                PERMISSIONS.PRINT_HANDOVER_OVERDUE,
+              ]}
+              element={<HandoverOverdue />}
+            />
+          }
+        />
+        <Route
+          path="completed"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_COMPLETED,
+                PERMISSIONS.EDIT_COMPLETED,
+                PERMISSIONS.DELETE_COMPLETED,
+                PERMISSIONS.PRINT_COMPLETED,
+              ]}
+              element={<Completed />}
+            />
+          }
+        />
 
+        {/* Documentation Status Routes */}
+        <Route
+          path="lpo-pending"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_LPO_PENDING,
+                PERMISSIONS.EDIT_LPO_PENDING,
+                PERMISSIONS.DELETE_LPO_PENDING,
+                PERMISSIONS.PRINT_LPO_PENDING,
+              ]}
+              element={<LpoPending />}
+            />
+          }
+        />
+        <Route
+          path="wcr-pending"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_WCR_PENDING,
+                PERMISSIONS.EDIT_WCR_PENDING,
+                PERMISSIONS.DELETE_WCR_PENDING,
+                PERMISSIONS.PRINT_WCR_PENDING,
+              ]}
+              element={<WcrPending />}
+            />
+          }
+        />
+        <Route
+          path="grn-pending"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_GRN_PENDING,
+                PERMISSIONS.EDIT_GRN_PENDING,
+                PERMISSIONS.DELETE_GRN_PENDING,
+                PERMISSIONS.PRINT_GRN_PENDING,
+              ]}
+              element={<GrnPending />}
+            />
+          }
+        />
+        <Route
+          path="invoice-pending"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_INVOICE_PENDING,
+                PERMISSIONS.EDIT_INVOICE_PENDING,
+                PERMISSIONS.DELETE_INVOICE_PENDING,
+                PERMISSIONS.PRINT_INVOICE_PENDING,
+              ]}
+              element={<InvoicePending />}
+            />
+          }
+        />
+        <Route
+          path="lpo-received"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_LPO_RECEIVED,
+                PERMISSIONS.EDIT_LPO_RECEIVED,
+                PERMISSIONS.DELETE_LPO_RECEIVED,
+                PERMISSIONS.PRINT_LPO_RECEIVED,
+              ]}
+              element={<LpoReceived />}
+            />
+          }
+        />
+        <Route
+          path="grn-received"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_GRN_RECEIVED,
+                PERMISSIONS.EDIT_GRN_RECEIVED,
+                PERMISSIONS.DELETE_GRN_RECEIVED,
+                PERMISSIONS.PRINT_GRN_RECEIVED,
+              ]}
+              element={<GrnReceived />}
+            />
+          }
+        />
+        <Route
+          path="invoice-submitted"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_INVOICE_SUBMITTED,
+                PERMISSIONS.EDIT_INVOICE_SUBMITTED,
+                PERMISSIONS.DELETE_INVOICE_SUBMITTED,
+                PERMISSIONS.PRINT_INVOICE_SUBMITTED,
+              ]}
+              element={<InvoiceSubmitted />}
+            />
+          }
+        />
 
-
-
-
-{/* /////////////////////////////////////////////////// */}
- {/* Quotation Routes - Move them inside admin route block */}
- <Route
-    path="quotation-dashboard"
-    element={
-      <ProtectedRoute
-        allowedRoles={['admin', 'Admin', 'staff', 'Staff', 'sales', 'Sales']}
-        allowedPermissions={[PERMISSIONS.VIEW_QUOTATIONS]}
-        element={<QuotationDashboard />}
-      />
-    }
-  />
-  <Route 
-    path="add-quotations" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.CREATE_QUOTATION]} 
-        element={<AddQuotations />} 
-      />
-    } 
-  />
-  <Route 
-    path="view-quotations" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_QUOTATIONS]} 
-        element={<ViewQuotationTable />} 
-      />
-    } 
-  />
-  <Route 
-    path="active-quotations" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_ACTIVE_QUOTATIONS]} 
-        element={<ActiveQuotationTable />} 
-      />
-    } 
-  />
-  <Route 
-    path="pending-approval" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_PENDING_QUOTATIONS]} 
-        element={<PendingForApproval />} 
-      />
-    } 
-  />
-  <Route 
-    path="cancelled-quotations" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_CANCELLED_QUOTATIONS]} 
-        element={<CancelledQuotationTable />} 
-      />
-    } 
-  />
-  <Route 
-    path="edit-quotation/:id" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.EDIT_QUOTATION]} 
-        element={<EditQuotation />} 
-      />
-    } 
-  />
-
-  {/* Work Status Routes */}
-  <Route 
-    path="not-started" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_NOT_STARTED]} 
-        element={<NotStartedTable />} 
-      />
-    } 
-  />
-  <Route 
-    path="in-progress" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_IN_PROGRESS]} 
-        element={<InProgress />} 
-      />
-    } 
-  />
-  <Route 
-    path="completed" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_COMPLETED]} 
-        element={<Completed />} 
-      />
-    } 
-  />
-  <Route 
-    path="on-hold" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_ON_HOLD]} 
-        element={<OnHold />} 
-      />
-    } 
-  />
-  <Route 
-    path="no-access" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_NO_ACCESS]} 
-        element={<NoAccess />} 
-      />
-    } 
-  />
-
-  {/* Documentation Status Routes */}
-  <Route 
-    path="lpo-pending" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_LPO_STATUS]} 
-        element={<LpoPending />} 
-      />
-    } 
-  />
-  <Route 
-    path="wcr-pending" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_WCR_STATUS]} 
-        element={<WcrPending />} 
-      />
-    } 
-  />
-  <Route 
-    path="grn-pending" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_GRN_STATUS]} 
-        element={<GrnPending />} 
-      />
-    } 
-  />
-  <Route 
-    path="invoice-pending" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_INVOICE_STATUS]} 
-        element={<InvoicePending />} 
-      />
-    } 
-  />
-  <Route 
-    path="lpo-received" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_LPO_STATUS]} 
-        element={<LpoReceived />} 
-      />
-    } 
-  />
-  <Route 
-    path="grn-received" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_GRN_STATUS]} 
-        element={<GrnReceived />} 
-      />
-    } 
-  />
-
-  {/* Retention Routes */}
-  <Route 
-    path="retention-overdue" 
-    element={
-      <ProtectedRoute 
-        allowedPermissions={[PERMISSIONS.VIEW_RETENTION_STATUS]} 
-        element={<RetentionOverDue />} 
-      />
-    } 
-  />
-
-
-
-
-
-
-
-
-
+        {/* Retention Routes */}
+        <Route
+          path="retention-invoice-pending"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_RETENTION_INVOICE_PENDING,
+                PERMISSIONS.EDIT_RETENTION_INVOICE_PENDING,
+                PERMISSIONS.DELETE_RETENTION_INVOICE_PENDING,
+                PERMISSIONS.PRINT_RETENTION_INVOICE_PENDING,
+              ]}
+              element={<RetentionInvoicePending />}
+            />
+          }
+        />
+        <Route
+          path="retention-invoice-overdue"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_RETENTION_INVOICE_OVERDUE,
+                PERMISSIONS.EDIT_RETENTION_INVOICE_OVERDUE,
+                PERMISSIONS.DELETE_RETENTION_INVOICE_OVERDUE,
+                PERMISSIONS.PRINT_RETENTION_INVOICE_OVERDUE,
+              ]}
+              element={<RetentionInvoiceOverdue />}
+            />
+          }
+        />
+        <Route
+          path="retention-invoice-submitted"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_RETENTION_INVOICE_SUBMITTED,
+                PERMISSIONS.EDIT_RETENTION_INVOICE_SUBMITTED,
+                PERMISSIONS.DELETE_RETENTION_INVOICE_SUBMITTED,
+                PERMISSIONS.PRINT_RETENTION_INVOICE_SUBMITTED,
+              ]}
+              element={<RetentionInvoiceSubmitted />}
+            />
+          }
+        />
       </Route>
- 
-
-
-
-
-
-
-
-
-
-
-
-
 
       {/* Catch all route */}
       <Route path="*" element={<Navigate to="/login" replace />} />

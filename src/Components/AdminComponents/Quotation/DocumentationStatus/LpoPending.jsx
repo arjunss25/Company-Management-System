@@ -199,11 +199,11 @@ const LpoPending = () => {
         </motion.div>
       </div>
 
-      <DateFilterModal
+      {/* <DateFilterModal
         isOpen={isDateFilterOpen}
         onClose={() => setIsDateFilterOpen(false)}
         onApply={handleApplyDateFilters}
-      />
+      /> */}
 
       <DeleteConfirmationModal
         isOpen={isDeleteModalOpen}

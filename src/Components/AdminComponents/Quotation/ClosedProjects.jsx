@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { FiEdit } from 'react-icons/fi';
-import { FcCancel } from "react-icons/fc";
+import { FcCancel } from 'react-icons/fc';
 import { IoArrowBack } from 'react-icons/io5';
 import { AiOutlinePrinter, AiOutlineFilter } from 'react-icons/ai';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import DeleteConfirmationModal from '../../../components/Admin/Contract/DeleteConfirmationModal';
+import DeleteConfirmationModal from '../Contract/DeleteConfirmationModal';
 import DateFilterModal from './DateFilterModal';
 
 const ClosedProjects = () => {
@@ -78,7 +78,6 @@ const ClosedProjects = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-
       <div className="flex-1 md:w-[calc(100%-300px)] h-screen overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -111,7 +110,13 @@ const ClosedProjects = () => {
               className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300"
             >
               <AiOutlineFilter size={20} />
-              <span>{dateFilters.dateFrom && dateFilters.dateTo ? `${formatDate(dateFilters.dateFrom)} to ${formatDate(dateFilters.dateTo)}` : 'Select Date Range'}</span>
+              <span>
+                {dateFilters.dateFrom && dateFilters.dateTo
+                  ? `${formatDate(dateFilters.dateFrom)} to ${formatDate(
+                      dateFilters.dateTo
+                    )}`
+                  : 'Select Date Range'}
+              </span>
             </button>
           </div>
 
@@ -153,12 +158,24 @@ const ClosedProjects = () => {
                       key={quotation.id}
                       className="group hover:bg-blue-50/50 transition-colors duration-300"
                     >
-                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">{formatDate(quotation.date)}</td>
-                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">{quotation.quotationNo}</td>
-                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">{quotation.client}</td>
-                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">{quotation.location}</td>
-                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">{quotation.status}</td>
-                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">{quotation.amount}</td>
+                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">
+                        {formatDate(quotation.date)}
+                      </td>
+                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">
+                        {quotation.quotationNo}
+                      </td>
+                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">
+                        {quotation.client}
+                      </td>
+                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">
+                        {quotation.location}
+                      </td>
+                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">
+                        {quotation.status}
+                      </td>
+                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">
+                        {quotation.amount}
+                      </td>
                       <td className="px-8 py-5 text-center whitespace-nowrap">
                         <div className="flex items-center space-x-4">
                           <motion.button
