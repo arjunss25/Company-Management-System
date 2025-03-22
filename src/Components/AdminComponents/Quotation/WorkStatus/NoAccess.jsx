@@ -183,6 +183,38 @@ const NoAccess = () => {
     }
   };
 
+  const getBuildingNumber = (unit) => {
+    if (!unit) return '-';
+
+    // Remove spaces and special characters for consistent comparison
+    const unitType = unit.unit_type.replace(/\s+/g, '');
+
+    switch (unitType) {
+      case 'Building':
+        return unit.building_number || '-';
+      case 'Apartment':
+        return unit.building_no || '-';
+      case 'CommunityCenter':
+        return unit.communitycenter_no || '-';
+      case 'LabourCamp':
+        return unit.lc_no || '-';
+      case 'Mall':
+        return unit.mall_no || '-';
+      case 'SwimmingPool':
+        return unit.pool_no || '-';
+      case 'Toilet':
+        return unit.toilet_no || '-';
+      case 'Villa':
+        return unit.villa_no || '-';
+      case 'Warehouse':
+        return unit.warehouse_no || '-';
+      case 'Others':
+        return unit.reference_no || '-';
+      default:
+        return '-';
+    }
+  };
+
   return (
     <div className="flex">
       <div className="flex-1 md:w-[calc(100%-300px)]">
@@ -307,10 +339,10 @@ const NoAccess = () => {
                           {quotation.location}
                         </td>
                         <td className="px-8 py-5 text-gray-700 whitespace-nowrap">
-                          {quotation.company}
+                          {quotation.units[0]?.unit_type || '-'}
                         </td>
                         <td className="px-8 py-5 text-gray-700 whitespace-nowrap">
-                          {quotation.job_no}
+                          {getBuildingNumber(quotation.units[0]) || '-'}
                         </td>
                         <td className="px-8 py-5 text-center whitespace-nowrap">
                           <div className="flex items-center space-x-4">

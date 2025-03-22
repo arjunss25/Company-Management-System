@@ -404,8 +404,7 @@ const WorkDetails = () => {
                 }),
                 ...(formData.unitType === 'Warehouse' && {
                   warehouse_no: formData.unitDetails[0]?.warehouseNo || '',
-                  warehouse_location:
-                    formData.unitDetails[0]?.warehouseLocation || '',
+                  location: formData.unitDetails[0]?.warehouseLocation || '',
                 }),
                 ...(formData.unitType === 'Toilet' && {
                   toilet_no: formData.unitDetails[0]?.toiletNo || '',
@@ -454,7 +453,7 @@ const WorkDetails = () => {
               }),
               ...(detail.type === 'Warehouse' && {
                 warehouse_no: detail.warehouseNo || '',
-                warehouse_location: detail.warehouseLocation || '',
+                location: detail.warehouseLocation || '',
               }),
               ...(detail.type === 'Toilet' && {
                 toilet_no: detail.toiletNo || '',
@@ -466,11 +465,12 @@ const WorkDetails = () => {
               }),
             }));
 
-      // Format LPO details with proper date format
+    
       const formattedLPO =
         formData.lpoNumber === 'Single'
           ? [
               {
+                lpo_number: formData.lpoNumber, 
                 lpo_status: formData.lpoStatus || '',
                 pr_no: formData.prNo || '',
                 lpo_no: formData.lpoNo || '',
@@ -481,6 +481,7 @@ const WorkDetails = () => {
               },
             ]
           : formData.lpoDetails.map((lpo) => ({
+              lpo_number: formData.lpoNumber, 
               lpo_status: lpo.lpoStatus || '',
               pr_no: lpo.prNo || '',
               lpo_no: lpo.lpoNo || '',
@@ -488,8 +489,9 @@ const WorkDetails = () => {
               lpo_date: lpo.date ? formatDate(lpo.date) : null,
             }));
 
-      // Format invoice details with proper date formats
+      
       const formattedInvoices = formData.invoiceDetails.map((invoice) => ({
+        invoice: formData.invoice, 
         invoice_status: formData.invoiceStatus || '',
         invoice_no: invoice.invoiceNo || '',
         invoice_date: invoice.invoiceDate
@@ -540,7 +542,7 @@ const WorkDetails = () => {
         unit_option: formData.unit,
         units: formattedUnits,
         wcr_status: formData.wcrStatus || '',
-        wcr_attachment_id: wcrAttachmentId, // Add this line
+        wcr_attachment_id: wcrAttachmentId, 
       };
 
       // Call the API
@@ -1303,8 +1305,8 @@ const WorkDetails = () => {
             >
               <option value="Pending">Pending</option>
               <option value="Approved">Approved</option>
-              <option value="Approval Pending but Work Started on Urgent basis">
-                Approval Pending but Work Started on Urgent basis
+              <option value="Approval pending but work started on urgent basis">
+                Approval pending but work started on urgent basis
               </option>
             </select>
             <IoChevronDownOutline
@@ -1339,7 +1341,7 @@ const WorkDetails = () => {
 
       {(formData.quotationStatus === 'Approved' ||
         formData.quotationStatus ===
-          'Approval Pending but Work Started on Urgent basis') && (
+          'Approval pending but work started on urgent basis') && (
         <>
           {/* Expected Costs and Site In Charge Row */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 border-b pb-6">
@@ -1940,11 +1942,11 @@ const WorkDetails = () => {
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
                               >
                                 <option value="">Select</option>
-                                <option value="1 BHK">1 BHK</option>
-                                <option value="2 BHK">2 BHK</option>
-                                <option value="3 BHK">3 BHK</option>
-                                <option value="4 BHK">4 BHK</option>
-                                <option value="5 BHK">5 BHK</option>
+                                <option value="1BHK">1 BHK</option>
+                                <option value="2BHK">2 BHK</option>
+                                <option value="3BHK">3 BHK</option>
+                                <option value="4BHK">4 BHK</option>
+                                <option value="5BHK">5 BHK</option>
                               </select>
                               <IoChevronDownOutline
                                 className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
@@ -2167,6 +2169,93 @@ const WorkDetails = () => {
                           </div>
                         </div>
                       )}
+
+                      {(formData.quotationStatus === 'Approved' ||
+                        formData.quotationStatus ===
+                          'Approval pending but work started on urgent basis') && (
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 col-span-3">
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 h-5 block">
+                              Start Date{' '}
+                              <span className="text-red-500 ml-1">*</span> :
+                            </label>
+                            <input
+                              type="date"
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.startDate || ''
+                                  : detail.startDate || ''
+                              }
+                              onChange={(e) =>
+                                handleUnitTypeDetailChange(
+                                  index,
+                                  'startDate',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 h-5 block">
+                              End Date{' '}
+                              <span className="text-red-500 ml-1">*</span> :
+                            </label>
+                            <input
+                              type="date"
+                              value={
+                                formData.unit === 'Single'
+                                  ? formData.unitDetails[0]?.endDate || ''
+                                  : detail.endDate || ''
+                              }
+                              onChange={(e) =>
+                                handleUnitTypeDetailChange(
+                                  index,
+                                  'endDate',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700 h-5 block">
+                              Work Status{' '}
+                              <span className="text-red-500 ml-1">*</span> :
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={
+                                  formData.unit === 'Single'
+                                    ? formData.unitDetails[0]?.workStatus ||
+                                      'Not Started'
+                                    : detail.workStatus || 'Not Started'
+                                }
+                                onChange={(e) =>
+                                  handleUnitTypeDetailChange(
+                                    index,
+                                    'workStatus',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                              >
+                                <option value="Not Started">Not Started</option>
+                                <option value="In Progress">In Progress</option>
+                                <option value="No Access">No Access</option>
+                                <option value="On Hold">On Hold</option>
+                                <option value="Completed">Completed</option>
+                              </select>
+                              <IoChevronDownOutline
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                                size={20}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </>
                   )}
                 </div>
@@ -2192,7 +2281,7 @@ const WorkDetails = () => {
       {/* Additional Fields*/}
       {(formData.quotationStatus === 'Approved' ||
         formData.quotationStatus ===
-          'Approval Pending but Work Started on Urgent basis') && (
+          'Approval pending but work started on urgent basis') && (
         <>
           {/* LPO and PR Section */}
           <div className="space-y-6 border-b pb-6">
@@ -2956,9 +3045,9 @@ const WorkDetails = () => {
           isOpen={isScopeModalOpen}
           onClose={() => setIsScopeModalOpen(false)}
           onAdd={handleAddScope}
-          defaultOption={option} // Pass the current option value
+          defaultOption={option}
           quotationId={quotationId}
-          showOptions={option !== 'Not Applicable'} // Only show options if not "Not Applicable"
+          showOptions={option !== 'Not Applicable'}
         />
       )}
     </div>
