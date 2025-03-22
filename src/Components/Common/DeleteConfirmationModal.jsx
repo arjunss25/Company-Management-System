@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoClose } from 'react-icons/io5';
-import { RiErrorWarningLine } from 'react-icons/ri';
+
 
 const DeleteConfirmationModal = ({
   isOpen,
@@ -35,9 +35,6 @@ const DeleteConfirmationModal = ({
           {/* Modal Body */}
           <div className="p-6">
             <div className="flex items-center justify-center mb-6">
-              <div className="w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                <RiErrorWarningLine className="text-red-600" size={24} />
-              </div>
             </div>
             <p className="text-center text-gray-600 mb-6">{message}</p>
             <div className="flex justify-center space-x-4">
@@ -54,7 +51,7 @@ const DeleteConfirmationModal = ({
                 }}
                 className="px-6 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors duration-300"
               >
-                Delete
+                Continue
               </button>
             </div>
           </div>

@@ -22,6 +22,7 @@ const CancelledQuotationTable = () => {
   const [totalPages, setTotalPages] = useState(0);
   const [loading, setLoading] = useState(false);
   const [loadingPdfId, setLoadingPdfId] = useState(null);
+  const [isDateFilterLoading, setIsDateFilterLoading] = useState(false);
 
   const itemsPerPage = 10;
 
@@ -33,13 +34,53 @@ const CancelledQuotationTable = () => {
     try {
       setLoading(true);
       const response = await axiosInstance.get('/list-cancelled-quotations/');
-      setQuotations(response.data.data);
-      setTotalPages(Math.ceil(response.data.data.length / itemsPerPage));
+      if (response.data.status === 'Success') {
+        setQuotations(response.data.data);
+        setTotalPages(Math.ceil(response.data.data.length / itemsPerPage));
+      }
     } catch (error) {
       console.error('Error fetching cancelled quotations:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleApplyDateFilters = async (filters) => {
+    try {
+      setIsDateFilterLoading(true);
+
+      // Format dates to YYYY-MM-DD
+      const formatDateForApi = (date) => {
+        return new Date(date).toISOString().split('T')[0];
+      };
+
+      const response = await axiosInstance.get(
+        `/filter-quotations/${formatDateForApi(
+          filters.dateFrom
+        )}/${formatDateForApi(filters.dateTo)}/`
+      );
+
+      if (response.data.status === 'Success') {
+        // Filter only cancelled quotations from the response
+        const cancelledQuotations = response.data.data.filter(
+          (quote) => quote.is_cancelled
+        );
+        setQuotations(cancelledQuotations);
+        setTotalPages(Math.ceil(cancelledQuotations.length / itemsPerPage));
+        setCurrentPage(1); // Reset to first page
+        setDateFilters(filters);
+      }
+    } catch (error) {
+      console.error('Error applying date filters:', error);
+    } finally {
+      setIsDateFilterLoading(false);
+      setIsDateFilterOpen(false);
+    }
+  };
+
+  const clearFilters = () => {
+    fetchCancelledQuotations();
+    setDateFilters({ dateFrom: '', dateTo: '' });
   };
 
   // Calculate pagination range
@@ -65,13 +106,6 @@ const CancelledQuotationTable = () => {
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     return quotations.slice(indexOfFirstItem, indexOfLastItem);
-  };
-
-  const handleApplyDateFilters = (filters) => {
-    setDateFilters(filters);
-    setIsDateFilterOpen(false);
-    // Implement your date filtering logic here
-    console.log('Applied date filters:', filters);
   };
 
   const [selectedQuotation, setSelectedQuotation] = useState(null);
@@ -158,7 +192,7 @@ const CancelledQuotationTable = () => {
   };
 
   return (
-    <div className="flex ">
+    <div className="flex h-screen">
       <div className="flex-1 ">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -189,9 +223,37 @@ const CancelledQuotationTable = () => {
           <div className="flex items-center justify-end space-x-4 mb-10">
             <button
               onClick={() => setIsDateFilterOpen(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300"
+              disabled={isDateFilterLoading}
+              className={`flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 ${
+                isDateFilterLoading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
             >
-              <AiOutlineFilter size={20} />
+              {isDateFilterLoading ? (
+                <div className="animate-spin w-5 h-5">
+                  <svg
+                    className="w-full h-full text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                </div>
+              ) : (
+                <AiOutlineFilter size={20} />
+              )}
               <span>
                 {dateFilters.dateFrom && dateFilters.dateTo
                   ? `${formatDate(dateFilters.dateFrom)} to ${formatDate(
@@ -200,6 +262,15 @@ const CancelledQuotationTable = () => {
                   : 'Select Date Range'}
               </span>
             </button>
+            {(dateFilters.dateFrom || dateFilters.dateTo) && (
+              <button
+                onClick={clearFilters}
+                disabled={isDateFilterLoading}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-300"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
 
           {/* Table Container */}
@@ -231,7 +302,7 @@ const CancelledQuotationTable = () => {
                           Location
                         </th>
                         <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600">
-                          Amount
+                          Subject
                         </th>
                         <th className="px-8 py-5 text-center text-sm font-semibold text-gray-600">
                           Actions
@@ -260,7 +331,7 @@ const CancelledQuotationTable = () => {
                             {quotation.location}
                           </td>
                           <td className="px-8 py-5 text-gray-700">
-                            {quotation.expected_material_cost || 0}
+                            {quotation.subject}
                           </td>
                           <td className="px-8 py-5 text-center whitespace-nowrap">
                             <div className="flex items-center space-x-4">
@@ -315,7 +386,7 @@ const CancelledQuotationTable = () => {
                                     </svg>
                                   </div>
                                 ) : (
-                                  <PiFilePdfDuotone  size={18} />
+                                  <PiFilePdfDuotone size={18} />
                                 )}
                               </motion.button>
                             </div>

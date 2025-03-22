@@ -1,98 +1,94 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
 
-const DateFilterModal = ({ isOpen, onClose, onApply }) => {
-  const [dateFilters, setDateFilters] = React.useState({
-    dateFrom: '',
-    dateTo: '',
-  });
+const DateFilterModal = ({
+  isOpen,
+  onClose,
+  onApply,
+  isLoading,
+  initialDates,
+}) => {
+  const [dateFrom, setDateFrom] = useState(initialDates?.dateFrom || '');
+  const [dateTo, setDateTo] = useState(initialDates?.dateTo || '');
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    setDateFilters(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
+  useEffect(() => {
+    setDateFrom(initialDates?.dateFrom || '');
+    setDateTo(initialDates?.dateTo || '');
+  }, [initialDates, isOpen]);
 
   const handleApply = () => {
-    onApply(dateFilters);
+    onApply({ dateFrom, dateTo });
   };
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Overlay */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 0.4 }}
-            exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 bg-black z-40"
-          />
-          
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.8 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.8 }}
-            transition={{ type: 'spring', duration: 0.3 }}
-            className="fixed inset-0 flex items-center justify-center z-50 p-6"
-          >
-            <div className="bg-white shadow-lg rounded-lg p-6 w-full max-w-md">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900">Date Filters</h2>
-                <button
-                  onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
-                </button>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <label className="block">
-                  <span className="text-sm font-medium text-gray-700">Date From</span>
-                  <input
-                    type="date"
-                    name="dateFrom"
-                    value={dateFilters.dateFrom}
-                    onChange={handleChange}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </label>
+  if (!isOpen) return null;
 
-                <label className="block">
-                  <span className="text-sm font-medium text-gray-700">Date To</span>
-                  <input
-                    type="date"
-                    name="dateTo"
-                    value={dateFilters.dateTo}
-                    onChange={handleChange}
-                    className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500"
-                  />
-                </label>
-              </div>
-              <div className="flex space-x-4 pt-6">
-                <button
-                  onClick={onClose}
-                  className="flex-1 px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleApply}
-                  className="flex-1 px-4 py-2 border border-transparent rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Apply Filters
-                </button>
-              </div>
+  return (
+    <div className="fixed inset-0 z-50 overflow-y-auto">
+      <div className="flex items-center justify-center min-h-screen px-4">
+        <div className="fixed inset-0 bg-black opacity-30" onClick={onClose} />
+
+        <div className="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+          <h2 className="text-lg font-medium mb-4">Select Date Range</h2>
+
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                From Date
+              </label>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md"
+                disabled={isLoading}
+              />
             </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                To Date
+              </label>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="w-full px-3 py-2 border rounded-md"
+                disabled={isLoading}
+              />
+            </div>
+          </div>
+
+          <div className="mt-6 flex justify-end space-x-3">
+            <button
+              onClick={onClose}
+              disabled={isLoading}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleApply}
+              disabled={isLoading || !dateFrom || !dateTo}
+              className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
+                isLoading || !dateFrom || !dateTo
+                  ? 'bg-blue-400 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              {isLoading ? (
+                <div className="flex items-center">
+                  <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                  Applying...
+                </div>
+              ) : (
+                'Apply Filter'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 };
 
