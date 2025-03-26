@@ -121,8 +121,8 @@ const WorkDetails = () => {
   const [option, setOption] = useState('Not Applicable');
   const [quotationId, setQuotationId] = useState(null);
 
-  // Add new state for WCR attachment status and ID
-  const [wcrUploadStatus, setWcrUploadStatus] = useState('upload'); // 'upload' | 'uploading' | 'submitted'
+
+  const [wcrUploadStatus, setWcrUploadStatus] = useState('upload'); 
   const [wcrAttachmentId, setWcrAttachmentId] = useState(null);
 
   const dispatch = useDispatch();
@@ -139,12 +139,11 @@ const WorkDetails = () => {
     console.log('handleInputChange called with:', { name, value });
 
     if (name === 'option') {
-      setOption(value); // Update the option state
+      setOption(value); 
     }
 
     setFormData((prev) => {
       if (name === 'unit') {
-        // When changing unit type (Single/Multiple)
         return {
           ...prev,
           [name]: value,
@@ -156,7 +155,6 @@ const WorkDetails = () => {
       }
 
       if (name === 'unitType' && prev.unit === 'Single') {
-        // When changing unit type in Single mode
         return {
           ...prev,
           [name]: value,
@@ -199,7 +197,6 @@ const WorkDetails = () => {
 
   const handleLPODetailChange = (index, field, value) => {
     if (formData.lpoNumber === 'Single') {
-      // For single LPO, update both the main form and the LPO details
       setFormData((prev) => ({
         ...prev,
         [field]: value,
@@ -211,7 +208,6 @@ const WorkDetails = () => {
         ],
       }));
     } else {
-      // For partial LPO, update only the LPO details array
       setFormData((prev) => ({
         ...prev,
         lpoDetails: prev.lpoDetails.map((detail, i) =>
@@ -289,21 +285,18 @@ const WorkDetails = () => {
     });
 
     setFormData((prev) => {
-      // Create a copy of the current unitDetails array
       let updatedDetails = [...prev.unitDetails];
 
       if (prev.unit === 'Single') {
-        // For Single unit, ensure we have at least one item
         if (updatedDetails.length === 0) {
           updatedDetails = [{ type: prev.unitType }];
         }
-        // Update the first item
+
         updatedDetails[0] = {
           ...updatedDetails[0],
           [field]: value,
         };
       } else {
-        // For Multiple units, update the specific index
         updatedDetails[index] = {
           ...updatedDetails[index],
           [field]: value,
@@ -317,21 +310,19 @@ const WorkDetails = () => {
     });
   };
   const handleAddNewClient = (newClient) => {
-    // Update clients list
     setClients((prevClients) => [...prevClients, newClient]);
 
-    // Update the selected client in the form
+
     setFormData((prev) => ({
       ...prev,
-      // client: newClient.id,
       clientName: newClient.clientName,
     }));
   };
   const handleAddNewLocation = (newLocation) => {
-    // Update locations list
+   
     setLocations((prevLocations) => [...prevLocations, newLocation]);
 
-    // Update the selected location in the form
+ 
     setFormData((prev) => ({
       ...prev,
       location: newLocation.locationName,
@@ -339,10 +330,9 @@ const WorkDetails = () => {
   };
 
   const handleAddNewStaff = (newStaff) => {
-    // Update staff list
+  
     setPmNames((prevStaff) => [...prevStaff, newStaff]);
 
-    // Update the selected staff in the form if needed
     setFormData((prev) => ({
       ...prev,
       projectManager: newStaff.id,
@@ -353,10 +343,6 @@ const WorkDetails = () => {
 
   const handleSaveAndContinue = async () => {
     try {
-      // Debugging: Log the formData state before any processing
-      console.log('Initial formData:', formData);
-
-      // Format unit details
       const formattedUnits =
         formData.unit === 'Single'
           ? [
@@ -370,7 +356,6 @@ const WorkDetails = () => {
                 ),
                 work_status:
                   formData.unitDetails[0]?.workStatus || 'Not Started',
-                // Add type-specific fields
                 ...(formData.unitType === 'Apartment' && {
                   building_no: formData.unitDetails[0]?.buildingNo || '',
                   phase: formData.unitDetails[0]?.phase || '',
@@ -421,7 +406,6 @@ const WorkDetails = () => {
               start_date: formatDate(detail.startDate || formData.date),
               end_date: formatDate(detail.endDate || formData.date),
               work_status: detail.workStatus || 'Not Started',
-              // Add type-specific fields based on unit type
               ...(detail.type === 'Apartment' && {
                 building_no: detail.buildingNo || '',
                 phase: detail.phase || '',
@@ -545,41 +529,29 @@ const WorkDetails = () => {
         wcr_attachment_id: wcrAttachmentId, 
       };
 
-      // Call the API
       const response = await addQuotationWorkDetails(payload);
 
-      // Debugging: Log the API response
-      console.log('API Response:', response);
 
       if (response && response.status === 'Success') {
-        // Only show ProductDetails if status is Pending
         if (formData.quotationStatus === 'Pending') {
           setShowProducts(true);
         }
       }
 
-      // Store the quotation ID directly
       dispatch(
         setQuotationDetails({
           id: response.data.id,
           quotationNo: response.data.quotation_no,
         })
       );
-
-      // Log to verify data is stored
-      console.log('Saved quotation details:', response.data);
-
-      // You might want to show a success message
       toast.success('Work details saved successfully!');
     } catch (error) {
-      // Debugging: Log any errors
       console.error('Error saving work details:', error);
       toast.error(error.response?.data?.message || 'Error saving work details');
       setShowProducts(false);
     }
   };
 
-  // date functionality in gnr
   const calculateDueDate = (grnDate, dueAfter) => {
     if (!grnDate) return '';
 
@@ -599,10 +571,9 @@ const WorkDetails = () => {
         return '';
     }
 
-    return date.toISOString().split('T')[0]; // Returns YYYY-MM-DD format
+    return date.toISOString().split('T')[0]; 
   };
 
-  // Modify the handleInvoiceDetailChange function
   const handleInvoiceDateChange = (index, field, value) => {
     setFormData((prev) => {
       const updatedDetails = [...prev.invoiceDetails];
@@ -611,7 +582,6 @@ const WorkDetails = () => {
         [field]: value,
       };
 
-      // If GRN date or Due After changes, update the Due Date
       if (field === 'grnDate' || field === 'dueAfter') {
         const grnDate =
           field === 'grnDate' ? value : updatedDetails[index].grnDate;
@@ -732,7 +702,6 @@ const WorkDetails = () => {
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-      // Reset related fields when lpoNumber changes
       ...(name === 'lpoNumber' && {
         lpoStatus: '',
         prNo: '',
@@ -740,7 +709,6 @@ const WorkDetails = () => {
         lpoAmount: '',
         lpoDate: '',
       }),
-      // Update lpoDetails array for Single LPO
       ...(prev.lpoNumber === 'Single' && {
         lpoDetails: [
           {
@@ -756,19 +724,17 @@ const WorkDetails = () => {
     }));
   };
 
-  // When opening the scope modal, make sure you're passing the current option value
   const handleOpenScopeModal = () => {
-    console.log('Opening scope modal with option:', option); // Add this log
+    console.log('Opening scope modal with option:', option); 
     setIsScopeModalOpen(true);
   };
 
   const handleAddScope = () => {
-    // Implement adding a new scope
     console.log('Adding new scope');
     setIsScopeModalOpen(false);
   };
 
-  // Add handler for WCR file upload
+
   const handleWcrUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -791,7 +757,6 @@ const WorkDetails = () => {
     } catch (error) {
       console.error('Error uploading WCR:', error);
       setWcrUploadStatus('upload');
-      // Handle error appropriately
     }
   };
 
@@ -1083,7 +1048,6 @@ const WorkDetails = () => {
               New
             </button>
           </div>
-          {/* Add the ClientModal component */}
           <ClientModal
             isOpen={isClientModalOpen}
             onClose={() => setIsClientModalOpen(false)}
@@ -1343,7 +1307,7 @@ const WorkDetails = () => {
         formData.quotationStatus ===
           'Approval pending but work started on urgent basis') && (
         <>
-          {/* Expected Costs and Site In Charge Row */}
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 border-b pb-6">
             {/* Expected Material Cost */}
             <div className="space-y-2">
@@ -1505,17 +1469,14 @@ const WorkDetails = () => {
           </div>
         </div>
 
-        {/* Unit Type Details - Works for both Single and Multiple */}
+        {/* Unit Type Details*/}
         {(formData.unit === 'Single' || formData.unit === 'Multiple') && (
           <div className="space-y-4 mt-6">
-            {/* For Single, we'll have one item in unitDetails array */}
-            {/* For Multiple, we can add more items */}
             {(formData.unit === 'Single'
               ? [{ type: formData.unitType || '' }]
               : formData.unitDetails
             ).map((detail, index) => (
               <div key={index} className="border rounded-lg p-4 relative">
-                {/* Show delete button only for Multiple units after first item */}
                 {formData.unit === 'Multiple' && index > 0 && (
                   <button
                     type="button"
@@ -1569,7 +1530,6 @@ const WorkDetails = () => {
                     </div>
                   </div>
 
-                  {/* Type-specific fields */}
                   {detail.type && (
                     <>
                       {/* Fields for Apartment */}
@@ -2262,7 +2222,7 @@ const WorkDetails = () => {
               </div>
             ))}
 
-            {/* Add Type Button - Only show for Multiple */}
+
             {formData.unit === 'Multiple' && (
               <div className="flex justify-end">
                 <button
@@ -2285,9 +2245,7 @@ const WorkDetails = () => {
         <>
           {/* LPO and PR Section */}
           <div className="space-y-6 border-b pb-6">
-            {/* All LPO related fields */}
             <div className="space-y-4">
-              {/* First row - Only LPO Number */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* LPO Number */}
                 <div className="space-y-2">
@@ -2381,7 +2339,7 @@ const WorkDetails = () => {
                           type="number"
                           name="lpoAmount"
                           value={formData.lpoAmount}
-                          onChange={handleLPOChange} // Changed from handleLPODetailChange
+                          onChange={handleLPOChange} 
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                         />
                       </div>
@@ -2395,7 +2353,7 @@ const WorkDetails = () => {
                           type="date"
                           name="lpoDate"
                           value={formData.lpoDate}
-                          onChange={handleLPOChange} // Changed from handleLPODetailChange
+                          onChange={handleLPOChange} 
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                         />
                       </div>

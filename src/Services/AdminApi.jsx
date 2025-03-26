@@ -212,20 +212,20 @@ export const AdminApi = {
       for (let pair of formData.entries()) {
         console.log('FormData Entry:', pair[0], pair[1]);
       }
-  const response = await axiosInstance.post('/add-contract/', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  return response.data;
-  } catch (error) {
-  if (error.response) {
-  console.error('Error response:', error.response.data);
-  return error.response.data;
-  }
-  console.error('Error adding contract:', error);
-  throw error;
-  }
+      const response = await axiosInstance.post('/add-contract/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        return error.response.data;
+      }
+      console.error('Error adding contract:', error);
+      throw error;
+    }
   },
   listStaffRole: async () => {
     try {
@@ -370,9 +370,9 @@ export const AdminApi = {
   addPaymentTerms: async (termsData) => {
     try {
       const response = await axiosInstance.post('/paymentCreate/', {
-        name: termsData.title,
+        name: termsData.name,
       });
-      return response.data;
+      return response;
     } catch (error) {
       console.error('Error adding payment terms:', error);
       throw error;
@@ -726,7 +726,10 @@ export const AdminApi = {
   // Add-ratecard-item
   addRateCardItem: async (rateCardItemData) => {
     try {
-      const response = await axiosInstance.post('/ratecard-detail/', rateCardItemData);
+      const response = await axiosInstance.post(
+        '/ratecard-detail/',
+        rateCardItemData
+      );
       return response.data;
     } catch (error) {
       console.error('Error adding rate card item:', error);
@@ -774,20 +777,20 @@ export const AdminApi = {
       for (let pair of formData.entries()) {
         console.log('FormData Entry:', pair[0], pair[1]);
       }
-  const response = await axiosInstance.post('/add-contract/', formData, {
-    headers: {
-      'Content-Type': 'multipart/form-data',
-    },
-  });
-  return response.data;
-  } catch (error) {
-  if (error.response) {
-  console.error('Error response:', error.response.data);
-  return error.response.data;
-  }
-  console.error('Error adding contract:', error);
-  throw error;
-  }
+      const response = await axiosInstance.post('/add-contract/', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        console.error('Error response:', error.response.data);
+        return error.response.data;
+      }
+      console.error('Error adding contract:', error);
+      throw error;
+    }
   },
   listContracts: async () => {
     try {
