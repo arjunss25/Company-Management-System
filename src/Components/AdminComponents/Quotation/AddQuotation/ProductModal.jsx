@@ -21,7 +21,7 @@ const ProductModal = ({
   initialData = null,
   isEditing = false,
 }) => {
-  // All useState hooks grouped together at the top
+
   const [editorState, setEditorState] = useState({
     bold: false,
     italic: false,
@@ -44,9 +44,9 @@ const ProductModal = ({
   const [photo, setPhoto] = useState(null);
   const [photoPreview, setPhotoPreview] = useState(null);
   const [units, setUnits] = useState([]);
-  const optionChoices = ['Option 1', 'Option 2', 'Option 3']; // Valid option choices
+  const optionChoices = ['Option 1', 'Option 2', 'Option 3']; 
 
-  // All useEffect hooks grouped together
+
   useEffect(() => {
     if (quantity && unitPrice) {
       setAmount((Number(quantity) * Number(unitPrice)).toString());
@@ -69,14 +69,13 @@ const ProductModal = ({
 
   useEffect(() => {
     return () => {
-      // Cleanup preview URL when component unmounts
       if (photoPreview) {
         URL.revokeObjectURL(photoPreview);
       }
     };
   }, [photoPreview]);
 
-  // Add useEffect to populate form with initial data when editing
+
   useEffect(() => {
     if (isEditing && initialData) {
       setHeading(initialData.heading || 'Not Applicable');
@@ -92,7 +91,7 @@ const ProductModal = ({
       setAmount(initialData.amount?.toString() || '');
       setSelectedOption(initialData.option || 'Option 1');
 
-      // Reset photo preview if there's an existing photo
+      // Reset photo preview 
       if (initialData.photo) {
         setPhotoPreview(initialData.photo);
       }
@@ -105,7 +104,6 @@ const ProductModal = ({
     }
   }, [isEditing, initialData, isOpen]);
 
-  // Conditional return should come after all hooks
   if (!isOpen) return null;
 
   const handleFormat = (command) => {
@@ -116,8 +114,6 @@ const ProductModal = ({
       console.error('Editor element not found');
       return;
     }
-
-    // Focus the editor
     editor.focus();
 
     if (command === 'orderedList' || command === 'unorderedList') {
@@ -134,7 +130,6 @@ const ProductModal = ({
         </${listTag}>
       `;
 
-      // If empty or just a paragraph tag, replace entirely
       if (
         !currentContent ||
         currentContent === '<p></p>' ||
@@ -142,7 +137,6 @@ const ProductModal = ({
       ) {
         editor.innerHTML = listHtml;
       } else {
-        // If there's content, wrap it in a list item
         const wrappedContent = `
           <${listTag} style="list-style-type: ${listStyle}; margin-left: 20px;">
             <li>${currentContent}</li>
@@ -151,13 +145,10 @@ const ProductModal = ({
         editor.innerHTML = wrappedContent;
       }
 
-      // Place cursor at end of first list item
       const li = editor.querySelector('li');
       if (li) {
         const range = document.createRange();
         const sel = window.getSelection();
-
-        // Set cursor at start of li
         range.setStart(li, 0);
         range.collapse(true);
         sel.removeAllRanges();
@@ -167,7 +158,6 @@ const ProductModal = ({
       setEditorState((prev) => ({
         ...prev,
         [command]: true,
-        // Ensure only one list type is active at a time
         orderedList: command === 'orderedList',
         unorderedList: command === 'unorderedList',
       }));
@@ -180,7 +170,7 @@ const ProductModal = ({
     }
   };
 
-  // Update handleKeyDown to work with both list types
+
   const handleKeyDown = (e) => {
     if (e.key === 'Enter') {
       const selection = window.getSelection();
@@ -188,7 +178,6 @@ const ProductModal = ({
       const listItem = range.startContainer.closest('li');
 
       if (listItem) {
-        // If list item is empty (except for <br>)
         if (listItem.textContent.trim() === '') {
           e.preventDefault();
 
@@ -196,19 +185,18 @@ const ProductModal = ({
           const parentList = list.parentElement;
           const isOrderedList = list.tagName.toLowerCase() === 'ol';
 
-          // Remove the empty list item
+
           list.removeChild(listItem);
 
-          // If this was the last item, remove the list
+
           if (list.children.length === 0) {
             parentList.removeChild(list);
 
-            // Add a new paragraph
+
             const p = document.createElement('p');
             p.appendChild(document.createElement('br'));
             editor.appendChild(p);
 
-            // Move cursor to new paragraph
             const newRange = document.createRange();
             newRange.setStart(p, 0);
             newRange.collapse(true);
@@ -246,11 +234,9 @@ const ProductModal = ({
   };
 
   const handleEditorChange = (e) => {
-    // Simply update the description without trying to manage cursor
     setDescription(e.currentTarget.innerHTML);
   };
 
-  // Update the editor styles
   const editorStyles = {
     minHeight: '120px',
     padding: '12px',
@@ -265,7 +251,6 @@ const ProductModal = ({
     const file = e.target.files[0];
     if (file) {
       setPhoto(file);
-      // Create a preview URL for the image
       const previewUrl = URL.createObjectURL(file);
       setPhotoPreview(previewUrl);
     }
@@ -275,28 +260,9 @@ const ProductModal = ({
     e.preventDefault();
     console.log('=== Form Submission Started ===');
 
-    // Create FormData manually instead of from form element
+
     const formData = new FormData();
 
-    // Log all current state values
-    console.log('Current State Values:', {
-      quotationId,
-      heading,
-      description,
-      unit,
-      quantity,
-      unitPrice,
-      amount,
-      selectedOption,
-      brand,
-      location,
-      itemCode,
-      workOrderNumber,
-      referenceNumber,
-      photo,
-    });
-
-    // Manually append all values
     formData.append('quotation', quotationId?.toString() || '');
     formData.append('heading', heading || '');
     formData.append('description', description || '');
@@ -316,7 +282,7 @@ const ProductModal = ({
       formData.append('photo', photo);
     }
 
-    // Log FormData entries
+    //FormData entries
     console.log('=== FormData Contents ===');
     for (let pair of formData.entries()) {
       console.log(`${pair[0]}: ${pair[1]}`);
@@ -374,7 +340,7 @@ const ProductModal = ({
                 </div>
               )}
 
-              {/* Always show Heading and Description first */}
+
               <div className="grid grid-cols-1 gap-6">
                 {/* Heading */}
                 <div className="space-y-2">
@@ -472,7 +438,6 @@ const ProductModal = ({
                         </button>
                       </div>
 
-                      {/* Editor Area - Moved outside the toolbar */}
                       <div
                         id="editor"
                         contentEditable="true"

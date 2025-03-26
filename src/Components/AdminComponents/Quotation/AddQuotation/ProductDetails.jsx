@@ -84,14 +84,13 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     }));
   };
 
-  // Fetch scopes when component mounts or when quotationId changes
   useEffect(() => {
     if (quotationId) {
       fetchScopes();
     }
   }, [quotationId]);
 
-  // Function to fetch scopes
+
   const fetchScopes = async () => {
     if (!quotationId) return;
 
@@ -113,42 +112,38 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     }
   };
 
-  // Function to handle adding a scope
+
   const handleAddScope = async (scopeData) => {
     try {
       setIsScopeModalOpen(false);
 
-      // Refresh scopes after adding
       await fetchScopes();
 
-      // Show success modal
       setResultSuccess(true);
       setResultMessage('Scope added successfully');
       setShowResultModal(true);
     } catch (error) {
       console.error('Error adding scope:', error);
-
-      // Show error modal
       setResultSuccess(false);
       setResultMessage('Failed to add scope');
       setShowResultModal(true);
     }
   };
 
-  // Function to handle editing a scope
+  //editing scope
   const handleEditScope = async (scope) => {
     setSelectedOption(scope.options);
     setEditingScope(scope);
     setIsScopeModalOpen(true);
   };
 
-  // Function to initiate scope deletion
+  //initiate scope deletion
   const handleDeleteInitiate = (scope) => {
     setScopeToDelete(scope);
     setShowConfirmModal(true);
   };
 
-  // Function to handle scope deletion
+  //scope deletion
   const handleDeleteScope = async () => {
     if (!scopeToDelete || !quotationId) return;
 
@@ -181,43 +176,37 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     return scopes.filter((scope) => scope.options === optionName);
   };
 
-  // Get unique options that have scopes, sorted in correct order
+
   const getUniqueOptionsWithScopes = () => {
-    // Extract all options from scopes
+   
     const options = scopes.map((scope) => scope.options);
-    // Get unique options
+    
     const uniqueOptions = [...new Set(options)];
 
-    // Define the correct order for options
     const optionOrder = {
       'Option 1': 1,
       'Option 2': 2,
       'Option 3': 3,
-      'Option 4': 4,
     };
 
-    // Sort options based on predefined order
+
     return uniqueOptions.sort((a, b) => {
-      // If both options are in our order map, sort by the order values
       if (optionOrder[a] && optionOrder[b]) {
         return optionOrder[a] - optionOrder[b];
       }
-      // If only one is in our order map, prioritize the one in the map
       if (optionOrder[a]) return -1;
       if (optionOrder[b]) return 1;
-      // If neither is in our map, sort alphabetically
       return a.localeCompare(b);
     });
   };
 
-  // Fetch products when component mounts or quotationId changes
+
   useEffect(() => {
     if (quotationId) {
       dispatch(fetchQuotationProducts(quotationId));
     }
   }, [dispatch, quotationId]);
 
-  // Transform API response to match component's data structure format
   useEffect(() => {
     if (quotationProducts && Array.isArray(quotationProducts)) {
       const formattedProducts = {};
@@ -248,9 +237,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
 
       product.set('quotation', quotationId.toString());
 
-      // Only set option if optionValue is 'Applicable'
       if (optionValue === 'Not Applicable') {
-        // Remove option from FormData if it exists
         product.delete('option');
       }
 
@@ -276,7 +263,6 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
           reference_number: product.get('reference_number'),
         };
 
-        // For display purposes, use 'Default Products' as the key
         const displayOption =
           optionValue === 'Not Applicable'
             ? 'Default Products'
@@ -300,13 +286,11 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     }
   };
 
-  // Update the handleEditProduct function
   const handleEditProduct = (product) => {
     setProductToEdit(product);
     setIsEditModalOpen(true);
   };
 
-  // Update the handleDeleteProduct function to show confirmation modal first
   const handleDeleteInitiateProduct = (option, product) => {
     setProductToDelete({
       id: product.id,
@@ -315,7 +299,6 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     setShowDeleteConfirmModal(true);
   };
 
-  // Add new function to execute the deletion
   const handleDeleteProduct = async () => {
     if (!productToDelete || !quotationId) return;
 
@@ -329,26 +312,22 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
         })
       ).unwrap();
 
-      // Show success modal
+      //success modal
       setResultSuccess(true);
       setResultMessage('Product deleted successfully');
       setShowResultModal(true);
 
-      // Refresh products list immediately
       await dispatch(fetchQuotationProducts(quotationId));
 
-      // Also manually update the local state to remove the deleted product
       if (productToDelete.option) {
         setProductsByOption((prev) => {
           const updated = { ...prev };
 
           if (updated[productToDelete.option]) {
-            // Filter out the deleted product by ID
             updated[productToDelete.option] = updated[
               productToDelete.option
             ].filter((product) => product.id !== productToDelete.id);
 
-            // If the option has no more products, remove the option
             if (updated[productToDelete.option].length === 0) {
               delete updated[productToDelete.option];
             }
@@ -360,14 +339,13 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     } catch (error) {
       console.error('Error deleting product:', error);
 
-      // Show error modal
+      //error modal
       setResultSuccess(false);
       setResultMessage(error.message || 'Failed to delete product');
       setShowResultModal(true);
     }
   };
 
-  // Update the handleUpdateProduct function to properly close the modal
   const handleUpdateProduct = async (updatedProduct) => {
     try {
       if (!quotationId) {
@@ -385,8 +363,6 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       }
 
       updatedProduct.set('quotation', quotationId.toString());
-
-      // Close the modal first before the API call to improve UX
       setIsEditModalOpen(false);
 
       const result = await dispatch(
@@ -398,15 +374,14 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       ).unwrap();
 
       if (result) {
-        // Show success modal
+        //success modal
         setResultSuccess(true);
         setResultMessage('Product updated successfully');
         setShowResultModal(true);
 
-        // Reset edit state
+        //edit state
         setProductToEdit(null);
 
-        // Refresh products list
         dispatch(fetchQuotationProducts(quotationId));
       }
     } catch (error) {
@@ -417,7 +392,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     }
   };
 
-  // Update the calculateTableTotal function
+
   const calculateTableTotal = (products) => {
     if (!products || !Array.isArray(products)) {
       return 0;
@@ -428,14 +403,14 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     );
   };
 
-  // Calculate VAT amount (5% of amount after discount)
+  //VAT amount (5% of amount after discount)
   const calculateVAT = (amount) => {
     return amount * 0.05;
   };
 
-  // Calculate final total with discount and VAT
+  //final total with discount and VAT
   const calculateFinalTotal = (baseTotal, option) => {
-    // Get discount amount (if applicable)
+    //discount amount (if applicable)
     const discount =
       dropdownValues.discount === 'Applicable'
         ? Number(discountAmounts[option] || 0)
@@ -465,9 +440,8 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     }));
   };
 
-  // Update the getSortedOptions function
+
   const getSortedOptions = (productOptions) => {
-    // If option is Not Applicable, only show Default Products
     if (optionValue === 'Not Applicable') {
       return ['Default Products'];
     }
@@ -476,18 +450,17 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       'Option 1': 1,
       'Option 2': 2,
       'Option 3': 3,
-      'Option 4': 4,
     };
 
     return Object.keys(productOptions).sort((a, b) => {
-      // If both options are in our order map, sort by the order values
+
       if (optionOrder[a] && optionOrder[b]) {
         return optionOrder[a] - optionOrder[b];
       }
-      // If only one is in our order map, prioritize the one in the map
+
       if (optionOrder[a]) return -1;
       if (optionOrder[b]) return 1;
-      // If neither is in our map, sort alphabetically
+
       return a.localeCompare(b);
     });
   };
@@ -578,7 +551,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
           <button
             onClick={() => {
               setEditingScope(null);
-              setSelectedOption('Option 1'); // Default to Option 1 for new scopes
+              setSelectedOption('Option 1'); 
               setIsScopeModalOpen(true);
             }}
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
@@ -600,7 +573,6 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
         </div>
       ) : (
         getSortedOptions(productsByOption).map((option) => {
-          // Add null check for productsByOption[option]
           const products = productsByOption[option] || [];
 
           return (
@@ -727,7 +699,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
               No scope of work items added yet. Click "Add Scope" to add scope
               of work.
             </div>
-          ) : // Only map through options if optionValue is 'Applicable'
+          ) :
           optionValue === 'Applicable' ? (
             getUniqueOptionsWithScopes().map((option) => {
               const optionScopes = getScopesByOption(option);
@@ -794,7 +766,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
               );
             })
           ) : (
-            // Render single scope section for Not Applicable
+            //single scope section for Not Applicable
             <div className="mb-6">
               <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
                 <div className="flex justify-between items-center px-6 py-4 bg-gray-50 border-b">
@@ -953,7 +925,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
         </div>
       )}
 
-      {/* Add Delete Product Confirmation Modal */}
+      {/*Delete Product Confirmation Modal */}
       {showDeleteConfirmModal && (
         <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white rounded-lg max-w-md w-full mx-4 p-8 shadow-xl">
