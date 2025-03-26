@@ -11,6 +11,7 @@ import axiosInstance from '../../../../Config/axiosInstance';
 import LoadingSpinner from '../../../Common/LoadingSpinner';
 import SuccessModal from '../../../Common/SuccessModal';
 import CancelConfirmationModal from '../CancelConfirmationModal';
+import { CiFileOn } from 'react-icons/ci';
 
 const InProgress = () => {
   const navigate = useNavigate();
@@ -31,6 +32,9 @@ const InProgress = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [itemsPerPage] = useState(10);
+
+  // Add new state for date filter loading
+  const [isDateFilterLoading, setIsDateFilterLoading] = useState(false);
 
   useEffect(() => {
     fetchQuotations();
@@ -140,11 +144,48 @@ const InProgress = () => {
     navigate(`/edit-work-details/${quotation.id}`);
   };
 
-  const handleApplyDateFilters = (filters) => {
-    setDateFilters(filters);
-    setIsDateFilterOpen(false);
-    setCurrentPage(1);
+  const handleApplyDateFilters = async (filters) => {
+    try {
+      setIsDateFilterLoading(true);
+
+      // Format dates to YYYY-MM-DD
+      const formatDateForApi = (date) => {
+        return new Date(date).toISOString().split('T')[0];
+      };
+
+      const response = await axiosInstance.get(
+        `/filter-inprogresswork-by-date/${formatDateForApi(
+          filters.dateFrom
+        )}/${formatDateForApi(filters.dateTo)}/`
+      );
+
+      if (response.data.status === 'Success') {
+        if (
+          !response.data.data ||
+          Object.keys(response.data.data).length === 0
+        ) {
+          setQuotations([]);
+          setTotalPages(1);
+        } else {
+          setQuotations(response.data.data);
+          setTotalPages(Math.ceil(response.data.data.length / itemsPerPage));
+        }
+        setCurrentPage(1); // Reset to first page
+        setDateFilters(filters);
+      }
+    } catch (error) {
+      console.error('Error applying date filters:', error);
+      setQuotations([]);
+      setTotalPages(1);
+    } finally {
+      setIsDateFilterLoading(false);
+      setIsDateFilterOpen(false);
+    }
+  };
+
+  const clearFilters = () => {
     fetchQuotations();
+    setDateFilters({ dateFrom: '', dateTo: '' });
   };
 
   const getPageNumbers = () => {
@@ -243,9 +284,37 @@ const InProgress = () => {
         <div className="flex items-center justify-end space-x-4 mb-10">
           <button
             onClick={() => setIsDateFilterOpen(true)}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300"
+            disabled={isDateFilterLoading}
+            className={`flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 ${
+              isDateFilterLoading ? 'opacity-70 cursor-not-allowed' : ''
+            }`}
           >
-            <AiOutlineFilter size={20} />
+            {isDateFilterLoading ? (
+              <div className="animate-spin w-5 h-5">
+                <svg
+                  className="w-full h-full text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+              </div>
+            ) : (
+              <AiOutlineFilter size={20} />
+            )}
             <span>
               {dateFilters.dateFrom && dateFilters.dateTo
                 ? `${formatDate(dateFilters.dateFrom)} to ${formatDate(
@@ -254,14 +323,45 @@ const InProgress = () => {
                 : 'Select Date Range'}
             </span>
           </button>
+          {(dateFilters.dateFrom || dateFilters.dateTo) && (
+            <button
+              onClick={clearFilters}
+              disabled={isDateFilterLoading}
+              className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-300"
+            >
+              Clear Filters
+            </button>
+          )}
         </div>
 
         {/* Table Container */}
         <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200">
           <div className="overflow-x-auto">
             {loading ? (
-              <div className="flex items-center justify-center min-h-[300px]">
+              <div className="min-h-[400px] flex items-center justify-center">
                 <LoadingSpinner />
+              </div>
+            ) : !Array.isArray(quotations) || quotations.length === 0 ? (
+              <div className="flex flex-col items-center justify-center w-full min-h-[300px] py-8">
+                <div className="text-gray-400 mb-3 text-[3rem]">
+                  <CiFileOn />
+                </div>
+                <p className="text-gray-500 text-lg font-medium">
+                  No In Progress Work Found
+                </p>
+                {dateFilters.dateFrom && dateFilters.dateTo && (
+                  <p className="text-gray-400 text-sm mt-2">
+                    No quotations available for the selected date range
+                  </p>
+                )}
+                {(dateFilters.dateFrom || dateFilters.dateTo) && (
+                  <button
+                    onClick={clearFilters}
+                    className="mt-4 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  >
+                    Clear Filters
+                  </button>
+                )}
               </div>
             ) : (
               <table className="w-full min-w-[600px]">
@@ -432,6 +532,8 @@ const InProgress = () => {
         isOpen={isDateFilterOpen}
         onClose={() => setIsDateFilterOpen(false)}
         onApply={handleApplyDateFilters}
+        isLoading={isDateFilterLoading}
+        initialDates={dateFilters}
       />
 
       <CancelConfirmationModal

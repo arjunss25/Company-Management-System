@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X } from 'lucide-react';
+import { MdCalendarMonth } from 'react-icons/md';
 
 const DateFilterModal = ({
   isOpen,
@@ -29,7 +30,12 @@ const DateFilterModal = ({
         <div className="fixed inset-0 bg-black opacity-30" onClick={onClose} />
 
         <div className="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
-          <h2 className="text-lg font-medium mb-4">Select Date Range</h2>
+          <h2 className="text-lg font-medium mb-4 flex items-center gap-3">
+            <span className="text-[2rem] text-blue-800">
+              <MdCalendarMonth />
+            </span>{' '}
+            Select Date Range
+          </h2>
 
           <div className="space-y-4">
             <div>
@@ -40,7 +46,7 @@ const DateFilterModal = ({
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border-[1px] border-[#dadada] rounded-md"
                 disabled={isLoading}
               />
             </div>
@@ -53,7 +59,7 @@ const DateFilterModal = ({
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="w-full px-3 py-2 border rounded-md"
+                className="w-full px-3 py-2 border-[1px] border-[#dadada] rounded-md"
                 disabled={isLoading}
               />
             </div>
@@ -63,24 +69,24 @@ const DateFilterModal = ({
             <button
               onClick={onClose}
               disabled={isLoading}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
             >
               Cancel
             </button>
             <button
               onClick={handleApply}
               disabled={isLoading || !dateFrom || !dateTo}
-              className={`px-4 py-2 text-sm font-medium text-white rounded-md ${
+              className={`px-4 py-2 text-sm font-medium text-white rounded-md flex items-center justify-center min-w-[100px] ${
                 isLoading || !dateFrom || !dateTo
                   ? 'bg-blue-400 cursor-not-allowed'
                   : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
               {isLoading ? (
-                <div className="flex items-center">
+                <>
                   <div className="animate-spin mr-2 h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
-                  Applying...
-                </div>
+                  <span>Applying...</span>
+                </>
               ) : (
                 'Apply Filter'
               )}

@@ -59,18 +59,14 @@ const PendingForApproval = () => {
       };
 
       const response = await axiosInstance.get(
-        `/filter-quotations/${formatDateForApi(
+        `/filter-pending-by-date/${formatDateForApi(
           filters.dateFrom
         )}/${formatDateForApi(filters.dateTo)}/`
       );
 
       if (response.data.status === 'Success') {
-        // Filter only pending quotations
-        const pendingQuotations = response.data.data.filter(
-          (quote) => quote.quotation_status === 'Pending'
-        );
-        setQuotations(pendingQuotations);
-        setTotalPages(Math.ceil(pendingQuotations.length / itemsPerPage));
+        setQuotations(response.data.data);
+        setTotalPages(Math.ceil(response.data.data.length / itemsPerPage));
         setCurrentPage(1); // Reset to first page
         setDateFilters(filters);
       }
@@ -402,6 +398,8 @@ const PendingForApproval = () => {
         isOpen={isDateFilterOpen}
         onClose={() => setIsDateFilterOpen(false)}
         onApply={handleApplyDateFilters}
+        isLoading={isDateFilterLoading}
+        initialDates={dateFilters}
       />
 
       <CancelConfirmationModal

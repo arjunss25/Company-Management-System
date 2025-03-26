@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiEdit } from 'react-icons/fi';
 import { FcCancel } from 'react-icons/fc';
 import { IoArrowBack } from 'react-icons/io5';
-import { AiOutlinePrinter } from 'react-icons/ai';
+import { AiOutlinePrinter,AiOutlineFilter } from 'react-icons/ai';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import DeleteConfirmationModal from '../../Contract/DeleteConfirmationModal';
@@ -12,6 +12,7 @@ import SuccessModal from '../../../Common/SuccessModal';
 import CancelConfirmationModal from '../CancelConfirmationModal';
 import { PiFilePdfDuotone } from 'react-icons/pi';
 import axiosInstance from '../../../../Config/axiosInstance';
+import { CiFileOn } from 'react-icons/ci';
 
 const Completed = () => {
   const navigate = useNavigate();
@@ -32,6 +33,9 @@ const Completed = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [itemsPerPage] = useState(10);
+
+  // Add new state for date filter loading
+  const [isDateFilterLoading, setIsDateFilterLoading] = useState(false);
 
   useEffect(() => {
     fetchQuotations();
@@ -150,11 +154,49 @@ const Completed = () => {
     return pageNumbers;
   };
 
-  const handleApplyDateFilters = (filters) => {
-    setDateFilters(filters);
-    setIsDateFilterOpen(false);
-    // Implement your date filtering logic here
-    console.log('Applied date filters:', filters);
+  const handleApplyDateFilters = async (filters) => {
+    try {
+      setIsDateFilterLoading(true);
+
+      // Format dates to YYYY-MM-DD
+      const formatDateForApi = (date) => {
+        return new Date(date).toISOString().split('T')[0];
+      };
+
+      const response = await axiosInstance.get(
+        `/filter-completedwork-by-date/${formatDateForApi(
+          filters.dateFrom
+        )}/${formatDateForApi(filters.dateTo)}/`
+      );
+
+      if (response.data.status === 'Success') {
+        if (
+          !Array.isArray(response.data.data) ||
+          response.data.data.length === 0
+        ) {
+          setQuotations([]);
+          setTotalPages(1);
+        } else {
+          setQuotations(response.data.data);
+          setTotalPages(Math.ceil(response.data.data.length / itemsPerPage));
+        }
+        setCurrentPage(1); // Reset to first page
+        setDateFilters(filters);
+      }
+    } catch (error) {
+      console.error('Error applying date filters:', error);
+      setQuotations([]);
+      setTotalPages(1);
+    } finally {
+      setIsDateFilterLoading(false);
+      setIsDateFilterOpen(false);
+    }
+  };
+
+  // Add clear filters function
+  const clearFilters = () => {
+    setDateFilters({ dateFrom: '', dateTo: '' });
+    fetchQuotations();
   };
 
   const [selectedQuotation, setSelectedQuotation] = useState(null);
@@ -234,9 +276,37 @@ const Completed = () => {
           <div className="flex items-center justify-end space-x-4 mb-10">
             <button
               onClick={() => setIsDateFilterOpen(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300"
+              disabled={isDateFilterLoading}
+              className={`flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 ${
+                isDateFilterLoading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
             >
-              <AiOutlinePrinter size={20} />
+              {isDateFilterLoading ? (
+                <div className="animate-spin w-5 h-5">
+                  <svg
+                    className="w-full h-full text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                </div>
+              ) : (
+                <AiOutlineFilter size={20} />
+              )}
               <span>
                 {dateFilters.dateFrom && dateFilters.dateTo
                   ? `${formatDate(dateFilters.dateFrom)} to ${formatDate(
@@ -245,6 +315,15 @@ const Completed = () => {
                   : 'Select Date Range'}
               </span>
             </button>
+            {(dateFilters.dateFrom || dateFilters.dateTo) && (
+              <button
+                onClick={clearFilters}
+                disabled={isDateFilterLoading}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-300"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
 
           {/* Table Container */}
@@ -256,7 +335,28 @@ const Completed = () => {
                 </div>
               ) : quotations.length === 0 ? (
                 <div className="flex flex-col items-center justify-center min-h-[300px] text-gray-500">
-                  {/* ... No quotations available message ... */}
+                  <div className="text-gray-400 mb-3 text-[3rem]">
+                                      <CiFileOn />
+                                    </div>
+                  <p className="text-xl font-medium">No Completed Quotations</p>
+                  {dateFilters.dateFrom && dateFilters.dateTo ? (
+                    <>
+                      <p className="mt-2 text-gray-400">
+                        No completed quotations found for the selected date
+                        range
+                      </p>
+                      <button
+                        onClick={clearFilters}
+                        className="mt-4 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Clear Filters
+                      </button>
+                    </>
+                  ) : (
+                    <p className="mt-2 text-gray-400">
+                      No completed quotations found in the system
+                    </p>
+                  )}
                 </div>
               ) : (
                 <table className="w-full min-w-[600px]">
@@ -418,6 +518,8 @@ const Completed = () => {
         isOpen={isDateFilterOpen}
         onClose={() => setIsDateFilterOpen(false)}
         onApply={handleApplyDateFilters}
+        isLoading={isDateFilterLoading}
+        initialDates={dateFilters}
       />
 
       <DeleteConfirmationModal

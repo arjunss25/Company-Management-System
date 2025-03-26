@@ -466,6 +466,8 @@ const CancelledQuotationTable = () => {
         isOpen={isDateFilterOpen}
         onClose={() => setIsDateFilterOpen(false)}
         onApply={handleApplyDateFilters}
+        isLoading={isDateFilterLoading}
+        initialDates={dateFilters}
       />
     </div>
   );

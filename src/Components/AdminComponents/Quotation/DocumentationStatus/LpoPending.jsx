@@ -12,6 +12,7 @@ import axiosInstance from '../../../../Config/axiosInstance';
 import LoadingSpinner from '../../../Common/LoadingSpinner';
 import SuccessModal from '../../../Common/SuccessModal';
 import CancelConfirmationModal from '../CancelConfirmationModal';
+import { CiFileOn } from 'react-icons/ci';
 
 const LpoPending = () => {
   const navigate = useNavigate();
@@ -32,6 +33,9 @@ const LpoPending = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [itemsPerPage] = useState(10);
+
+  // Add new state for date filter loading
+  const [isDateFilterLoading, setIsDateFilterLoading] = useState(false);
 
   useEffect(() => {
     fetchQuotations();
@@ -72,11 +76,43 @@ const LpoPending = () => {
     }
   };
 
-  const handleApplyDateFilters = (filters) => {
-    setDateFilters(filters);
-    setIsDateFilterOpen(false);
-    // Implement your date filtering logic here
-    console.log('Applied date filters:', filters);
+  const handleApplyDateFilters = async (filters) => {
+    try {
+      setIsDateFilterLoading(true);
+
+      // Format dates to YYYY-MM-DD
+      const formatDateForApi = (date) => {
+        return new Date(date).toISOString().split('T')[0];
+      };
+
+      const response = await axiosInstance.get(
+        `/filter-lpo-pending-date/${formatDateForApi(
+          filters.dateFrom
+        )}/${formatDateForApi(filters.dateTo)}/`
+      );
+
+      if (response.data.status === 'Success') {
+        if (
+          !Array.isArray(response.data.data) ||
+          response.data.data.length === 0
+        ) {
+          setQuotations([]);
+          setTotalPages(1);
+        } else {
+          setQuotations(response.data.data);
+          setTotalPages(Math.ceil(response.data.data.length / itemsPerPage));
+        }
+        setCurrentPage(1); // Reset to first page
+        setDateFilters(filters);
+      }
+    } catch (error) {
+      console.error('Error applying date filters:', error);
+      setQuotations([]);
+      setTotalPages(1);
+    } finally {
+      setIsDateFilterLoading(false);
+      setIsDateFilterOpen(false);
+    }
   };
 
   const [selectedQuotation, setSelectedQuotation] = useState(null);
@@ -212,6 +248,12 @@ const LpoPending = () => {
     return pageNumbers;
   };
 
+  // Add clear filters function
+  const clearFilters = () => {
+    setDateFilters({ dateFrom: '', dateTo: '' });
+    fetchQuotations();
+  };
+
   return (
     <div className="flex">
       <div className="flex-1 md:w-[calc(100%-300px)]">
@@ -243,9 +285,37 @@ const LpoPending = () => {
           <div className="flex items-center justify-end space-x-4 mb-10">
             <button
               onClick={() => setIsDateFilterOpen(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300"
+              disabled={isDateFilterLoading}
+              className={`flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 ${
+                isDateFilterLoading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
             >
-              <AiOutlineFilter size={20} />
+              {isDateFilterLoading ? (
+                <div className="animate-spin w-5 h-5">
+                  <svg
+                    className="w-full h-full text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                </div>
+              ) : (
+                <AiOutlineFilter size={20} />
+              )}
               <span>
                 {dateFilters.dateFrom && dateFilters.dateTo
                   ? `${formatDate(dateFilters.dateFrom)} to ${formatDate(
@@ -254,6 +324,15 @@ const LpoPending = () => {
                   : 'Select Date Range'}
               </span>
             </button>
+            {(dateFilters.dateFrom || dateFilters.dateTo) && (
+              <button
+                onClick={clearFilters}
+                disabled={isDateFilterLoading}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-300"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
 
           {/* Table Container */}
@@ -265,12 +344,30 @@ const LpoPending = () => {
                 </div>
               ) : quotations.length === 0 ? (
                 <div className="flex flex-col items-center justify-center min-h-[300px] text-gray-500">
-                  <p className="text-xl font-medium">No Quotations Available</p>
-                  <p className="mt-2 text-gray-400">
-                    {dateFilters.dateFrom && dateFilters.dateTo
-                      ? 'No quotations found for the selected date range'
-                      : 'No quotations found in the system'}
+                  <div className="text-gray-400 mb-3 text-[3rem]">
+                    <CiFileOn />
+                  </div>
+                  <p className="text-xl font-medium">
+                    No LPO Pending Quotations
                   </p>
+                  {dateFilters.dateFrom && dateFilters.dateTo ? (
+                    <>
+                      <p className="mt-2 text-gray-400">
+                        No LPO pending quotations found for the selected date
+                        range
+                      </p>
+                      <button
+                        onClick={clearFilters}
+                        className="mt-4 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                      >
+                        Clear Filters
+                      </button>
+                    </>
+                  ) : (
+                    <p className="mt-2 text-gray-400">
+                      No LPO pending quotations found in the system
+                    </p>
+                  )}
                 </div>
               ) : (
                 <table className="w-full min-w-[600px]">
@@ -444,6 +541,8 @@ const LpoPending = () => {
         isOpen={isDateFilterOpen}
         onClose={() => setIsDateFilterOpen(false)}
         onApply={handleApplyDateFilters}
+        isLoading={isDateFilterLoading}
+        initialDates={dateFilters}
       />
 
       <CancelConfirmationModal

@@ -11,6 +11,7 @@ import axiosInstance from '../../../../Config/axiosInstance';
 import LoadingSpinner from '../../../Common/LoadingSpinner';
 import SuccessModal from '../../../Common/SuccessModal';
 import CancelConfirmationModal from '../CancelConfirmationModal';
+import { CiFileOn } from 'react-icons/ci';
 
 const NoAccess = () => {
   const navigate = useNavigate();
@@ -31,6 +32,9 @@ const NoAccess = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [itemsPerPage] = useState(10);
+
+  // Add new state for date filter loading
+  const [isDateFilterLoading, setIsDateFilterLoading] = useState(false);
 
   useEffect(() => {
     fetchQuotations();
@@ -137,11 +141,48 @@ const NoAccess = () => {
     navigate(`/edit-work-details/${quotation.id}`);
   };
 
-  const handleApplyDateFilters = (filters) => {
-    setDateFilters(filters);
-    setIsDateFilterOpen(false);
-    setCurrentPage(1);
+  const handleApplyDateFilters = async (filters) => {
+    try {
+      setIsDateFilterLoading(true);
+
+      // Format dates to YYYY-MM-DD
+      const formatDateForApi = (date) => {
+        return new Date(date).toISOString().split('T')[0];
+      };
+
+      const response = await axiosInstance.get(
+        `/filter-noaccesswork-by-date/${formatDateForApi(
+          filters.dateFrom
+        )}/${formatDateForApi(filters.dateTo)}/`
+      );
+
+      if (response.data.status === 'Success') {
+        if (
+          !response.data.data ||
+          Object.keys(response.data.data).length === 0
+        ) {
+          setQuotations([]);
+          setTotalPages(1);
+        } else {
+          setQuotations(response.data.data);
+          setTotalPages(Math.ceil(response.data.data.length / itemsPerPage));
+        }
+        setCurrentPage(1); // Reset to first page
+        setDateFilters(filters);
+      }
+    } catch (error) {
+      console.error('Error applying date filters:', error);
+      setQuotations([]);
+      setTotalPages(1);
+    } finally {
+      setIsDateFilterLoading(false);
+      setIsDateFilterOpen(false);
+    }
+  };
+
+  const clearFilters = () => {
     fetchQuotations();
+    setDateFilters({ dateFrom: '', dateTo: '' });
   };
 
   const getPageNumbers = () => {
@@ -247,9 +288,37 @@ const NoAccess = () => {
           <div className="flex items-center justify-end space-x-4 mb-10">
             <button
               onClick={() => setIsDateFilterOpen(true)}
-              className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300"
+              disabled={isDateFilterLoading}
+              className={`flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 ${
+                isDateFilterLoading ? 'opacity-70 cursor-not-allowed' : ''
+              }`}
             >
-              <AiOutlineFilter size={20} />
+              {isDateFilterLoading ? (
+                <div className="animate-spin w-5 h-5">
+                  <svg
+                    className="w-full h-full text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
+                  </svg>
+                </div>
+              ) : (
+                <AiOutlineFilter size={20} />
+              )}
               <span>
                 {dateFilters.dateFrom && dateFilters.dateTo
                   ? `${formatDate(dateFilters.dateFrom)} to ${formatDate(
@@ -258,6 +327,15 @@ const NoAccess = () => {
                   : 'Select Date Range'}
               </span>
             </button>
+            {(dateFilters.dateFrom || dateFilters.dateTo) && (
+              <button
+                onClick={clearFilters}
+                disabled={isDateFilterLoading}
+                className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors duration-300"
+              >
+                Clear Filters
+              </button>
+            )}
           </div>
 
           {/* Table Container */}
@@ -267,28 +345,29 @@ const NoAccess = () => {
                 <div className="flex items-center justify-center min-h-[300px]">
                   <LoadingSpinner />
                 </div>
-              ) : quotations.length === 0 ? (
+              ) : !Array.isArray(quotations) || quotations.length === 0 ? (
                 <div className="flex flex-col items-center justify-center min-h-[300px] text-gray-500">
-                  <svg
-                    className="w-16 h-16 mb-4 text-gray-400"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"
-                    />
-                  </svg>
-                  <p className="text-xl font-medium">No Quotations Available</p>
-                  <p className="mt-2 text-gray-400">
-                    {dateFilters.dateFrom && dateFilters.dateTo
-                      ? 'No quotations found for the selected date range'
-                      : 'No quotations found in the system'}
-                  </p>
+                  <div className="text-gray-400 mb-3 text-[3rem]">
+                                    <CiFileOn />
+                                  </div>
+                  <p className="text-xl font-medium">No Access Quotations</p>
+                  {dateFilters.dateFrom && dateFilters.dateTo ? (
+                    <p className="mt-2 text-gray-400">
+                      No quotations found for the selected date range
+                    </p>
+                  ) : (
+                    <p className="mt-2 text-gray-400">
+                      No quotations found in the system
+                    </p>
+                  )}
+                  {(dateFilters.dateFrom || dateFilters.dateTo) && (
+                    <button
+                      onClick={clearFilters}
+                      className="mt-4 px-4 py-2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
                 </div>
               ) : (
                 <table className="w-full min-w-[600px]">
@@ -460,6 +539,8 @@ const NoAccess = () => {
         isOpen={isDateFilterOpen}
         onClose={() => setIsDateFilterOpen(false)}
         onApply={handleApplyDateFilters}
+        isLoading={isDateFilterLoading}
+        initialDates={dateFilters}
       />
 
       <CancelConfirmationModal
