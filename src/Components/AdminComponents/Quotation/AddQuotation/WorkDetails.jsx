@@ -121,8 +121,7 @@ const WorkDetails = () => {
   const [option, setOption] = useState('Not Applicable');
   const [quotationId, setQuotationId] = useState(null);
 
-
-  const [wcrUploadStatus, setWcrUploadStatus] = useState('upload'); 
+  const [wcrUploadStatus, setWcrUploadStatus] = useState('upload');
   const [wcrAttachmentId, setWcrAttachmentId] = useState(null);
 
   const dispatch = useDispatch();
@@ -139,7 +138,7 @@ const WorkDetails = () => {
     console.log('handleInputChange called with:', { name, value });
 
     if (name === 'option') {
-      setOption(value); 
+      setOption(value);
     }
 
     setFormData((prev) => {
@@ -223,7 +222,7 @@ const WorkDetails = () => {
       invoiceDetails: [
         ...prev.invoiceDetails,
         {
-          invoiceStatus: '',
+          invoiceStatus: '', // Initialize with empty status
           invoiceNo: '',
           invoiceDate: '',
           invoiceAmount: '',
@@ -312,17 +311,14 @@ const WorkDetails = () => {
   const handleAddNewClient = (newClient) => {
     setClients((prevClients) => [...prevClients, newClient]);
 
-
     setFormData((prev) => ({
       ...prev,
       clientName: newClient.clientName,
     }));
   };
   const handleAddNewLocation = (newLocation) => {
-   
     setLocations((prevLocations) => [...prevLocations, newLocation]);
 
- 
     setFormData((prev) => ({
       ...prev,
       location: newLocation.locationName,
@@ -330,7 +326,6 @@ const WorkDetails = () => {
   };
 
   const handleAddNewStaff = (newStaff) => {
-  
     setPmNames((prevStaff) => [...prevStaff, newStaff]);
 
     setFormData((prev) => ({
@@ -449,12 +444,11 @@ const WorkDetails = () => {
               }),
             }));
 
-    
       const formattedLPO =
         formData.lpoNumber === 'Single'
           ? [
               {
-                lpo_number: formData.lpoNumber, 
+                lpo_number: formData.lpoNumber,
                 lpo_status: formData.lpoStatus || '',
                 pr_no: formData.prNo || '',
                 lpo_no: formData.lpoNo || '',
@@ -465,7 +459,7 @@ const WorkDetails = () => {
               },
             ]
           : formData.lpoDetails.map((lpo) => ({
-              lpo_number: formData.lpoNumber, 
+              lpo_number: formData.lpoNumber,
               lpo_status: lpo.lpoStatus || '',
               pr_no: lpo.prNo || '',
               lpo_no: lpo.lpoNo || '',
@@ -473,9 +467,8 @@ const WorkDetails = () => {
               lpo_date: lpo.date ? formatDate(lpo.date) : null,
             }));
 
-      
       const formattedInvoices = formData.invoiceDetails.map((invoice) => ({
-        invoice: formData.invoice, 
+        invoice: formData.invoice,
         invoice_status: formData.invoiceStatus || '',
         invoice_no: invoice.invoiceNo || '',
         invoice_date: invoice.invoiceDate
@@ -526,11 +519,10 @@ const WorkDetails = () => {
         unit_option: formData.unit,
         units: formattedUnits,
         wcr_status: formData.wcrStatus || '',
-        wcr_attachment_id: wcrAttachmentId, 
+        wcr_attachment_id: wcrAttachmentId,
       };
 
       const response = await addQuotationWorkDetails(payload);
-
 
       if (response && response.status === 'Success') {
         if (formData.quotationStatus === 'Pending') {
@@ -571,7 +563,7 @@ const WorkDetails = () => {
         return '';
     }
 
-    return date.toISOString().split('T')[0]; 
+    return date.toISOString().split('T')[0];
   };
 
   const handleInvoiceDateChange = (index, field, value) => {
@@ -725,7 +717,7 @@ const WorkDetails = () => {
   };
 
   const handleOpenScopeModal = () => {
-    console.log('Opening scope modal with option:', option); 
+    console.log('Opening scope modal with option:', option);
     setIsScopeModalOpen(true);
   };
 
@@ -733,7 +725,6 @@ const WorkDetails = () => {
     console.log('Adding new scope');
     setIsScopeModalOpen(false);
   };
-
 
   const handleWcrUpload = async (e) => {
     const file = e.target.files[0];
@@ -1307,7 +1298,6 @@ const WorkDetails = () => {
         formData.quotationStatus ===
           'Approval pending but work started on urgent basis') && (
         <>
-
           <div className="grid grid-cols-1 md:grid-cols-3 gap-x-8 gap-y-6 border-b pb-6">
             {/* Expected Material Cost */}
             <div className="space-y-2">
@@ -2222,7 +2212,6 @@ const WorkDetails = () => {
               </div>
             ))}
 
-
             {formData.unit === 'Multiple' && (
               <div className="flex justify-end">
                 <button
@@ -2298,19 +2287,21 @@ const WorkDetails = () => {
                       </div>
                     </div>
 
-                    {/* Default PR No */}
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700 h-5 block">
-                        PR No:
-                      </label>
-                      <input
-                        type="text"
-                        name="prNo"
-                        value={formData.prNo}
-                        onChange={handleLPOChange}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                      />
-                    </div>
+                    {/* PR No - Only show when status is Pending or Received */}
+                    {formData.lpoStatus && (
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700 h-5 block">
+                          PR No:
+                        </label>
+                        <input
+                          type="text"
+                          name="prNo"
+                          value={formData.prNo}
+                          onChange={handleLPOChange}
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Additional fields when LPO Status is Received */}
@@ -2339,7 +2330,7 @@ const WorkDetails = () => {
                           type="number"
                           name="lpoAmount"
                           value={formData.lpoAmount}
-                          onChange={handleLPOChange} 
+                          onChange={handleLPOChange}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                         />
                       </div>
@@ -2353,7 +2344,7 @@ const WorkDetails = () => {
                           type="date"
                           name="lpoDate"
                           value={formData.lpoDate}
-                          onChange={handleLPOChange} 
+                          onChange={handleLPOChange}
                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                         />
                       </div>
@@ -2408,81 +2399,103 @@ const WorkDetails = () => {
                             </div>
                           </div>
 
-                          {/* PR No */}
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">
-                              PR No:
-                            </label>
-                            <input
-                              type="text"
-                              value={detail.prNo || ''}
-                              onChange={(e) =>
-                                handleLPODetailChange(
-                                  index,
-                                  'prNo',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            />
-                          </div>
+                          {/* PR No - Only show when status is Pending */}
+                          {detail.lpoStatus === 'Pending' && (
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-700">
+                                PR No:
+                              </label>
+                              <input
+                                type="text"
+                                value={detail.prNo || ''}
+                                onChange={(e) =>
+                                  handleLPODetailChange(
+                                    index,
+                                    'prNo',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                              />
+                            </div>
+                          )}
 
-                          {/* LPO No */}
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">
-                              LPO No:
-                            </label>
-                            <input
-                              type="text"
-                              value={detail.lpoNo || ''}
-                              onChange={(e) =>
-                                handleLPODetailChange(
-                                  index,
-                                  'lpoNo',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            />
-                          </div>
+                          {/* Additional fields - Only show when status is Received */}
+                          {detail.lpoStatus === 'Received' && (
+                            <>
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700">
+                                  PR No:
+                                </label>
+                                <input
+                                  type="text"
+                                  value={detail.prNo || ''}
+                                  onChange={(e) =>
+                                    handleLPODetailChange(
+                                      index,
+                                      'prNo',
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                />
+                              </div>
 
-                          {/* LPO Amount */}
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">
-                              LPO Amount:
-                            </label>
-                            <input
-                              type="number"
-                              value={detail.lpoAmount || ''}
-                              onChange={(e) =>
-                                handleLPODetailChange(
-                                  index,
-                                  'lpoAmount',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            />
-                          </div>
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700">
+                                  LPO No:
+                                </label>
+                                <input
+                                  type="text"
+                                  value={detail.lpoNo || ''}
+                                  onChange={(e) =>
+                                    handleLPODetailChange(
+                                      index,
+                                      'lpoNo',
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                />
+                              </div>
 
-                          {/* Date */}
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">
-                              Date:
-                            </label>
-                            <input
-                              type="date"
-                              value={detail.date || ''}
-                              onChange={(e) =>
-                                handleLPODetailChange(
-                                  index,
-                                  'date',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            />
-                          </div>
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700">
+                                  LPO Amount:
+                                </label>
+                                <input
+                                  type="number"
+                                  value={detail.lpoAmount || ''}
+                                  onChange={(e) =>
+                                    handleLPODetailChange(
+                                      index,
+                                      'lpoAmount',
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                />
+                              </div>
+
+                              <div className="space-y-2">
+                                <label className="text-sm font-medium text-gray-700">
+                                  Date:
+                                </label>
+                                <input
+                                  type="date"
+                                  value={detail.date || ''}
+                                  onChange={(e) =>
+                                    handleLPODetailChange(
+                                      index,
+                                      'date',
+                                      e.target.value
+                                    )
+                                  }
+                                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                />
+                              </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -2595,39 +2608,394 @@ const WorkDetails = () => {
                   />
                 </div>
               </div>
-
-              {/* Invoice Status */}
-              {formData.invoice && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 h-5 block">
-                    Invoice Status:
-                  </label>
-                  <div className="relative">
-                    <select
-                      name="invoiceStatus"
-                      value={formData.invoiceStatus}
-                      onChange={handleInputChange}
-                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Submitted">Submitted</option>
-                    </select>
-                    <IoChevronDownOutline
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                      size={20}
-                    />
-                  </div>
-                </div>
-              )}
             </div>
 
-            {/* Invoice Details */}
-            {formData.invoice && formData.invoiceStatus === 'Submitted' && (
+            {/* Single Invoice Section */}
+            {formData.invoice === 'Single' && (
+              <div className="border rounded-lg p-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* Invoice Status */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 h-5 block">
+                      Invoice Status:
+                    </label>
+                    <div className="relative">
+                      <select
+                        name="invoiceStatus"
+                        value={formData.invoiceStatus}
+                        onChange={handleInputChange}
+                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                      >
+                        <option value="">Select</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Submitted">Submitted</option>
+                      </select>
+                      <IoChevronDownOutline
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                        size={20}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* If Invoice Status is Submitted */}
+                {formData.invoiceStatus === 'Submitted' && (
+                  <div className="space-y-4">
+                    {/* Invoice Details */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">
+                          Invoice No:
+                        </label>
+                        <input
+                          type="text"
+                          value={formData.invoiceDetails[0]?.invoiceNo || ''}
+                          onChange={(e) =>
+                            handleInvoiceDetailChange(
+                              0,
+                              'invoiceNo',
+                              e.target.value
+                            )
+                          }
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">
+                          Invoice Date:
+                        </label>
+                        <input
+                          type="date"
+                          value={formData.invoiceDetails[0]?.invoiceDate || ''}
+                          onChange={(e) =>
+                            handleInvoiceDetailChange(
+                              0,
+                              'invoiceDate',
+                              e.target.value
+                            )
+                          }
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">
+                          Invoice Amount:
+                        </label>
+                        <input
+                          type="number"
+                          value={
+                            formData.invoiceDetails[0]?.invoiceAmount || ''
+                          }
+                          onChange={(e) =>
+                            handleInvoiceDetailChange(
+                              0,
+                              'invoiceAmount',
+                              e.target.value
+                            )
+                          }
+                          className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                        />
+                      </div>
+                    </div>
+
+                    {/* GRN Status and Retention */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* GRN Status */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">
+                          GRN Status:
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={
+                              formData.invoiceDetails[0]?.grnStatus || 'Pending'
+                            }
+                            onChange={(e) =>
+                              handleInvoiceDetailChange(
+                                0,
+                                'grnStatus',
+                                e.target.value
+                              )
+                            }
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                          >
+                            <option value="Pending">Pending</option>
+                            <option value="Received">Received</option>
+                            <option value="Not Applicable">
+                              Not Applicable
+                            </option>
+                          </select>
+                          <IoChevronDownOutline
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                            size={20}
+                          />
+                        </div>
+                      </div>
+
+                      {/* GRN Details when status is Received */}
+                      {formData.invoiceDetails[0]?.grnStatus === 'Received' && (
+                        <>
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">
+                              GRN No:
+                            </label>
+                            <input
+                              type="text"
+                              value={formData.invoiceDetails[0]?.grnNo || ''}
+                              onChange={(e) =>
+                                handleInvoiceDetailChange(
+                                  0,
+                                  'grnNo',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                          </div>
+
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">
+                              GRN Date:
+                            </label>
+                            <input
+                              type="date"
+                              value={formData.invoiceDetails[0]?.grnDate || ''}
+                              onChange={(e) =>
+                                handleInvoiceDetailChange(
+                                  0,
+                                  'grnDate',
+                                  e.target.value
+                                )
+                              }
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                            />
+                          </div>
+                        </>
+                      )}
+
+                      {/* Retention */}
+                      <div className="space-y-2">
+                        <label className="text-sm font-medium text-gray-700">
+                          Retention:
+                        </label>
+                        <div className="relative">
+                          <select
+                            value={
+                              formData.invoiceDetails[0]?.retention ||
+                              'Not Applicable'
+                            }
+                            onChange={(e) =>
+                              handleInvoiceDetailChange(
+                                0,
+                                'retention',
+                                e.target.value
+                              )
+                            }
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                          >
+                            <option value="Not Applicable">
+                              Not Applicable
+                            </option>
+                            <option value="Applicable">Applicable</option>
+                          </select>
+                          <IoChevronDownOutline
+                            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                            size={20}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Retention Amount */}
+                      {formData.invoiceDetails[0]?.retention ===
+                        'Applicable' && (
+                        <div className="space-y-2">
+                          <label className="text-sm font-medium text-gray-700">
+                            Amount:
+                          </label>
+                          <input
+                            type="number"
+                            value={
+                              formData.invoiceDetails[0]?.retentionAmount || ''
+                            }
+                            onChange={(e) =>
+                              handleInvoiceDetailChange(
+                                0,
+                                'retentionAmount',
+                                e.target.value
+                              )
+                            }
+                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Retention Details */}
+                    {formData.invoiceDetails[0]?.retention === 'Applicable' && (
+                      <>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                          {/* Due After */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">
+                              Due After:
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={
+                                  formData.invoiceDetails[0]?.dueAfter || ''
+                                }
+                                onChange={(e) =>
+                                  handleInvoiceDateChange(
+                                    0,
+                                    'dueAfter',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                              >
+                                <option value="">Select</option>
+                                <option value="1 Year">1 Year</option>
+                                <option value="2 Years">2 Years</option>
+                                <option value="3 Years">3 Years</option>
+                              </select>
+                              <IoChevronDownOutline
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                                size={20}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Due Date */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">
+                              Due Date:
+                            </label>
+                            <input
+                              type="date"
+                              value={formData.invoiceDetails[0]?.dueDate || ''}
+                              readOnly
+                              className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
+                            />
+                          </div>
+
+                          {/* Retention Invoice */}
+                          <div className="space-y-2">
+                            <label className="text-sm font-medium text-gray-700">
+                              Retention Invoice:
+                            </label>
+                            <div className="relative">
+                              <select
+                                value={
+                                  formData.invoiceDetails[0]
+                                    ?.retentionInvoice || 'Pending'
+                                }
+                                onChange={(e) =>
+                                  handleInvoiceDetailChange(
+                                    0,
+                                    'retentionInvoice',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                              >
+                                <option value="Pending">Pending</option>
+                                <option value="Submitted">Submitted</option>
+                              </select>
+                              <IoChevronDownOutline
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                                size={20}
+                              />
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Retention Invoice Details */}
+                        {formData.invoiceDetails[0]?.retentionInvoice ===
+                          'Submitted' && (
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                            {/* Invoice Date */}
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-700">
+                                Invoice Date:
+                              </label>
+                              <input
+                                type="date"
+                                value={
+                                  formData.invoiceDetails[0]
+                                    ?.retentionInvoiceDate || ''
+                                }
+                                onChange={(e) =>
+                                  handleInvoiceDetailChange(
+                                    0,
+                                    'retentionInvoiceDate',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                              />
+                            </div>
+
+                            {/* Invoice No */}
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-700">
+                                Invoice No:
+                              </label>
+                              <input
+                                type="text"
+                                value={
+                                  formData.invoiceDetails[0]
+                                    ?.retentionInvoiceNo || ''
+                                }
+                                onChange={(e) =>
+                                  handleInvoiceDetailChange(
+                                    0,
+                                    'retentionInvoiceNo',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                              />
+                            </div>
+
+                            {/* Amount */}
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-700">
+                                Amount:
+                              </label>
+                              <input
+                                type="number"
+                                value={
+                                  formData.invoiceDetails[0]
+                                    ?.retentionInvoiceAmount || ''
+                                }
+                                onChange={(e) =>
+                                  handleInvoiceDetailChange(
+                                    0,
+                                    'retentionInvoiceAmount',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Partial Invoice Details */}
+            {formData.invoice === 'Partial' && (
               <div className="space-y-4">
                 {formData.invoiceDetails.map((detail, index) => (
                   <div key={index} className="border rounded-lg p-4 relative">
-                    {/* Delete button for additional invoice details */}
-                    {formData.invoice === 'Partial' && index > 0 && (
+                    {/* Delete button */}
+                    {index > 0 && (
                       <button
                         type="button"
                         onClick={() => handleRemoveInvoice(index)}
@@ -2638,87 +3006,27 @@ const WorkDetails = () => {
                     )}
 
                     <div className="space-y-4">
-                      {/* First row with Invoice No, Date, Amount */}
+                      {/* Invoice Status */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="space-y-2">
                           <label className="text-sm font-medium text-gray-700">
-                            Invoice No:
-                          </label>
-                          <input
-                            type="text"
-                            value={detail.invoiceNo}
-                            onChange={(e) =>
-                              handleInvoiceDetailChange(
-                                index,
-                                'invoiceNo',
-                                e.target.value
-                              )
-                            }
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-gray-700">
-                            Invoice Date:
-                          </label>
-                          <input
-                            type="date"
-                            value={detail.invoiceDate}
-                            onChange={(e) =>
-                              handleInvoiceDetailChange(
-                                index,
-                                'invoiceDate',
-                                e.target.value
-                              )
-                            }
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                          />
-                        </div>
-
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-gray-700">
-                            Invoice Amount:
-                          </label>
-                          <input
-                            type="number"
-                            value={detail.invoiceAmount}
-                            onChange={(e) =>
-                              handleInvoiceDetailChange(
-                                index,
-                                'invoiceAmount',
-                                e.target.value
-                              )
-                            }
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Second row with GRN Status and Retention */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* GRN Status */}
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-gray-700">
-                            GRN Status:
+                            Invoice Status:
                           </label>
                           <div className="relative">
                             <select
-                              value={detail.grnStatus}
+                              value={detail.invoiceStatus}
                               onChange={(e) =>
                                 handleInvoiceDetailChange(
                                   index,
-                                  'grnStatus',
+                                  'invoiceStatus',
                                   e.target.value
                                 )
                               }
                               className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
                             >
+                              <option value="">Select</option>
                               <option value="Pending">Pending</option>
-                              <option value="Received">Received</option>
-                              <option value="Not Applicable">
-                                Not Applicable
-                              </option>
+                              <option value="Submitted">Submitted</option>
                             </select>
                             <IoChevronDownOutline
                               className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
@@ -2726,21 +3034,24 @@ const WorkDetails = () => {
                             />
                           </div>
                         </div>
+                      </div>
 
-                        {/* GRN Details when status is Received */}
-                        {detail.grnStatus === 'Received' && (
-                          <>
+                      {/* If Invoice Status is Submitted */}
+                      {detail.invoiceStatus === 'Submitted' && (
+                        <>
+                          {/* Invoice Details */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                             <div className="space-y-2">
                               <label className="text-sm font-medium text-gray-700">
-                                GRN No:
+                                Invoice No:
                               </label>
                               <input
                                 type="text"
-                                value={detail.grnNo || ''}
+                                value={detail.invoiceNo}
                                 onChange={(e) =>
                                   handleInvoiceDetailChange(
                                     index,
-                                    'grnNo',
+                                    'invoiceNo',
                                     e.target.value
                                   )
                                 }
@@ -2750,140 +3061,65 @@ const WorkDetails = () => {
 
                             <div className="space-y-2">
                               <label className="text-sm font-medium text-gray-700">
-                                GRN Date:
+                                Invoice Date:
                               </label>
                               <input
                                 type="date"
-                                value={detail.grnDate || ''}
+                                value={detail.invoiceDate}
                                 onChange={(e) =>
                                   handleInvoiceDetailChange(
                                     index,
-                                    'grnDate',
+                                    'invoiceDate',
                                     e.target.value
                                   )
                                 }
                                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                               />
                             </div>
-                          </>
-                        )}
 
-                        {/* Retention */}
-                        <div className="space-y-2">
-                          <label className="text-sm font-medium text-gray-700">
-                            Retention:
-                          </label>
-                          <div className="relative">
-                            <select
-                              value={detail.retention}
-                              onChange={(e) =>
-                                handleInvoiceDetailChange(
-                                  index,
-                                  'retention',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-                            >
-                              <option value="Not Applicable">
-                                Not Applicable
-                              </option>
-                              <option value="Applicable">Applicable</option>
-                            </select>
-                            <IoChevronDownOutline
-                              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                              size={20}
-                            />
-                          </div>
-                        </div>
-
-                        {/* Amount (shows up next to Retention) */}
-                        {detail.retention === 'Applicable' && (
-                          <div className="space-y-2">
-                            <label className="text-sm font-medium text-gray-700">
-                              Amount:
-                            </label>
-                            <input
-                              type="number"
-                              value={detail.retentionAmount}
-                              onChange={(e) =>
-                                handleInvoiceDetailChange(
-                                  index,
-                                  'retentionAmount',
-                                  e.target.value
-                                )
-                              }
-                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                            />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Second row with Due After, Due Date, and Retention Invoice */}
-                      {detail.retention === 'Applicable' && (
-                        <>
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-                            {/* Due After */}
                             <div className="space-y-2">
                               <label className="text-sm font-medium text-gray-700">
-                                Due After:
-                              </label>
-                              <div className="relative">
-                                <select
-                                  value={detail.dueAfter}
-                                  onChange={(e) =>
-                                    handleInvoiceDateChange(
-                                      index,
-                                      'dueAfter',
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
-                                >
-                                  <option value="">Select</option>
-                                  <option value="1 Year">1 Year</option>
-                                  <option value="2 Years">2 Years</option>
-                                  <option value="3 Years">3 Years</option>
-                                </select>
-                                <IoChevronDownOutline
-                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
-                                  size={20}
-                                />
-                              </div>
-                            </div>
-
-                            {/* Due Date */}
-                            <div className="space-y-2">
-                              <label className="text-sm font-medium text-gray-700">
-                                Due Date:
+                                Invoice Amount:
                               </label>
                               <input
-                                type="date"
-                                value={detail.dueDate || ''}
-                                readOnly
-                                className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
+                                type="number"
+                                value={detail.invoiceAmount}
+                                onChange={(e) =>
+                                  handleInvoiceDetailChange(
+                                    index,
+                                    'invoiceAmount',
+                                    e.target.value
+                                  )
+                                }
+                                className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                               />
                             </div>
+                          </div>
 
-                            {/* Retention Invoice */}
+                          {/* GRN Status and Retention */}
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            {/* GRN Status */}
                             <div className="space-y-2">
                               <label className="text-sm font-medium text-gray-700">
-                                Retention Invoice:
+                                GRN Status:
                               </label>
                               <div className="relative">
                                 <select
-                                  value={detail.retentionInvoice}
+                                  value={detail.grnStatus}
                                   onChange={(e) =>
                                     handleInvoiceDetailChange(
                                       index,
-                                      'retentionInvoice',
+                                      'grnStatus',
                                       e.target.value
                                     )
                                   }
                                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
                                 >
                                   <option value="Pending">Pending</option>
-                                  <option value="Submitted">Submitted</option>
+                                  <option value="Received">Received</option>
+                                  <option value="Not Applicable">
+                                    Not Applicable
+                                  </option>
                                 </select>
                                 <IoChevronDownOutline
                                   className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
@@ -2891,67 +3127,237 @@ const WorkDetails = () => {
                                 />
                               </div>
                             </div>
-                          </div>
 
-                          {detail.retentionInvoice === 'Submitted' && (
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
-                              {/* Invoice Date */}
-                              <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">
-                                  Invoice Date:
-                                </label>
-                                <input
-                                  type="date"
-                                  value={detail.retentionInvoiceDate}
+                            {/* GRN Details when status is Received */}
+                            {detail.grnStatus === 'Received' && (
+                              <>
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium text-gray-700">
+                                    GRN No:
+                                  </label>
+                                  <input
+                                    type="text"
+                                    value={detail.grnNo || ''}
+                                    onChange={(e) =>
+                                      handleInvoiceDetailChange(
+                                        index,
+                                        'grnNo',
+                                        e.target.value
+                                      )
+                                    }
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                  />
+                                </div>
+
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium text-gray-700">
+                                    GRN Date:
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={detail.grnDate || ''}
+                                    onChange={(e) =>
+                                      handleInvoiceDetailChange(
+                                        index,
+                                        'grnDate',
+                                        e.target.value
+                                      )
+                                    }
+                                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                  />
+                                </div>
+                              </>
+                            )}
+
+                            {/* Retention */}
+                            <div className="space-y-2">
+                              <label className="text-sm font-medium text-gray-700">
+                                Retention:
+                              </label>
+                              <div className="relative">
+                                <select
+                                  value={detail.retention}
                                   onChange={(e) =>
                                     handleInvoiceDetailChange(
                                       index,
-                                      'retentionInvoiceDate',
+                                      'retention',
                                       e.target.value
                                     )
                                   }
-                                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                                >
+                                  <option value="Not Applicable">
+                                    Not Applicable
+                                  </option>
+                                  <option value="Applicable">Applicable</option>
+                                </select>
+                                <IoChevronDownOutline
+                                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                                  size={20}
                                 />
                               </div>
+                            </div>
 
-                              {/* Invoice No */}
-                              <div className="space-y-2">
-                                <label className="text-sm font-medium text-gray-700">
-                                  Invoice No:
-                                </label>
-                                <input
-                                  type="text"
-                                  value={detail.retentionInvoiceNo}
-                                  onChange={(e) =>
-                                    handleInvoiceDetailChange(
-                                      index,
-                                      'retentionInvoiceNo',
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
-                                />
-                              </div>
-
-                              {/* Amount */}
+                            {/* Retention Amount */}
+                            {detail.retention === 'Applicable' && (
                               <div className="space-y-2">
                                 <label className="text-sm font-medium text-gray-700">
                                   Amount:
                                 </label>
                                 <input
                                   type="number"
-                                  value={detail.retentionInvoiceAmount}
+                                  value={detail.retentionAmount}
                                   onChange={(e) =>
                                     handleInvoiceDetailChange(
                                       index,
-                                      'retentionInvoiceAmount',
+                                      'retentionAmount',
                                       e.target.value
                                     )
                                   }
                                   className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
                                 />
                               </div>
-                            </div>
+                            )}
+                          </div>
+
+                          {/* Retention Details */}
+                          {detail.retention === 'Applicable' && (
+                            <>
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {/* Due After */}
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium text-gray-700">
+                                    Due After:
+                                  </label>
+                                  <div className="relative">
+                                    <select
+                                      value={detail.dueAfter}
+                                      onChange={(e) =>
+                                        handleInvoiceDateChange(
+                                          index,
+                                          'dueAfter',
+                                          e.target.value
+                                        )
+                                      }
+                                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                                    >
+                                      <option value="">Select</option>
+                                      <option value="1 Year">1 Year</option>
+                                      <option value="2 Years">2 Years</option>
+                                      <option value="3 Years">3 Years</option>
+                                    </select>
+                                    <IoChevronDownOutline
+                                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                                      size={20}
+                                    />
+                                  </div>
+                                </div>
+
+                                {/* Due Date */}
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium text-gray-700">
+                                    Due Date:
+                                  </label>
+                                  <input
+                                    type="date"
+                                    value={detail.dueDate || ''}
+                                    readOnly
+                                    className="w-full p-3 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed"
+                                  />
+                                </div>
+
+                                {/* Retention Invoice */}
+                                <div className="space-y-2">
+                                  <label className="text-sm font-medium text-gray-700">
+                                    Retention Invoice:
+                                  </label>
+                                  <div className="relative">
+                                    <select
+                                      value={detail.retentionInvoice}
+                                      onChange={(e) =>
+                                        handleInvoiceDetailChange(
+                                          index,
+                                          'retentionInvoice',
+                                          e.target.value
+                                        )
+                                      }
+                                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white"
+                                    >
+                                      <option value="Pending">Pending</option>
+                                      <option value="Submitted">
+                                        Submitted
+                                      </option>
+                                    </select>
+                                    <IoChevronDownOutline
+                                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none"
+                                      size={20}
+                                    />
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Retention Invoice Details */}
+                              {detail.retentionInvoice === 'Submitted' && (
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-4">
+                                  {/* Invoice Date */}
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">
+                                      Invoice Date:
+                                    </label>
+                                    <input
+                                      type="date"
+                                      value={detail.retentionInvoiceDate}
+                                      onChange={(e) =>
+                                        handleInvoiceDetailChange(
+                                          index,
+                                          'retentionInvoiceDate',
+                                          e.target.value
+                                        )
+                                      }
+                                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    />
+                                  </div>
+
+                                  {/* Invoice No */}
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">
+                                      Invoice No:
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={detail.retentionInvoiceNo}
+                                      onChange={(e) =>
+                                        handleInvoiceDetailChange(
+                                          index,
+                                          'retentionInvoiceNo',
+                                          e.target.value
+                                        )
+                                      }
+                                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    />
+                                  </div>
+
+                                  {/* Amount */}
+                                  <div className="space-y-2">
+                                    <label className="text-sm font-medium text-gray-700">
+                                      Amount:
+                                    </label>
+                                    <input
+                                      type="number"
+                                      value={detail.retentionInvoiceAmount}
+                                      onChange={(e) =>
+                                        handleInvoiceDetailChange(
+                                          index,
+                                          'retentionInvoiceAmount',
+                                          e.target.value
+                                        )
+                                      }
+                                      className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </>
                           )}
                         </>
                       )}
@@ -2959,18 +3365,16 @@ const WorkDetails = () => {
                   </div>
                 ))}
 
-                {/* Add Invoice Button for Partial */}
-                {formData.invoice === 'Partial' && (
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      onClick={handleAddInvoice}
-                      className="px-4 py-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2"
-                    >
-                      Add Invoice
-                    </button>
-                  </div>
-                )}
+                {/* Add Invoice Button */}
+                <div className="flex justify-end">
+                  <button
+                    type="button"
+                    onClick={handleAddInvoice}
+                    className="px-4 py-2 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors flex items-center gap-2"
+                  >
+                    Add Invoice
+                  </button>
+                </div>
               </div>
             )}
           </div>

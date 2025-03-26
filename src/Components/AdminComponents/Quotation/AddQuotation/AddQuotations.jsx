@@ -165,33 +165,6 @@ const AddQuotations = () => {
             </div>
           </div>
 
-          {/* Scope of Work Section */}
-          <div className="bg-white rounded-lg shadow-sm mb-6">
-            <button
-              className={`w-full px-8 py-6 text-left flex justify-between items-center ${
-                expandedSection === 'scopeOfWork'
-                  ? 'rounded-t-lg'
-                  : 'rounded-lg'
-              }`}
-              onClick={() => toggleSection('scopeOfWork')}
-            >
-              <span className="text-[1.1rem] text-gray-700">Scope of Work</span>
-              <IoIosArrowDown
-                className={`text-gray-400 text-xl transition-transform duration-300 ${
-                  expandedSection === 'scopeOfWork' ? 'rotate-180' : ''
-                }`}
-              />
-            </button>
-            <div
-              className={`transition-all duration-300 ${
-                expandedSection === 'scopeOfWork' ? 'block' : 'hidden'
-              }`}
-            >
-              <div className="border-t">
-                <ScopeOfWorkSection />
-              </div>
-            </div>
-          </div>
 
           {/* Save Button */}
           <div className="flex justify-end mt-8">
