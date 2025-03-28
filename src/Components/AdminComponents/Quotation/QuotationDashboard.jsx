@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import usePermissions from '../../../Hooks/userPermission';
 import { PERMISSIONS } from '../../../Hooks/userPermission';
+import TokenService from '../../../Config/tokenService';
 import { MdAddCircle, MdClose, MdOutlinePendingActions } from 'react-icons/md';
 import { FaEye, FaClock, FaHourglassStart } from 'react-icons/fa';
 import { VscLayersActive } from 'react-icons/vsc';
@@ -16,10 +17,22 @@ import { GiCheckMark } from 'react-icons/gi';
 const QuotationDashboard = () => {
   const navigate = useNavigate();
   const { hasPermission } = usePermissions();
+  const userRole = TokenService.getUserRole();
+  const isSuperAdmin = userRole === 'SuperAdmin';
+  const isStaff = userRole === 'Staff';
+  const isSalesPerson = userRole === 'Sales Person';
 
   // Helper function to check if user has any of the required permissions
   const hasAnyRequiredPermission = (permissions) => {
-    return permissions.some((permission) => hasPermission(permission));
+    // SuperAdmin should have access to everything
+    if (isSuperAdmin) return true;
+
+    // Staff and Sales Person need to have at least one of the required permissions
+    if (isStaff || isSalesPerson) {
+      return permissions.some((permission) => hasPermission(permission));
+    }
+
+    return false;
   };
 
   const sections = [
@@ -222,21 +235,32 @@ const QuotationDashboard = () => {
         hasAnyRequiredPermission(item.requiredPermissions)
       ),
     }))
-    .filter((section) => section.items.length > 0); // Only show sections with visible items
+    .filter((section) => section.items.length > 0);
 
   const handleCardClick = (path, requiredPermissions) => {
-    const hasAllRequiredPermissions = requiredPermissions.some((permission) =>
-      hasPermission(permission)
-    );
-
-    if (!hasAllRequiredPermissions) {
-      navigate('/unauthorized');
+    // SuperAdmin should have access to everything
+    if (isSuperAdmin) {
+      navigate(path);
       return;
     }
+
+    // Staff and Sales Person need to have at least one of the required permissions
+    if (isStaff || isSalesPerson) {
+      const hasRequiredPermission = requiredPermissions.some((permission) =>
+        hasPermission(permission)
+      );
+
+      if (!hasRequiredPermission) {
+        navigate('/unauthorized');
+        return;
+      }
+    }
+
     navigate(path);
   };
 
-  if (!hasPermission(PERMISSIONS.VIEW_QUOTATIONS)) {
+  // Check if user has permission to view quotations
+  if (!isSuperAdmin && !hasPermission(PERMISSIONS.VIEW_QUOTATIONS)) {
     navigate('/unauthorized');
     return null;
   }

@@ -184,6 +184,17 @@ export const SuperadminApi = {
       throw error;
     }
   },
+
+  generateCompanyTokens: async (companyId) => {
+    try {
+      const response = await axiosInstance.post('/generate-company-tokens/', {
+        company_id: companyId,
+      });
+      return response.data;
+    } catch (error) {
+      throw error;
+    }
+  },
 };
 
 export default SuperadminApi;

@@ -114,6 +114,8 @@ const AppRoutes = () => {
               'Staff',
               'Sales Person',
               'Sales Person',
+              'SuperAdmin',
+              'superadmin',
             ]}
             element={<AdminLayout />}
           />
@@ -132,7 +134,7 @@ const AppRoutes = () => {
           path="client-location"
           element={
             <ProtectedRoute
-              allowedRoles={['admin']}
+              allowedRoles={['admin', 'SuperAdmin']}
               allowedPermissions={['view_clients', 'view_locations']}
               element={<ClientLocationDashboard />}
             />
