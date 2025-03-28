@@ -65,6 +65,7 @@ import RetentionInvoicePending from '../Components/AdminComponents/Quotation/Ret
 import RetentionInvoiceOverdue from '../Components/AdminComponents/Quotation/Retention/RetentionOverDue';
 import RetentionInvoiceSubmitted from '../Components/AdminComponents/Quotation/Retention/RetentionInvoiceSubmitted';
 import InvoiceSubmitted from '../Components/AdminComponents/Quotation/DocumentationStatus/InvoiceSubmitted';
+import UserrightsSuperadmin from '../Components/SuperadminComponents/UserrightsSuperadmin';
 
 const AppRoutes = () => {
   return (
@@ -90,6 +91,15 @@ const AppRoutes = () => {
         <Route path="company-management" element={<CompanyManagement />} />
         <Route path="user-management" element={<SuperAdminUserManagement />} />
         <Route path="view-staff" element={<SuperAdminViewStaff />} />
+        <Route
+          path="user-rights/:userId"
+          element={
+            <ProtectedRoute
+              allowedRoles={['superadmin', 'SuperAdmin']}
+              element={<UserrightsSuperadmin />}
+            />
+          }
+        />
       </Route>
 
       {/* Admin Routes */}

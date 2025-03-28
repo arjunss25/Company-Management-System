@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { IoArrowBack } from 'react-icons/io5';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PERMISSIONS } from '../../../Hooks/userPermission';
-import axiosInstance from '../../../Config/axiosInstance';
+import { PERMISSIONS } from '../../Hooks/userPermission';
+import axiosInstance from '../../Config/axiosInstance';
 
 const UserrightsSuperadmin = () => {
   const navigate = useNavigate();
@@ -131,7 +131,7 @@ const UserrightsSuperadmin = () => {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-8">
               <button
-                onClick={() => navigate('/admin/staff-details')}
+                onClick={() => navigate('/superadmin/staff-list')}
                 className="group flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300"
               >
                 <IoArrowBack
