@@ -4,7 +4,7 @@ import { IoClose } from 'react-icons/io5';
 import { MdKeyboardArrowDown } from 'react-icons/md';
 import { IoIosArrowDown } from 'react-icons/io';
 import './UpdateRateCardItemModal.css';
-import { AdminApi } from '../../../services/AdminApi';
+import { AdminApi } from '../../../Services/AdminApi';
 
 const UpdateRateCardItemModal = ({ isOpen, onClose, rateCard, onUpdate }) => {
   const [rateCards, setRateCards] = useState([]);
