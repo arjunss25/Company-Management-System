@@ -82,7 +82,11 @@ const LoginPage = () => {
         const userRole = userData.role?.toLowerCase();
         if (userRole === 'superadmin') {
           navigate('/superadmin/dashboard');
-        } else if (userRole === 'admin') {
+        } else if (
+          userRole === 'admin' ||
+          userRole === 'sales person' ||
+          userRole === 'staff'
+        ) {
           navigate('/admin/dashboard');
         } else {
           navigate('/unauthorized');

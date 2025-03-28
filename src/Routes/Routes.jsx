@@ -102,8 +102,8 @@ const AppRoutes = () => {
               'Admin',
               'staff',
               'Staff',
-              'sales',
-              'Sales',
+              'Sales Person',
+              'Sales Person',
             ]}
             element={<AdminLayout />}
           />
