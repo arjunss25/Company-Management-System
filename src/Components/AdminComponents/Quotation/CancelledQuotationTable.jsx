@@ -12,6 +12,9 @@ import axiosInstance from '../../../Config/axiosInstance';
 import LoadingSpinner from '../../Common/LoadingSpinner';
 import RevertConfirmationModal from '../../Common/RevertConfirmationModal';
 import SuccessModal from '../../Common/SuccessModal';
+import { PERMISSIONS } from '../../../Hooks/userPermission';
+import usePermissions from '../../../Hooks/userPermission';
+import ExportButton from '../../Common/ExportButton';
 
 const CancelledQuotationTable = () => {
   const navigate = useNavigate();
@@ -23,6 +26,7 @@ const CancelledQuotationTable = () => {
   const [loading, setLoading] = useState(false);
   const [loadingPdfId, setLoadingPdfId] = useState(null);
   const [isDateFilterLoading, setIsDateFilterLoading] = useState(false);
+  const { hasPermission } = usePermissions();
 
   const itemsPerPage = 10;
 
@@ -118,10 +122,18 @@ const CancelledQuotationTable = () => {
   });
 
   const handleEdit = (quotation) => {
+    if (!hasPermission(PERMISSIONS.EDIT_CANCELLED_QUOTATIONS)) {
+      navigate('/unauthorized');
+      return;
+    }
     navigate(`/admin/edit-quotation/${quotation.id}`);
   };
 
   const handleRevert = (quotation) => {
+    if (!hasPermission(PERMISSIONS.REVERT_CANCELLED_QUOTATIONS)) {
+      navigate('/unauthorized');
+      return;
+    }
     setQuotationToRevert(quotation);
     setIsRevertModalOpen(true);
   };
@@ -170,6 +182,11 @@ const CancelledQuotationTable = () => {
   };
 
   const handlePrintPDF = async (quotationId) => {
+    if (!hasPermission(PERMISSIONS.EXPORT_CANCELLED_QUOTATIONS)) {
+      navigate('/unauthorized');
+      return;
+    }
+
     try {
       setLoadingPdfId(quotationId);
       const response = await axiosInstance.get(
@@ -185,7 +202,6 @@ const CancelledQuotationTable = () => {
       URL.revokeObjectURL(fileURL);
     } catch (error) {
       console.error('Error downloading PDF:', error);
-      // You can show your error modal here if needed
     } finally {
       setLoadingPdfId(null);
     }

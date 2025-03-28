@@ -1,37 +1,31 @@
 import React, { useState } from 'react';
 import { IoArrowBack } from 'react-icons/io5';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { PERMISSIONS } from '../../../Hooks/userPermission';
+import axiosInstance from '../../../Config/axiosInstance';
 
 const Userrights = () => {
   const navigate = useNavigate();
+  const { userId } = useParams();
+  const allPermissions = Object.values(PERMISSIONS);
+  const [isLoading, setIsLoading] = useState(false);
+
   const [rights, setRights] = useState({
     selectAll: false,
-    rights: Array(15).fill(false),
+    rights: Array(allPermissions.length).fill(false),
   });
 
-  const pages = [
-    'Active Contract',
-    'Add Clients',
-    'Add Contract',
-    'Add Locations',
-    'Add Materials',
-    'Add Quotation',
-    'Add Rate Card',
-    'Add Rate Card Item',
-    'Add Rate Contract Work',
-    'Add Rate Contract Work Proposal',
-    'Add Regular Work',
-    'Add Staff',
-    'Add Terms',
-    'Cancelled Quotation',
-    'Dashboard',
-  ];
+  const [saveStatus, setSaveStatus] = useState({
+    show: false,
+    success: false,
+    message: '',
+  });
 
   const handleSelectAll = () => {
     setRights({
       selectAll: !rights.selectAll,
-      rights: Array(15).fill(!rights.selectAll),
+      rights: Array(allPermissions.length).fill(!rights.selectAll),
     });
   };
 
@@ -44,9 +38,92 @@ const Userrights = () => {
     });
   };
 
+  const handleSavePermissions = async () => {
+    try {
+      setIsLoading(true);
+
+      const selectedPermissions = allPermissions.filter(
+        (_, index) => rights.rights[index]
+      );
+
+      const payload = {
+        user_id: parseInt(userId),
+        permissions: selectedPermissions,
+      };
+
+      const response = await axiosInstance.post('/save-permission/', payload);
+
+      if (response.data.status === 'Success') {
+        setSaveStatus({
+          show: true,
+          success: true,
+          message: 'Permissions saved successfully!',
+        });
+
+        setTimeout(() => {
+          navigate('/admin/staff-details');
+        }, 2000);
+      } else {
+        setSaveStatus({
+          show: true,
+          success: false,
+          message: 'Failed to save permissions. Please try again.',
+        });
+      }
+    } catch (error) {
+      console.error('Error saving permissions:', error);
+      setSaveStatus({
+        show: true,
+        success: false,
+        message: 'An error occurred while saving permissions.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const permissionCategories = {
+    'Page Access': allPermissions.filter((p) => p.startsWith('view_')),
+    'User Management': allPermissions.filter((p) => p.includes('user_')),
+    'Client Management': allPermissions.filter((p) => p.includes('client')),
+    'Location Management': allPermissions.filter((p) => p.includes('location')),
+    'Material Management': allPermissions.filter((p) => p.includes('material')),
+    'Terms & Conditions': allPermissions.filter((p) => p.includes('terms')),
+    'Contract Management': allPermissions.filter((p) => p.includes('contract')),
+    'Quotation Management': allPermissions.filter(
+      (p) =>
+        p.includes('quotation') ||
+        p.includes('_started') ||
+        p.includes('_progress') ||
+        p.includes('_hold') ||
+        p.includes('_completed')
+    ),
+    Documentation: allPermissions.filter(
+      (p) =>
+        p.includes('lpo') ||
+        p.includes('wcr') ||
+        p.includes('grn') ||
+        p.includes('invoice')
+    ),
+    'Retention Management': allPermissions.filter((p) =>
+      p.includes('retention')
+    ),
+  };
+
+  const formatPermissionName = (permission) => {
+    return permission
+      .split('_')
+      .map((word) => {
+        if (word.toLowerCase() === 'export') {
+          return 'Export as PDF';
+        }
+        return word.charAt(0).toUpperCase() + word.slice(1);
+      })
+      .join(' ');
+  };
+
   return (
     <div className="flex h-screen bg-gray-50">
-
       <div className="flex-1 md:w-[calc(100%-300px)] h-screen overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -54,11 +131,10 @@ const Userrights = () => {
           transition={{ duration: 0.6 }}
           className="p-8"
         >
-          {/* Header section */}
-          <div className="flex items-center justify-between mb-12">
+          <div className="flex items-center justify-between mb-8">
             <div className="flex items-center space-x-8">
               <button
-                onClick={() => navigate('/staff-details')}
+                onClick={() => navigate('/admin/staff-details')}
                 className="group flex items-center space-x-2 text-gray-600 hover:text-blue-600 transition-colors duration-300"
               >
                 <IoArrowBack
@@ -68,82 +144,137 @@ const Userrights = () => {
                 <span className="text-sm font-medium">Back</span>
               </button>
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                User Rights
+                User Rights Management
               </h1>
             </div>
           </div>
 
-          {/* Table Container */}
-          <div className="relative bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-200">
-            <div className="overflow-x-auto">
-              <table className="w-full min-w-[600px]">
-                <thead>
-                  <tr className="bg-gradient-to-r from-gray-50 to-white border-b border-gray-200">
-                    <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600 w-24">
-                      Sl No.
-                    </th>
-                    <th className="px-8 py-5 text-left text-sm font-semibold text-gray-600">
-                      Pages
-                    </th>
-                    <th className="px-8 py-5 text-center text-sm font-semibold text-gray-600">
-                      <label className="inline-flex items-center justify-center">
+          <div className="bg-white rounded-xl p-4 mb-6 shadow-sm border border-gray-200">
+            <label className="flex items-center justify-between cursor-pointer">
+              <span className="text-lg font-semibold text-gray-700">
+                Select All Permissions
+              </span>
+              <div className="relative">
+                <input
+                  type="checkbox"
+                  checked={rights.selectAll}
+                  onChange={handleSelectAll}
+                  className="w-6 h-6 text-blue-600 border-gray-300 rounded-lg focus:ring-blue-500 transition-all duration-200 cursor-pointer"
+                />
+              </div>
+            </label>
+          </div>
+
+          {Object.entries(permissionCategories).map(
+            ([category, permissions]) => (
+              <motion.div
+                key={category}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4 }}
+                className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-200 mb-6"
+              >
+                <div className="bg-gradient-to-r from-gray-50 to-white px-6 py-4 border-b border-gray-200">
+                  <h2 className="text-lg font-semibold text-gray-800">
+                    {category}
+                  </h2>
+                </div>
+
+                <div className="divide-y divide-gray-100">
+                  {permissions.map((permission, index) => (
+                    <motion.div
+                      key={permission}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: index * 0.05 }}
+                      className="flex items-center justify-between px-6 py-4 hover:bg-blue-50/40 transition-colors duration-200"
+                    >
+                      <span className="text-gray-700 font-medium">
+                        {formatPermissionName(permission)}
+                      </span>
+                      <div className="flex items-center space-x-4">
                         <input
                           type="checkbox"
-                          checked={rights.selectAll}
-                          onChange={handleSelectAll}
-                          className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          checked={
+                            rights.rights[allPermissions.indexOf(permission)]
+                          }
+                          onChange={() =>
+                            handleSingleCheck(
+                              allPermissions.indexOf(permission)
+                            )
+                          }
+                          className="w-5 h-5 text-blue-600 border-gray-300 rounded-lg focus:ring-blue-500 transition-all duration-200 cursor-pointer"
                         />
-                        <span className="ml-2">Select All</span>
-                      </label>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {pages.map((page, index) => (
-                    <motion.tr
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, delay: index * 0.1 }}
-                      key={index}
-                      className="group hover:bg-blue-50/50 transition-colors duration-300"
-                    >
-                      <td className="px-8 py-5 w-24">
-                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium">
-                          {index + 1}
-                        </span>
-                      </td>
-                      <td className="px-8 py-5">
-                        <span className="text-gray-700 font-medium group-hover:text-gray-900 transition-colors duration-300">
-                          {page}
-                        </span>
-                      </td>
-                      <td className="px-8 py-5">
-                        <div className="flex items-center justify-center">
-                          <input
-                            type="checkbox"
-                            checked={rights.rights[index]}
-                            onChange={() => handleSingleCheck(index)}
-                            className="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                          />
-                        </div>
-                      </td>
-                    </motion.tr>
+                      </div>
+                    </motion.div>
                   ))}
-                </tbody>
-              </table>
-            </div>
+                </div>
+              </motion.div>
+            )
+          )}
 
-            {/* Save Button */}
-            <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-end">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="px-6 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300 font-medium"
-              >
-                Save User Rights
-              </motion.button>
-            </div>
-          </div>
+          {saveStatus.show && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={`fixed top-4 right-4 p-4 rounded-lg shadow-lg ${
+                saveStatus.success
+                  ? 'bg-green-100 text-green-800'
+                  : 'bg-red-100 text-red-800'
+              }`}
+            >
+              {saveStatus.message}
+            </motion.div>
+          )}
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="fixed bottom-8 right-8"
+          >
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handleSavePermissions}
+              disabled={isLoading}
+              className={`px-8 py-3 bg-blue-600 text-white rounded-xl transition-all duration-300 font-medium shadow-lg hover:shadow-xl ${
+                isLoading
+                  ? 'opacity-70 cursor-not-allowed'
+                  : 'hover:bg-blue-700'
+              }`}
+            >
+              {isLoading ? (
+                <div className="flex items-center space-x-2">
+                  <div className="animate-spin w-5 h-5">
+                    <svg
+                      className="w-full h-full text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      />
+                    </svg>
+                  </div>
+                  <span>Saving...</span>
+                </div>
+              ) : (
+                'Save Permissions'
+              )}
+            </motion.button>
+          </motion.div>
         </motion.div>
       </div>
     </div>

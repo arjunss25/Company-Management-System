@@ -369,10 +369,10 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="user-rights"
+          path="user-rights/:userId"
           element={
             <ProtectedRoute
-              allowedPermissions={['manage_user_permissions']}
+              allowedPermissions={[PERMISSIONS.MANAGE_USER_PERMISSIONS]}
               element={<Userrights />}
             />
           }
@@ -415,12 +415,7 @@ const AppRoutes = () => {
           path="cancelled-quotations"
           element={
             <ProtectedRoute
-              allowedPermissions={[
-                PERMISSIONS.VIEW_CANCELLED_QUOTATIONS,
-                PERMISSIONS.EDIT_CANCELLED_QUOTATIONS,
-                PERMISSIONS.REVERT_CANCELLED_QUOTATIONS,
-                PERMISSIONS.PRINT_CANCELLED_QUOTATIONS,
-              ]}
+              allowedPermissions={[PERMISSIONS.VIEW_CANCELLED_QUOTATIONS]}
               element={<CancelledQuotationTable />}
             />
           }
@@ -703,6 +698,17 @@ const AppRoutes = () => {
                 PERMISSIONS.PRINT_RETENTION_INVOICE_SUBMITTED,
               ]}
               element={<RetentionInvoiceSubmitted />}
+            />
+          }
+        />
+
+        {/* Edit Quotation Route */}
+        <Route
+          path="edit-quotation/:id"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[PERMISSIONS.EDIT_CANCELLED_QUOTATIONS]}
+              element={<EditQuotation />}
             />
           }
         />

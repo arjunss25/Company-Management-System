@@ -366,9 +366,9 @@ const AddRateCardItemModal = ({ isOpen, onClose, rateCardId, onSuccess }) => {
                           onChange={(e) => handleMaterialChange(index, e)}
                         >
                           <option value="">Select</option>
-                          <option value="civil">Civil</option>
-                          <option value="electrical">Electrical</option>
-                          <option value="plumbing">Plumbing</option>
+                          <option value="Carpentry">Carpentry</option>
+                          <option value="Electrical">Electrical</option>
+                          <option value="Plumbing">Plumbing</option>
                         </SelectWithIcon>
                       </div>
                       <div className="space-y-2">

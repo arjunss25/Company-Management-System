@@ -1,25 +1,69 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { IoClose } from 'react-icons/io5';
 import { MdKeyboardArrowDown } from 'react-icons/md';
-import './UpdateRateCardItemModal.css'
+import { IoIosArrowDown } from 'react-icons/io';
+import './UpdateRateCardItemModal.css';
+import { AdminApi } from '../../../services/AdminApi';
 
-const UpdateRateCardItemModal = ({ isOpen, onClose, rateCard }) => {
+const UpdateRateCardItemModal = ({ isOpen, onClose, rateCard, onUpdate }) => {
+  const [rateCards, setRateCards] = useState([]);
+  const [units, setUnits] = useState([]);
+  const [searchRateCard, setSearchRateCard] = useState('');
+  const [isRateCardDropdownOpen, setIsRateCardDropdownOpen] = useState(false);
+
   const [formData, setFormData] = useState({
-    itemName: rateCard?.name || '',
+    itemName: '',
     unit: '',
     opexCapex: '',
     workType: '',
     material: '',
     underRateCard: '',
     rate: '',
-    area: '',
     flatType: '',
     materialName: '',
     materialUnder: '',
     materialUnit: '',
     materialQuantity: '',
   });
+
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [rateCardsResponse, unitsResponse] = await Promise.all([
+          AdminApi.listRateCards(),
+          AdminApi.listUnits(),
+        ]);
+        setRateCards(rateCardsResponse.data || []);
+        setUnits(unitsResponse.data || []);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
+    };
+    fetchData();
+  }, []);
+
+  useEffect(() => {
+    if (rateCard) {
+      setFormData({
+        itemName: rateCard.item_name || '',
+        unit: rateCard.unit || '',
+        opexCapex: rateCard.opex_or_capex?.toLowerCase() || '',
+        workType: rateCard.work_type || '',
+        material:
+          rateCard.material?.toLowerCase() === 'applicable'
+            ? 'applicable'
+            : 'not_applicable',
+        underRateCard: rateCard.rate_card || '',
+        rate: rateCard.rate || '',
+        flatType: rateCard.flat_type || '',
+        materialName: rateCard.material_name || '',
+        materialUnder: rateCard.material_under || '',
+        materialUnit: rateCard.material_unit || '',
+        materialQuantity: rateCard.material_quantity || '',
+      });
+    }
+  }, [rateCard]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -29,10 +73,36 @@ const UpdateRateCardItemModal = ({ isOpen, onClose, rateCard }) => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    onClose();
+    try {
+      const payload = {
+        rate_card: formData.underRateCard,
+        companyid: 1,
+        item_name: formData.itemName,
+        unit: parseInt(formData.unit),
+        rate: parseFloat(formData.rate),
+        opex_or_capex: formData.opexCapex === 'opex' ? 'Opex' : 'Capex',
+        material:
+          formData.material === 'applicable' ? 'Applicable' : 'Not Applicable',
+      };
+
+      await AdminApi.editRateCardItem(rateCard.id, payload);
+      onUpdate?.();
+      onClose();
+    } catch (error) {
+      console.error('Error updating rate card item:', error);
+    }
+  };
+
+  const filteredRateCards = rateCards.filter(
+    (card) =>
+      card.card_name &&
+      card.card_name.toLowerCase().includes(searchRateCard.toLowerCase())
+  );
+
+  const toggleRateCardDropdown = () => {
+    setIsRateCardDropdownOpen(!isRateCardDropdownOpen);
   };
 
   const SelectWithIcon = ({
@@ -103,37 +173,80 @@ const UpdateRateCardItemModal = ({ isOpen, onClose, rateCard }) => {
                 <label className="text-sm font-medium text-gray-700">
                   Under Rate Card:
                 </label>
-                <SelectWithIcon
-                  name="underRateCard"
-                  value={formData.underRateCard}
-                  onChange={handleInputChange}
-                >
-                  <option value="">Select</option>
-                  <option value="civil">Civil</option>
-                  <option value="electrical">Electrical</option>
-                  <option value="plumbing">Plumbing</option>
-                </SelectWithIcon>
+                <div className="relative">
+                  <div
+                    className="w-full px-4 py-3 rounded-lg border border-gray-200 cursor-pointer flex justify-between items-center"
+                    onClick={toggleRateCardDropdown}
+                  >
+                    <span>
+                      {rateCards.find(
+                        (card) => card.id === formData.underRateCard
+                      )?.card_name || 'Select Rate Card'}
+                    </span>
+                    <IoIosArrowDown
+                      className={`transform transition-transform ${
+                        isRateCardDropdownOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </div>
+                  {isRateCardDropdownOpen && (
+                    <div className="absolute z-10 w-full bg-white border border-gray-200 rounded-lg shadow-lg">
+                      <div className="p-2 border-b">
+                        <input
+                          type="text"
+                          className="w-full px-3 py-2 border border-gray-200 rounded-md"
+                          placeholder="Search rate cards..."
+                          value={searchRateCard}
+                          onChange={(e) => setSearchRateCard(e.target.value)}
+                        />
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        {filteredRateCards.map((card) => (
+                          <div
+                            key={card.id}
+                            onClick={() => {
+                              setFormData((prev) => ({
+                                ...prev,
+                                underRateCard: card.id,
+                              }));
+                              setSearchRateCard('');
+                              setIsRateCardDropdownOpen(false);
+                            }}
+                            className="px-4 py-2 cursor-pointer hover:bg-blue-100"
+                          >
+                            {card.card_name}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Unit */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Unit:</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Unit:
+                </label>
                 <SelectWithIcon
                   name="unit"
                   value={formData.unit}
                   onChange={handleInputChange}
                 >
                   <option value="">Select</option>
-                  <option value="sqft">Square Feet</option>
-                  <option value="sqm">Square Meter</option>
-                  <option value="unit">Unit</option>
-                  <option value="rm">Running Meter</option>
+                  {units.map((unit) => (
+                    <option key={unit.id} value={unit.id}>
+                      {unit.name}
+                    </option>
+                  ))}
                 </SelectWithIcon>
               </div>
 
               {/* Rate */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Rate:</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Rate:
+                </label>
                 <input
                   type="number"
                   name="rate"
@@ -159,25 +272,12 @@ const UpdateRateCardItemModal = ({ isOpen, onClose, rateCard }) => {
                 </SelectWithIcon>
               </div>
 
-              {/* Area */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Area:</label>
-                <SelectWithIcon
-                  name="area"
-                  value={formData.area}
-                  onChange={handleInputChange}
-                >
-                  <option value="">Select</option>
-                  <option value="common">Common Area</option>
-                  <option value="flat">Flat</option>
-                  <option value="parking">Parking</option>
-                  <option value="garden">Garden</option>
-                </SelectWithIcon>
-              </div>
 
               {/* Material */}
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Material:</label>
+                <label className="text-sm font-medium text-gray-700">
+                  Material:
+                </label>
                 <SelectWithIcon
                   name="material"
                   value={formData.material}
@@ -258,7 +358,7 @@ const UpdateRateCardItemModal = ({ isOpen, onClose, rateCard }) => {
                   type="submit"
                   className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors duration-200"
                 >
-                  Submit
+                  Update
                 </button>
               </div>
             </form>

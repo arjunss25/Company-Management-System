@@ -111,39 +111,63 @@ const TermsAndConditions = () => {
     if (newTerm.trim()) {
       try {
         let response;
+        console.log('Current Section:', currentSection);
+        console.log('New Term Value:', newTerm.trim());
 
         if (currentSection === 'general') {
-          response = await AdminApi.addTermsAndConditions({
-            title: newTerm.trim(),
-          });
+          const payload = { title: newTerm.trim() };
+          console.log('General Terms Payload:', payload);
+          response = await AdminApi.addTermsAndConditions(payload);
         } else if (currentSection === 'payment') {
-          response = await AdminApi.addPaymentTerms({
-            name: newTerm.trim(),
-          });
+          const payload = { name: newTerm.trim() };
+          console.log('Payment Terms Payload:', payload);
+          response = await AdminApi.addPaymentTerms(payload);
         } else if (currentSection === 'completion') {
-          response = await AdminApi.addCompletionTerms({
-            delivery: newTerm.trim(),
-          });
+          const completionPayload = { delivery: newTerm.trim() };
+          console.log('Completion Terms Payload:', completionPayload);
+          console.log('API Function:', AdminApi.addCompletionTerms);
+          response = await AdminApi.addCompletionTerms(completionPayload);
         } else if (currentSection === 'validity') {
+          console.log('Validity Terms Payload:', newTerm.trim());
           response = await addQuotationValidityTerm(newTerm.trim());
         } else if (currentSection === 'warranty') {
+          console.log('Warranty Terms Payload:', newTerm.trim());
           response = await addWarrantyTerm(newTerm.trim());
         }
 
-        setOptions((prevOptions) => ({
-          ...prevOptions,
-          [currentSection]: [
-            ...prevOptions[currentSection],
-            { id: response.data.id, title: response.data.title },
-          ],
-        }));
+        console.log('API Response:', response);
 
         setSelectedTerms((prev) => ({
           ...prev,
-          [currentSection]: [
-            ...prev[currentSection],
-            { id: response.data.id, title: response.data.title },
-          ],
+          [currentSection]: [...prev[currentSection], newTerm.trim()],
+        }));
+
+        const newOption = {
+          id: response.data.id,
+          ...(currentSection === 'general' && { title: newTerm.trim() }),
+          ...(currentSection === 'payment' && { name: newTerm.trim() }),
+          ...(currentSection === 'completion' && { delivery: newTerm.trim() }),
+          ...(currentSection === 'validity' && { validity: newTerm.trim() }),
+          ...(currentSection === 'warranty' && { warranty: newTerm.trim() }),
+        };
+
+        setOptions((prevOptions) => ({
+          ...prevOptions,
+          [currentSection]: [...prevOptions[currentSection], newOption],
+        }));
+
+        const sectionToPayloadKey = {
+          general: 'terms',
+          payment: 'payment',
+          completion: 'delivery',
+          validity: 'validity',
+          warranty: 'warranty',
+        };
+
+        const payloadKey = sectionToPayloadKey[currentSection];
+        setSelectedTermIds((prev) => ({
+          ...prev,
+          [payloadKey]: [...prev[payloadKey], response.data.id],
         }));
 
         setStatusMessage({
@@ -156,7 +180,18 @@ const TermsAndConditions = () => {
         setIsCreateModalOpen(false);
         setNewTerm('');
 
-        if (currentSection === 'general') {
+        if (currentSection === 'completion') {
+          const refreshResponse = await AdminApi.listCompletionTerms();
+          if (refreshResponse.data) {
+            setOptions((prevOptions) => ({
+              ...prevOptions,
+              completion: refreshResponse.data.map((term) => ({
+                id: term.id,
+                delivery: term.delivery,
+              })),
+            }));
+          }
+        } else if (currentSection === 'general') {
           const refreshResponse = await AdminApi.listTermsAndConditions();
           if (refreshResponse.data) {
             setOptions((prevOptions) => ({
@@ -178,25 +213,33 @@ const TermsAndConditions = () => {
               })),
             }));
           }
-        } else if (currentSection === 'completion') {
-          const refreshResponse = await AdminApi.listCompletionTerms();
-          if (refreshResponse.data) {
-            setOptions((prevOptions) => ({
-              ...prevOptions,
-              completion: refreshResponse.data.map((term) => ({
-                id: term.id,
-                delivery: term.delivery,
-              })),
-            }));
-          }
         }
       } catch (error) {
-        console.error('Error creating term:', error);
+        console.error('Error Details:', {
+          error,
+          response: error.response,
+          data: error.response?.data,
+          status: error.response?.status,
+        });
+
+        setIsCreateModalOpen(false);
+        let errorMessage;
+        if (error.response?.data?.message) {
+          console.log('Error Message Structure:', error.response.data.message);
+          if (typeof error.response.data.message === 'object') {
+            errorMessage = Object.entries(error.response.data.message)
+              .map(([key, value]) => `${key}: ${value.join(', ')}`)
+              .join('; ');
+          } else {
+            errorMessage = error.response.data.message;
+          }
+        } else {
+          errorMessage = `Failed to add ${currentSection} term`;
+        }
+
         setStatusMessage({
           type: 'error',
-          message:
-            error.response?.data?.message ||
-            `Failed to add ${currentSection} term`,
+          message: errorMessage,
         });
         setShowStatusModal(true);
       }
@@ -348,16 +391,18 @@ const TermsAndConditions = () => {
       [payloadKey]: selectedIds,
     }));
 
+    const selectedTexts = selectedModalItems.map((item) => {
+      if (currentSection === 'general') return item.title;
+      if (currentSection === 'payment') return item.name;
+      if (currentSection === 'completion') return item.delivery;
+      if (currentSection === 'validity') return item.validity;
+      if (currentSection === 'warranty') return item.warranty;
+      return '';
+    });
+
     setSelectedTerms((prev) => ({
       ...prev,
-      [currentSection]: selectedModalItems.map(
-        (item) =>
-          item.title ||
-          item.name ||
-          item.delivery ||
-          item.validity ||
-          item.warranty
-      ),
+      [currentSection]: selectedTexts,
     }));
 
     setSelectedModalItems([]);
@@ -603,7 +648,10 @@ const TermsAndConditions = () => {
 
               <textarea
                 value={newTerm}
-                onChange={(e) => setNewTerm(e.target.value)}
+                onChange={(e) => {
+                  console.log('Textarea value changed:', e.target.value);
+                  setNewTerm(e.target.value);
+                }}
                 placeholder="Enter new term..."
                 className="w-full p-4 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none min-h-[120px] mb-6 resize-none transition-all"
               />
@@ -700,7 +748,11 @@ const TermsAndConditions = () => {
                   </svg>
                 </button>
               </div>
-              <p className="text-gray-600 mb-6">{statusMessage.message}</p>
+              <p className="text-gray-600 mb-6">
+                {typeof statusMessage.message === 'string'
+                  ? statusMessage.message
+                  : 'An error occurred'}
+              </p>
               <div className="flex justify-end">
                 <button
                   onClick={() => setShowStatusModal(false)}

@@ -26,7 +26,7 @@ const ViewRateCardItems = () => {
     try {
       setLoading(true);
       const response = await AdminApi.getRateCardItems();
-      setRateCards(response.data || []);
+      setRateCards(response.data.data || []);
     } catch (error) {
       console.error('Error fetching rate card items:', error);
       setError('Failed to fetch rate card items');
@@ -40,19 +40,19 @@ const ViewRateCardItems = () => {
     setIsUpdateModalOpen(true);
   };
 
-  const handleDelete = (rateCard) => {
+  const handleDelete = async (rateCard) => {
     setRateCardToDelete(rateCard);
     setIsDeleteModalOpen(true);
   };
 
   const handleConfirmDelete = async () => {
     try {
-      await AdminApi.deleteRateCard(rateCardToDelete.id);
-      await fetchRateCardItems(); // Refresh the list after deletion
+      await AdminApi.deleteRateCardItem(rateCardToDelete.id);
+      await fetchRateCardItems();
       setIsDeleteModalOpen(false);
       setRateCardToDelete(null);
     } catch (error) {
-      console.error('Error deleting rate card:', error);
+      console.error('Error deleting rate card item:', error);
     }
   };
 
@@ -74,8 +74,6 @@ const ViewRateCardItems = () => {
 
   return (
     <div className="flex h-screen bg-gray-50">
-
-
       <div className="flex-1 md:w-[calc(100%-300px)] h-screen overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -97,7 +95,7 @@ const ViewRateCardItems = () => {
                 <span className="text-sm font-medium">Dashboard</span>
               </button>
               <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-              RATE CARD ITEM DETAILS
+                RATE CARD ITEM DETAILS
               </h1>
             </div>
           </div>
@@ -138,12 +136,12 @@ const ViewRateCardItems = () => {
                       </td>
                       <td className="px-8 py-5">
                         <span className="text-gray-700 font-medium">
-                          {rateCard.name}
+                          {rateCard.item_name}
                         </span>
                       </td>
                       <td className="px-8 py-5">
                         <span className="text-gray-700 font-medium">
-                          {rateCard.type}
+                          {rateCard.opex_or_capex}
                         </span>
                       </td>
                       <td className="px-8 py-5">
@@ -194,6 +192,7 @@ const ViewRateCardItems = () => {
           setSelectedRateCard(null);
         }}
         rateCard={selectedRateCard}
+        onUpdate={fetchRateCardItems}
       />
 
       <DeleteConfirmationModal

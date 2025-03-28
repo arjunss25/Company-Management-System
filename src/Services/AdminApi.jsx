@@ -414,10 +414,12 @@ export const AdminApi = {
   // Completion and Delivery Terms API endpoints
   addCompletionTerms: async (termsData) => {
     try {
-      const response = await axiosInstance.post('/completioncreateget/', {
-        delivery: termsData.title,
-      });
-      return response.data;
+      console.log('Sending completion terms data:', termsData);
+      const response = await axiosInstance.post(
+        '/completioncreateget/',
+        termsData
+      );
+      return response;
     } catch (error) {
       console.error('Error adding completion terms:', error);
       throw error;
@@ -760,7 +762,18 @@ export const AdminApi = {
       throw error;
     }
   },
-  // Add this method to the AdminApi object
+  deleteRateCardItem: async (id) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/ratecarddetail-editdelete/${id}/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting rate card:', error);
+      throw error;
+    }
+  },
+
   listExpiredContracts: async () => {
     try {
       const response = await axiosInstance.get('/contracts-expired/');
@@ -844,4 +857,128 @@ export const AdminApi = {
       throw error;
     }
   },
+
+//  User Management APIs
+listAllStaffs: async () => {
+  try {
+    const response = await axiosInstance.get('/list-all-staffs/');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching staff list:', error);
+    throw error;
+  }
+},
+registerStaff: async (formData) => {
+  try {
+    const response = await axiosInstance.post(
+      '/register-staff-by-admin/',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        }
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error registering staff:', error);
+    throw error;
+  }
+},
+ 
+deleteStaff: async (staffId) => {
+  try {
+    const response = await axiosInstance.delete(
+      `/edit-delete-staffs/${staffId}/`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting staff:', error);
+    throw error;
+  }
+},
+verifyOtp: async (data) => {
+  try {
+    const response = await axiosInstance.post('/otp-verify/', data);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+},
+resendOtp: async (data) => {
+  try {
+    const response = await axiosInstance.post('/otp-resend/', data);
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+},
+editStaff: async (staffId, formData) => {
+  try {
+    const response = await axiosInstance.patch(
+      `/edit-delete-staffs/${staffId}/`,
+      formData
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error updating staff:', error);
+    throw error;
+  }
+},
+userchangePassword: async (passwordData) => {
+  try {
+    const response = await axiosInstance.patch(
+      '/admin-change-password/',  
+      passwordData
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error changing password:', error);
+    throw error;
+  }
+},
+
+
+
+
+
+
+
+
+
+
+  getRateCardItems: async () => {
+    try {
+      const response = await axiosInstance.get('/ratecard-detail/');
+      return response;
+    } catch (error) {
+      console.error('Error fetching rate card items:', error);
+      throw error;
+    }
+  },
+  editRateCardItem: async (id, itemData) => {
+    try {
+      const response = await axiosInstance.patch(
+        `/ratecarddetail-editdelete/${id}/`,
+        itemData
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error editing rate card item:', error);
+      throw error;
+    }
+  },
+
+  deleteRateCardItem: async (id) => {
+    try {
+      const response = await axiosInstance.delete(
+        `/ratecarddetail-editdelete/${id}/`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting rate card item:', error);
+      throw error;
+    }
+  },
 };
+
