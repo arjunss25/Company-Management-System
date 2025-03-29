@@ -11,6 +11,10 @@ import DateFilterModal from './DateFilterModal';
 import axiosInstance from '../../../Config/axiosInstance';
 import LoadingSpinner from '../../Common/LoadingSpinner';
 import SuccessModal from '../../Common/SuccessModal';
+import usePermissions from '../../../Hooks/userPermission';
+import { PERMISSIONS } from '../../../Hooks/userPermission';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 
 const PendingForApproval = () => {
   const navigate = useNavigate();
@@ -27,6 +31,9 @@ const PendingForApproval = () => {
     success: false,
     message: '',
   });
+  const { hasPermission } = usePermissions();
+  const [unauthorizedModalOpen, setUnauthorizedModalOpen] = useState(false);
+  const [unauthorizedAction, setUnauthorizedAction] = useState('');
 
   const itemsPerPage = 10;
 
@@ -83,13 +90,26 @@ const PendingForApproval = () => {
   const [isCancelModalOpen, setIsCancelModalOpen] = useState(false);
   const [quotationToCancel, setQuotationToCancel] = useState(null);
 
+  const checkPermissionAndExecute = (action, permission, callback) => {
+    if (hasPermission(permission)) {
+      callback();
+    } else {
+      setUnauthorizedAction(action);
+      setUnauthorizedModalOpen(true);
+    }
+  };
+
   const handleEdit = (quotation) => {
-    navigate(`/edit-work-details/${quotation.id}`);
+    checkPermissionAndExecute('edit', PERMISSIONS.EDIT_PENDING_QUOTATIONS, () =>
+      navigate(`/edit-work-details/${quotation.id}`)
+    );
   };
 
   const handleCancel = (quotation) => {
-    setQuotationToCancel(quotation);
-    setIsCancelModalOpen(true);
+    checkPermissionAndExecute('cancel', PERMISSIONS.CANCEL_QUOTATION, () => {
+      setQuotationToCancel(quotation);
+      setIsCancelModalOpen(true);
+    });
   };
 
   const handleConfirmCancel = async () => {
@@ -123,25 +143,31 @@ const PendingForApproval = () => {
     }
   };
 
-  const handlePrintPDF = async (quotationId) => {
-    try {
-      setLoadingPdfId(quotationId);
-      const response = await axiosInstance.get(
-        `/download-quotation-pdf/${quotationId}/`,
-        {
-          responseType: 'blob',
-        }
-      );
+  const handlePrintPDF = (quotationId) => {
+    checkPermissionAndExecute(
+      'export',
+      PERMISSIONS.EXPORT_PENDING_QUOTATIONS,
+      async () => {
+        try {
+          setLoadingPdfId(quotationId);
+          const response = await axiosInstance.get(
+            `/download-quotation-pdf/${quotationId}/`,
+            {
+              responseType: 'blob',
+            }
+          );
 
-      const file = new Blob([response.data], { type: 'application/pdf' });
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL);
-      URL.revokeObjectURL(fileURL);
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-    } finally {
-      setLoadingPdfId(null);
-    }
+          const file = new Blob([response.data], { type: 'application/pdf' });
+          const fileURL = URL.createObjectURL(file);
+          window.open(fileURL);
+          URL.revokeObjectURL(fileURL);
+        } catch (error) {
+          console.error('Error downloading PDF:', error);
+        } finally {
+          setLoadingPdfId(null);
+        }
+      }
+    );
   };
 
   const formatDate = (dateString) => {
@@ -173,6 +199,52 @@ const PendingForApproval = () => {
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     return quotations.slice(indexOfFirstItem, indexOfLastItem);
+  };
+
+  const UnauthorizedModal = ({ isOpen, onClose, action }) => {
+    if (!isOpen) return null;
+
+    return (
+      <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50">
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-white rounded-xl w-full max-w-md p-6 shadow-xl"
+        >
+          <div className="flex flex-col items-center text-center">
+            <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center mb-4">
+              <svg
+                className="w-8 h-8 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </div>
+            <h3 className="text-xl font-semibold mb-2 text-red-600">
+              Unauthorized Action
+            </h3>
+            <p className="text-gray-600 mb-6">
+              You don't have permission to {action} this quotation. Please
+              contact your administrator for access.
+            </p>
+            <button
+              onClick={onClose}
+              className="px-6 py-2 rounded-lg bg-red-500 text-white font-medium hover:bg-red-600"
+            >
+              Close
+            </button>
+          </div>
+        </motion.div>
+      </div>
+    );
   };
 
   return (
@@ -289,28 +361,112 @@ const PendingForApproval = () => {
                         <td className="px-8 py-5 text-center whitespace-nowrap">
                           <div className="flex items-center space-x-4">
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
+                              data-tooltip-id="action-tooltip"
+                              data-tooltip-content={
+                                !hasPermission(
+                                  PERMISSIONS.EDIT_PENDING_QUOTATIONS
+                                )
+                                  ? "You don't have permission to edit quotations"
+                                  : ''
+                              }
+                              whileHover={
+                                hasPermission(
+                                  PERMISSIONS.EDIT_PENDING_QUOTATIONS
+                                )
+                                  ? { scale: 1.1 }
+                                  : {}
+                              }
+                              whileTap={
+                                hasPermission(
+                                  PERMISSIONS.EDIT_PENDING_QUOTATIONS
+                                )
+                                  ? { scale: 0.95 }
+                                  : {}
+                              }
                               onClick={() => handleEdit(quotation)}
-                              className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-300"
+                              disabled={
+                                !hasPermission(
+                                  PERMISSIONS.EDIT_PENDING_QUOTATIONS
+                                )
+                              }
+                              className={`p-2 rounded-lg transition-colors duration-300 ${
+                                hasPermission(
+                                  PERMISSIONS.EDIT_PENDING_QUOTATIONS
+                                )
+                                  ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              }`}
                             >
                               <FiEdit size={18} />
                             </motion.button>
+
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
+                              data-tooltip-id="action-tooltip"
+                              data-tooltip-content={
+                                !hasPermission(PERMISSIONS.CANCEL_QUOTATION)
+                                  ? "You don't have permission to cancel quotations"
+                                  : ''
+                              }
+                              whileHover={
+                                hasPermission(PERMISSIONS.CANCEL_QUOTATION)
+                                  ? { scale: 1.1 }
+                                  : {}
+                              }
+                              whileTap={
+                                hasPermission(PERMISSIONS.CANCEL_QUOTATION)
+                                  ? { scale: 0.95 }
+                                  : {}
+                              }
                               onClick={() => handleCancel(quotation)}
-                              className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-300"
+                              disabled={
+                                !hasPermission(PERMISSIONS.CANCEL_QUOTATION)
+                              }
+                              className={`p-2 rounded-lg transition-colors duration-300 ${
+                                hasPermission(PERMISSIONS.CANCEL_QUOTATION)
+                                  ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              }`}
                             >
                               <FcCancel size={18} />
                             </motion.button>
+
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
+                              data-tooltip-id="action-tooltip"
+                              data-tooltip-content={
+                                !hasPermission(
+                                  PERMISSIONS.EXPORT_PENDING_QUOTATIONS
+                                )
+                                  ? "You don't have permission to export quotations"
+                                  : loadingPdfId === quotation.id
+                                  ? 'Generating PDF...'
+                                  : ''
+                              }
+                              whileHover={
+                                hasPermission(
+                                  PERMISSIONS.EXPORT_PENDING_QUOTATIONS
+                                )
+                                  ? { scale: 1.1 }
+                                  : {}
+                              }
+                              whileTap={
+                                hasPermission(
+                                  PERMISSIONS.EXPORT_PENDING_QUOTATIONS
+                                )
+                                  ? { scale: 0.95 }
+                                  : {}
+                              }
                               onClick={() => handlePrintPDF(quotation.id)}
-                              disabled={loadingPdfId === quotation.id}
+                              disabled={
+                                !hasPermission(
+                                  PERMISSIONS.EXPORT_PENDING_QUOTATIONS
+                                ) || loadingPdfId === quotation.id
+                              }
                               className={`p-2 rounded-lg transition-colors duration-300 ${
-                                loadingPdfId === quotation.id
+                                !hasPermission(
+                                  PERMISSIONS.EXPORT_PENDING_QUOTATIONS
+                                )
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : loadingPdfId === quotation.id
                                   ? 'bg-gray-100 cursor-not-allowed'
                                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                               }`}
@@ -341,6 +497,12 @@ const PendingForApproval = () => {
                               )}
                             </motion.button>
                           </div>
+
+                          <Tooltip
+                            id="action-tooltip"
+                            place="top"
+                            className="bg-gray-900 text-white px-3 py-2 rounded-lg text-sm"
+                          />
                         </td>
                       </motion.tr>
                     ))}
@@ -417,6 +579,12 @@ const PendingForApproval = () => {
         onClose={() => setIsResultModalOpen(false)}
         success={cancelResult.success}
         message={cancelResult.message}
+      />
+
+      <UnauthorizedModal
+        isOpen={unauthorizedModalOpen}
+        onClose={() => setUnauthorizedModalOpen(false)}
+        action={unauthorizedAction}
       />
     </div>
   );

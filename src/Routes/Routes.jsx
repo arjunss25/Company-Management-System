@@ -67,6 +67,32 @@ import RetentionInvoiceSubmitted from '../Components/AdminComponents/Quotation/R
 import InvoiceSubmitted from '../Components/AdminComponents/Quotation/DocumentationStatus/InvoiceSubmitted';
 import UserrightsSuperadmin from '../Components/SuperadminComponents/UserrightsSuperadmin';
 
+const quotationRelatedPermissions = [
+  PERMISSIONS.VIEW_QUOTATIONS,
+  PERMISSIONS.CREATE_QUOTATION,
+  PERMISSIONS.VIEW_CANCELLED_QUOTATIONS,
+  PERMISSIONS.VIEW_PENDING_QUOTATIONS,
+  PERMISSIONS.VIEW_PENDING_WORKSTARTED,
+  PERMISSIONS.VIEW_ACTIVE_QUOTATIONS,
+  PERMISSIONS.VIEW_CLOSED_PROJECTS,
+  PERMISSIONS.VIEW_NOT_STARTED,
+  PERMISSIONS.VIEW_IN_PROGRESS,
+  PERMISSIONS.VIEW_NO_ACCESS,
+  PERMISSIONS.VIEW_ON_HOLD,
+  PERMISSIONS.VIEW_HANDOVER_OVERDUE,
+  PERMISSIONS.VIEW_COMPLETED,
+  PERMISSIONS.VIEW_LPO_PENDING,
+  PERMISSIONS.VIEW_WCR_PENDING,
+  PERMISSIONS.VIEW_GRN_PENDING,
+  PERMISSIONS.VIEW_INVOICE_PENDING,
+  PERMISSIONS.VIEW_LPO_RECEIVED,
+  PERMISSIONS.VIEW_GRN_RECEIVED,
+  PERMISSIONS.VIEW_INVOICE_SUBMITTED,
+  PERMISSIONS.VIEW_RETENTION_INVOICE_PENDING,
+  PERMISSIONS.VIEW_RETENTION_INVOICE_OVERDUE,
+  PERMISSIONS.VIEW_RETENTION_INVOICE_SUBMITTED,
+];
+
 const AppRoutes = () => {
   return (
     <Routes>
@@ -395,7 +421,7 @@ const AppRoutes = () => {
           path="quotation-dashboard"
           element={
             <ProtectedRoute
-              allowedPermissions={[PERMISSIONS.VIEW_QUOTATIONS]}
+              allowedPermissions={quotationRelatedPermissions}
               element={<QuotationDashboard />}
             />
           }
@@ -413,12 +439,7 @@ const AppRoutes = () => {
           path="view-quotations"
           element={
             <ProtectedRoute
-              allowedPermissions={[
-                PERMISSIONS.VIEW_QUOTATIONS,
-                PERMISSIONS.EDIT_VIEW_QUOTATIONS,
-                PERMISSIONS.DELETE_VIEW_QUOTATIONS,
-                PERMISSIONS.PRINT_VIEW_QUOTATIONS,
-              ]}
+              allowedPermissions={[PERMISSIONS.VIEW_QUOTATIONS]}
               element={<ViewQuotationTable />}
             />
           }

@@ -11,7 +11,11 @@ import LoadingSpinner from '../../Common/LoadingSpinner';
 import SuccessModal from '../../Common/SuccessModal';
 import { PiFilePdfDuotone } from 'react-icons/pi';
 import CancelConfirmationModal from './CancelConfirmationModal';
-import { CiFileOn } from "react-icons/ci";
+import { CiFileOn } from 'react-icons/ci';
+import usePermissions from '../../../Hooks/userPermission';
+import { PERMISSIONS } from '../../../Hooks/userPermission';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 
 const ApprovalPendingWorkStarted = () => {
   const navigate = useNavigate();
@@ -30,6 +34,7 @@ const ApprovalPendingWorkStarted = () => {
     message: '',
   });
   const [isDateFilterLoading, setIsDateFilterLoading] = useState(false);
+  const { hasPermission } = usePermissions();
 
   const itemsPerPage = 10;
 
@@ -53,29 +58,33 @@ const ApprovalPendingWorkStarted = () => {
   };
 
   const handlePrintPDF = async (quotationId) => {
-    try {
-      setLoadingPdfId(quotationId);
-      const response = await axiosInstance.get(
-        `/download-quotation-pdf/${quotationId}/`,
-        {
-          responseType: 'blob',
-        }
-      );
+    if (hasPermission(PERMISSIONS.EXPORT_PENDING_WORKSTARTED)) {
+      try {
+        setLoadingPdfId(quotationId);
+        const response = await axiosInstance.get(
+          `/download-quotation-pdf/${quotationId}/`,
+          {
+            responseType: 'blob',
+          }
+        );
 
-      const file = new Blob([response.data], { type: 'application/pdf' });
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL);
-      URL.revokeObjectURL(fileURL);
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-    } finally {
-      setLoadingPdfId(null);
+        const file = new Blob([response.data], { type: 'application/pdf' });
+        const fileURL = URL.createObjectURL(file);
+        window.open(fileURL);
+        URL.revokeObjectURL(fileURL);
+      } catch (error) {
+        console.error('Error downloading PDF:', error);
+      } finally {
+        setLoadingPdfId(null);
+      }
     }
   };
 
   const handleCancel = (quotation) => {
-    setQuotationToCancel(quotation);
-    setIsCancelModalOpen(true);
+    if (hasPermission(PERMISSIONS.DELETE_PENDING_WORKSTARTED)) {
+      setQuotationToCancel(quotation);
+      setIsCancelModalOpen(true);
+    }
   };
 
   const handleConfirmCancel = async () => {
@@ -146,7 +155,9 @@ const ApprovalPendingWorkStarted = () => {
   };
 
   const handleEdit = (quotation) => {
-    navigate(`/edit-work-details/${quotation.id}`);
+    if (hasPermission(PERMISSIONS.EDIT_PENDING_WORKSTARTED)) {
+      navigate(`/edit-work-details/${quotation.id}`);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -336,28 +347,122 @@ const ApprovalPendingWorkStarted = () => {
                         <td className="px-8 py-5 text-center whitespace-nowrap">
                           <div className="flex items-center space-x-4">
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
+                              data-tooltip-id="action-tooltip"
+                              data-tooltip-content={
+                                !hasPermission(
+                                  PERMISSIONS.EDIT_PENDING_WORKSTARTED
+                                )
+                                  ? "You don't have permission to edit quotations. Please contact your administrator for access."
+                                  : ''
+                              }
+                              whileHover={
+                                hasPermission(
+                                  PERMISSIONS.EDIT_PENDING_WORKSTARTED
+                                )
+                                  ? { scale: 1.1 }
+                                  : {}
+                              }
+                              whileTap={
+                                hasPermission(
+                                  PERMISSIONS.EDIT_PENDING_WORKSTARTED
+                                )
+                                  ? { scale: 0.95 }
+                                  : {}
+                              }
                               onClick={() => handleEdit(quotation)}
-                              className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-300"
+                              disabled={
+                                !hasPermission(
+                                  PERMISSIONS.EDIT_PENDING_WORKSTARTED
+                                )
+                              }
+                              className={`p-2 rounded-lg transition-colors duration-300 ${
+                                hasPermission(
+                                  PERMISSIONS.EDIT_PENDING_WORKSTARTED
+                                )
+                                  ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              }`}
                             >
                               <FiEdit size={18} />
                             </motion.button>
+
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
+                              data-tooltip-id="action-tooltip"
+                              data-tooltip-content={
+                                !hasPermission(
+                                  PERMISSIONS.DELETE_PENDING_WORKSTARTED
+                                )
+                                  ? "You don't have permission to cancel quotations. Please contact your administrator for access."
+                                  : ''
+                              }
+                              whileHover={
+                                hasPermission(
+                                  PERMISSIONS.DELETE_PENDING_WORKSTARTED
+                                )
+                                  ? { scale: 1.1 }
+                                  : {}
+                              }
+                              whileTap={
+                                hasPermission(
+                                  PERMISSIONS.DELETE_PENDING_WORKSTARTED
+                                )
+                                  ? { scale: 0.95 }
+                                  : {}
+                              }
                               onClick={() => handleCancel(quotation)}
-                              className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-300"
+                              disabled={
+                                !hasPermission(
+                                  PERMISSIONS.DELETE_PENDING_WORKSTARTED
+                                )
+                              }
+                              className={`p-2 rounded-lg transition-colors duration-300 ${
+                                hasPermission(
+                                  PERMISSIONS.DELETE_PENDING_WORKSTARTED
+                                )
+                                  ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              }`}
                             >
                               <FcCancel size={18} />
                             </motion.button>
+
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
+                              data-tooltip-id="action-tooltip"
+                              data-tooltip-content={
+                                !hasPermission(
+                                  PERMISSIONS.EXPORT_PENDING_WORKSTARTED
+                                )
+                                  ? "You don't have permission to export quotations. Please contact your administrator for access."
+                                  : loadingPdfId === quotation.id
+                                  ? 'Generating PDF...'
+                                  : ''
+                              }
+                              whileHover={
+                                hasPermission(
+                                  PERMISSIONS.EXPORT_PENDING_WORKSTARTED
+                                )
+                                  ? { scale: 1.1 }
+                                  : {}
+                              }
+                              whileTap={
+                                hasPermission(
+                                  PERMISSIONS.EXPORT_PENDING_WORKSTARTED
+                                )
+                                  ? { scale: 0.95 }
+                                  : {}
+                              }
                               onClick={() => handlePrintPDF(quotation.id)}
-                              disabled={loadingPdfId === quotation.id}
+                              disabled={
+                                !hasPermission(
+                                  PERMISSIONS.EXPORT_PENDING_WORKSTARTED
+                                ) || loadingPdfId === quotation.id
+                              }
                               className={`p-2 rounded-lg transition-colors duration-300 ${
-                                loadingPdfId === quotation.id
+                                !hasPermission(
+                                  PERMISSIONS.EXPORT_PENDING_WORKSTARTED
+                                )
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : loadingPdfId === quotation.id
                                   ? 'bg-gray-100 cursor-not-allowed'
                                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                               }`}
@@ -390,6 +495,12 @@ const ApprovalPendingWorkStarted = () => {
                               )}
                             </motion.button>
                           </div>
+
+                          <Tooltip
+                            id="action-tooltip"
+                            place="top"
+                            className="!bg-gray-900 text-white px-3 py-2 rounded-lg text-sm"
+                          />
                         </td>
                       </motion.tr>
                     ))}

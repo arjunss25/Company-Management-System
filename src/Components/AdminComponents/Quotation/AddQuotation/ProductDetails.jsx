@@ -68,6 +68,10 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState(null);
 
+  // Add new state for storing amount IDs
+  const [amountIds, setAmountIds] = useState({});
+  const [isSaving, setIsSaving] = useState(false);
+
   // Column toggle handler
   const handleColumnToggle = (columnName) => {
     setSelectedColumns((prev) => ({
@@ -90,7 +94,6 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     }
   }, [quotationId]);
 
-
   const fetchScopes = async () => {
     if (!quotationId) return;
 
@@ -111,7 +114,6 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       setLoadingScopes(false);
     }
   };
-
 
   const handleAddScope = async (scopeData) => {
     try {
@@ -176,11 +178,9 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     return scopes.filter((scope) => scope.options === optionName);
   };
 
-
   const getUniqueOptionsWithScopes = () => {
-   
     const options = scopes.map((scope) => scope.options);
-    
+
     const uniqueOptions = [...new Set(options)];
 
     const optionOrder = {
@@ -188,7 +188,6 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       'Option 2': 2,
       'Option 3': 3,
     };
-
 
     return uniqueOptions.sort((a, b) => {
       if (optionOrder[a] && optionOrder[b]) {
@@ -199,7 +198,6 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       return a.localeCompare(b);
     });
   };
-
 
   useEffect(() => {
     if (quotationId) {
@@ -392,44 +390,140 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     }
   };
 
-
-  const calculateTableTotal = (products) => {
-    if (!products || !Array.isArray(products)) {
-      return 0;
+  // Add helper function to round numbers and ensure proper format
+  const formatAmount = (amount) => {
+    // Round to 2 decimal places and ensure no more than 12 total digits
+    const rounded = Number(amount).toFixed(2);
+    // If number is too large, truncate to max 12 digits (including decimals)
+    if (rounded.replace('.', '').length > 12) {
+      const max = Math.pow(10, 9) - 0.01; // Maximum 9 digits before decimal + 2 after
+      return Math.min(Number(rounded), max).toFixed(2);
     }
-    return products.reduce(
-      (sum, product) => sum + Number(product.amount || 0),
-      0
-    );
+    return rounded;
   };
 
-  //VAT amount (5% of amount after discount)
+  const handleSaveAmounts = async () => {
+    if (!quotationId) {
+      setResultSuccess(false);
+      setResultMessage('Please save work details first');
+      setShowResultModal(true);
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      // Separate payloads for new and existing records
+      const updatePayload = [];
+      const createPayload = [];
+
+      // Prepare and separate the payloads
+      getSortedOptions(productsByOption).forEach((option) => {
+        const products = productsByOption[option] || [];
+        const baseTotal = calculateTableTotal(products);
+        const totals = calculateFinalTotal(baseTotal, option);
+        const optionKey = option === 'Default Products' ? 'Option 1' : option;
+
+        const basePayload = {
+          quotation: quotationId.toString(),
+          option: optionKey,
+          vat_amount: formatAmount(totals.vat),
+          discount_amount: formatAmount(totals.discount),
+          subtotal_amount: formatAmount(totals.baseTotal),
+          grand_total: formatAmount(totals.finalTotal),
+        };
+
+        // If we have an ID for this option, add to update payload
+        if (amountIds[optionKey]) {
+          updatePayload.push({
+            ...basePayload,
+            id: amountIds[optionKey].toString(),
+          });
+        } else {
+          // If no ID, add to create payload
+          createPayload.push(basePayload);
+        }
+      });
+
+      let response;
+
+      // Handle updates first if any exist
+      if (updatePayload.length > 0) {
+        response = await axiosInstance.patch('/edit-amounts/', updatePayload);
+      }
+
+      // Handle new records if any exist
+      if (createPayload.length > 0) {
+        const createResponse = await axiosInstance.post(
+          '/add-amounts/',
+          createPayload
+        );
+
+        // Store new IDs
+        if (createResponse.data?.data) {
+          const newIds = {};
+          createResponse.data.data.forEach((item) => {
+            newIds[item.option] = item.id;
+          });
+          // Merge with existing IDs
+          setAmountIds((prev) => ({
+            ...prev,
+            ...newIds,
+          }));
+        }
+      }
+
+      setResultSuccess(true);
+      setResultMessage('Product details saved successfully');
+      setShowResultModal(true);
+    } catch (error) {
+      console.error('Error saving amounts:', error);
+      setResultSuccess(false);
+      setResultMessage(
+        error.response?.data?.message?.vat_amount?.[0] ||
+          error.response?.data?.message ||
+          'Failed to save product details'
+      );
+      setShowResultModal(true);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Update the calculateVAT function to use formatting
   const calculateVAT = (amount) => {
-    return amount * 0.05;
+    return Number(formatAmount(amount * 0.05));
   };
 
-  //final total with discount and VAT
+  // Update the calculateFinalTotal function to use formatting
   const calculateFinalTotal = (baseTotal, option) => {
-    //discount amount (if applicable)
     const discount =
       dropdownValues.discount === 'Applicable'
         ? Number(discountAmounts[option] || 0)
         : 0;
 
-    // Apply discount
     const afterDiscount = baseTotal - discount;
-
-    // Calculate and apply VAT if applicable
     const vat =
       dropdownValues.vat === 'Applicable' ? calculateVAT(afterDiscount) : 0;
 
     return {
-      baseTotal,
-      discount,
-      afterDiscount,
-      vat,
-      finalTotal: afterDiscount + vat,
+      baseTotal: Number(formatAmount(baseTotal)),
+      discount: Number(formatAmount(discount)),
+      afterDiscount: Number(formatAmount(afterDiscount)),
+      vat: Number(formatAmount(vat)),
+      finalTotal: Number(formatAmount(afterDiscount + vat)),
     };
+  };
+
+  // Update the calculateTableTotal function to use formatting
+  const calculateTableTotal = (products) => {
+    if (!products || !Array.isArray(products)) {
+      return 0;
+    }
+    const total = products.reduce(
+      (sum, product) => sum + Number(product.amount || 0),
+      0
+    );
+    return Number(formatAmount(total));
   };
 
   // Handle discount input change
@@ -439,7 +533,6 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       [option]: value,
     }));
   };
-
 
   const getSortedOptions = (productOptions) => {
     if (optionValue === 'Not Applicable') {
@@ -453,7 +546,6 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
     };
 
     return Object.keys(productOptions).sort((a, b) => {
-
       if (optionOrder[a] && optionOrder[b]) {
         return optionOrder[a] - optionOrder[b];
       }
@@ -464,6 +556,16 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
       return a.localeCompare(b);
     });
   };
+
+  // Add useEffect to reset amountIds when optionValue changes
+  useEffect(() => {
+    setAmountIds({}); // Reset IDs when option value changes
+  }, [optionValue]);
+
+  // Log amountIds whenever it changes (for debugging)
+  useEffect(() => {
+    console.log('Current amountIds:', amountIds);
+  }, [amountIds]);
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-3 sm:p-6 space-y-4 sm:space-y-8">
@@ -551,7 +653,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
           <button
             onClick={() => {
               setEditingScope(null);
-              setSelectedOption('Option 1'); 
+              setSelectedOption('Option 1');
               setIsScopeModalOpen(true);
             }}
             className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-all"
@@ -601,7 +703,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
                             Sub Total:
                           </span>
                           <span className="ml-2 text-sm font-semibold text-gray-900">
-                            ${baseTotal.toFixed(2)}
+                            ₹{baseTotal.toFixed(2)}
                           </span>
                         </div>
                       )}
@@ -611,7 +713,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
                           Total Amount:
                         </span>
                         <span className="ml-2 text-sm font-semibold text-gray-900">
-                          ${baseTotal.toFixed(2)}
+                          ₹{baseTotal.toFixed(2)}
                         </span>
                       </div>
 
@@ -622,7 +724,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
                             Discount:
                           </span>
                           <div className="flex items-center">
-                            <span className="text-gray-600 mr-1">$</span>
+                            <span className="text-gray-600 mr-1">₹</span>
                             <input
                               type="number"
                               value={discountAmounts[option] || ''}
@@ -644,7 +746,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
                             After Discount:
                           </span>
                           <span className="ml-2 text-sm font-semibold text-gray-900">
-                            ${totals.afterDiscount.toFixed(2)}
+                            ₹{totals.afterDiscount.toFixed(2)}
                           </span>
                         </div>
                       )}
@@ -656,7 +758,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
                             VAT (5%):
                           </span>
                           <span className="ml-2 text-sm font-semibold text-gray-900">
-                            ${totals.vat.toFixed(2)}
+                            ₹{totals.vat.toFixed(2)}
                           </span>
                         </div>
                       )}
@@ -672,7 +774,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
                     {option} Grand Total:
                   </span>
                   <span className="ml-3 text-lg font-semibold text-blue-900">
-                    $
+                    ₹
                     {calculateFinalTotal(
                       calculateTableTotal(products),
                       option
@@ -683,6 +785,43 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
             </div>
           );
         })
+      )}
+
+      {/* Modified save button */}
+      {Object.keys(productsByOption).length > 0 && (
+        <div className="flex justify-end mt-8">
+          <button
+            onClick={handleSaveAmounts}
+            disabled={isSaving}
+            className={`flex items-center gap-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all ${
+              isSaving ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+          >
+            {isSaving ? (
+              <>
+                <div className="w-5 h-5 border-t-2 border-white rounded-full animate-spin"></div>
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                  />
+                </svg>
+                <span>Save Product Details</span>
+              </>
+            )}
+          </button>
+        </div>
       )}
 
       {/* Separate Scope of Work section - only show if applicable */}
@@ -699,8 +838,7 @@ const ProductDetails = ({ optionValue, onProductsAdded = () => {} }) => {
               No scope of work items added yet. Click "Add Scope" to add scope
               of work.
             </div>
-          ) :
-          optionValue === 'Applicable' ? (
+          ) : optionValue === 'Applicable' ? (
             getUniqueOptionsWithScopes().map((option) => {
               const optionScopes = getScopesByOption(option);
               return (

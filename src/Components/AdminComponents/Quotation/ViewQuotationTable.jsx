@@ -10,6 +10,8 @@ import { motion } from 'framer-motion';
 import DeleteConfirmationModal from '../../Common/DeleteConfirmationModal';
 import FilterSidebar from './FilterSidebar';
 import DateFilterModal from './DateFilterModal';
+import { PERMISSIONS } from '../../../Hooks/userPermission';
+import usePermissions from '../../../Hooks/userPermission';
 
 const ViewQuotationTable = () => {
   const navigate = useNavigate();
@@ -20,6 +22,7 @@ const ViewQuotationTable = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilters, setDateFilters] = useState({ dateFrom: '', dateTo: '' });
+  const { hasPermission } = usePermissions();
 
   const handleApplyFilters = (filters) => {
     // Implement your filtering logic here
@@ -92,13 +95,13 @@ const ViewQuotationTable = () => {
     return (
       quotation.client.toLowerCase().includes(searchTerm.toLowerCase()) &&
       (statusFilter === '' || quotation.status === statusFilter) &&
-      (selectedOption === '' || quotation[selectedOption].toString().includes(inputValue))
+      (selectedOption === '' ||
+        quotation[selectedOption].toString().includes(inputValue))
     );
   });
 
   return (
     <div className="flex h-screen bg-gray-50">
-
       <div className="flex-1 md:w-[calc(100%-300px)] h-screen overflow-y-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -131,7 +134,11 @@ const ViewQuotationTable = () => {
               className="flex items-center justify-center gap-2"
             >
               <AiOutlineFilter size={20} />
-              <span>{dateFilters.dateFrom && dateFilters.dateTo ? `${dateFilters.dateFrom} to ${dateFilters.dateTo}` : ''}</span>
+              <span>
+                {dateFilters.dateFrom && dateFilters.dateTo
+                  ? `${dateFilters.dateFrom} to ${dateFilters.dateTo}`
+                  : ''}
+              </span>
             </button>
           </div>
           {/* Search and Filter section */}
@@ -179,19 +186,13 @@ const ViewQuotationTable = () => {
                 </button>
               </div>
               <div className="flex items-center space-x-4">
-                <button
-                  className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-300 flex items-center gap-2"
-                >
-                
+                <button className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors duration-300 flex items-center gap-2">
                   <span>Export as</span>
                   <AiOutlineFilePdf size={20} />
                 </button>
-                <button
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-300 flex items-center gap-2"
-                >
+                <button className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors duration-300 flex items-center gap-2">
                   <span>Export as</span>
                   <AiOutlineFileExcel size={20} />
-                  
                 </button>
                 <button
                   onClick={() => setIsFilterOpen(true)}
@@ -242,39 +243,54 @@ const ViewQuotationTable = () => {
                       key={quotation.id}
                       className="group hover:bg-blue-50/50 transition-colors duration-300"
                     >
-                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">{quotation.date}</td>
-                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">{quotation.quotationNo}</td>
-                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">{quotation.client}</td>
-                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">{quotation.location}</td>
+                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">
+                        {quotation.date}
+                      </td>
+                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">
+                        {quotation.quotationNo}
+                      </td>
+                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">
+                        {quotation.client}
+                      </td>
+                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">
+                        {quotation.location}
+                      </td>
                       <td className="px-8 py-5 whitespace-nowrap">
                         <span
-                          className={`px-2 py-1 rounded-full text-sm font-regular ${quotation.status === 'Pending'
-                            ? 'bg-yellow-100 text-yellow-700'
-                            : 'bg-green-100 text-green-700'
-                            }`}
+                          className={`px-2 py-1 rounded-full text-sm font-regular ${
+                            quotation.status === 'Pending'
+                              ? 'bg-yellow-100 text-yellow-700'
+                              : 'bg-green-100 text-green-700'
+                          }`}
                         >
                           {quotation.status}
                         </span>
                       </td>
-                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">{quotation.amount}</td>
+                      <td className="px-8 py-5 text-gray-700 whitespace-nowrap">
+                        {quotation.amount}
+                      </td>
                       <td className="px-8 py-5 text-center whitespace-nowrap">
                         <div className="flex items-center space-x-4">
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleEdit(quotation)}
-                            className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-300"
-                          >
-                            <FiEdit size={18} />
-                          </motion.button>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => handleDelete(quotation)}
-                            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-300"
-                          >
-                            <RiDeleteBin6Line size={18} />
-                          </motion.button>
+                          {hasPermission(PERMISSIONS.EDIT_QUOTATION) && (
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => handleEdit(quotation)}
+                              className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-300"
+                            >
+                              <FiEdit size={18} />
+                            </motion.button>
+                          )}
+                          {hasPermission(PERMISSIONS.DELETE_QUOTATION) && (
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => handleDelete(quotation)}
+                              className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-300"
+                            >
+                              <RiDeleteBin6Line size={18} />
+                            </motion.button>
+                          )}
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}

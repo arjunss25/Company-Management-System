@@ -15,6 +15,8 @@ import SuccessModal from '../../Common/SuccessModal';
 import { PERMISSIONS } from '../../../Hooks/userPermission';
 import usePermissions from '../../../Hooks/userPermission';
 import ExportButton from '../../Common/ExportButton';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 
 const CancelledQuotationTable = () => {
   const navigate = useNavigate();
@@ -122,20 +124,16 @@ const CancelledQuotationTable = () => {
   });
 
   const handleEdit = (quotation) => {
-    if (!hasPermission(PERMISSIONS.EDIT_CANCELLED_QUOTATIONS)) {
-      navigate('/unauthorized');
-      return;
+    if (hasPermission(PERMISSIONS.EDIT_CANCELLED_QUOTATIONS)) {
+      navigate(`/admin/edit-quotation/${quotation.id}`);
     }
-    navigate(`/admin/edit-quotation/${quotation.id}`);
   };
 
   const handleRevert = (quotation) => {
-    if (!hasPermission(PERMISSIONS.REVERT_CANCELLED_QUOTATIONS)) {
-      navigate('/unauthorized');
-      return;
+    if (hasPermission(PERMISSIONS.REVERT_CANCELLED_QUOTATIONS)) {
+      setQuotationToRevert(quotation);
+      setIsRevertModalOpen(true);
     }
-    setQuotationToRevert(quotation);
-    setIsRevertModalOpen(true);
   };
 
   const handleConfirmRevert = async () => {
@@ -182,28 +180,25 @@ const CancelledQuotationTable = () => {
   };
 
   const handlePrintPDF = async (quotationId) => {
-    if (!hasPermission(PERMISSIONS.EXPORT_CANCELLED_QUOTATIONS)) {
-      navigate('/unauthorized');
-      return;
-    }
+    if (hasPermission(PERMISSIONS.EXPORT_CANCELLED_QUOTATIONS)) {
+      try {
+        setLoadingPdfId(quotationId);
+        const response = await axiosInstance.get(
+          `/download-quotation-pdf/${quotationId}/`,
+          {
+            responseType: 'blob',
+          }
+        );
 
-    try {
-      setLoadingPdfId(quotationId);
-      const response = await axiosInstance.get(
-        `/download-quotation-pdf/${quotationId}/`,
-        {
-          responseType: 'blob',
-        }
-      );
-
-      const file = new Blob([response.data], { type: 'application/pdf' });
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL);
-      URL.revokeObjectURL(fileURL);
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-    } finally {
-      setLoadingPdfId(null);
+        const file = new Blob([response.data], { type: 'application/pdf' });
+        const fileURL = URL.createObjectURL(file);
+        window.open(fileURL);
+        URL.revokeObjectURL(fileURL);
+      } catch (error) {
+        console.error('Error downloading PDF:', error);
+      } finally {
+        setLoadingPdfId(null);
+      }
     }
   };
 
@@ -352,28 +347,122 @@ const CancelledQuotationTable = () => {
                           <td className="px-8 py-5 text-center whitespace-nowrap">
                             <div className="flex items-center space-x-4">
                               <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
+                                data-tooltip-id="action-tooltip"
+                                data-tooltip-content={
+                                  !hasPermission(
+                                    PERMISSIONS.EDIT_CANCELLED_QUOTATIONS
+                                  )
+                                    ? "You don't have permission to edit quotations. Please contact your administrator for access."
+                                    : ''
+                                }
+                                whileHover={
+                                  hasPermission(
+                                    PERMISSIONS.EDIT_CANCELLED_QUOTATIONS
+                                  )
+                                    ? { scale: 1.1 }
+                                    : {}
+                                }
+                                whileTap={
+                                  hasPermission(
+                                    PERMISSIONS.EDIT_CANCELLED_QUOTATIONS
+                                  )
+                                    ? { scale: 0.95 }
+                                    : {}
+                                }
                                 onClick={() => handleEdit(quotation)}
-                                className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-300"
+                                disabled={
+                                  !hasPermission(
+                                    PERMISSIONS.EDIT_CANCELLED_QUOTATIONS
+                                  )
+                                }
+                                className={`p-2 rounded-lg transition-colors duration-300 ${
+                                  hasPermission(
+                                    PERMISSIONS.EDIT_CANCELLED_QUOTATIONS
+                                  )
+                                    ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                }`}
                               >
                                 <FiEdit size={18} />
                               </motion.button>
+
                               <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
+                                data-tooltip-id="action-tooltip"
+                                data-tooltip-content={
+                                  !hasPermission(
+                                    PERMISSIONS.REVERT_CANCELLED_QUOTATIONS
+                                  )
+                                    ? "You don't have permission to revert quotations. Please contact your administrator for access."
+                                    : ''
+                                }
+                                whileHover={
+                                  hasPermission(
+                                    PERMISSIONS.REVERT_CANCELLED_QUOTATIONS
+                                  )
+                                    ? { scale: 1.1 }
+                                    : {}
+                                }
+                                whileTap={
+                                  hasPermission(
+                                    PERMISSIONS.REVERT_CANCELLED_QUOTATIONS
+                                  )
+                                    ? { scale: 0.95 }
+                                    : {}
+                                }
                                 onClick={() => handleRevert(quotation)}
-                                className="p-2 rounded-lg bg-green-50 text-green-600 hover:bg-green-100 transition-colors duration-300"
+                                disabled={
+                                  !hasPermission(
+                                    PERMISSIONS.REVERT_CANCELLED_QUOTATIONS
+                                  )
+                                }
+                                className={`p-2 rounded-lg transition-colors duration-300 ${
+                                  hasPermission(
+                                    PERMISSIONS.REVERT_CANCELLED_QUOTATIONS
+                                  )
+                                    ? 'bg-green-50 text-green-600 hover:bg-green-100'
+                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                }`}
                               >
                                 <GrRevert size={18} />
                               </motion.button>
+
                               <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
+                                data-tooltip-id="action-tooltip"
+                                data-tooltip-content={
+                                  !hasPermission(
+                                    PERMISSIONS.EXPORT_CANCELLED_QUOTATIONS
+                                  )
+                                    ? "You don't have permission to export quotations. Please contact your administrator for access."
+                                    : loadingPdfId === quotation.id
+                                    ? 'Generating PDF...'
+                                    : ''
+                                }
+                                whileHover={
+                                  hasPermission(
+                                    PERMISSIONS.EXPORT_CANCELLED_QUOTATIONS
+                                  )
+                                    ? { scale: 1.1 }
+                                    : {}
+                                }
+                                whileTap={
+                                  hasPermission(
+                                    PERMISSIONS.EXPORT_CANCELLED_QUOTATIONS
+                                  )
+                                    ? { scale: 0.95 }
+                                    : {}
+                                }
                                 onClick={() => handlePrintPDF(quotation.id)}
-                                disabled={loadingPdfId === quotation.id}
+                                disabled={
+                                  !hasPermission(
+                                    PERMISSIONS.EXPORT_CANCELLED_QUOTATIONS
+                                  ) || loadingPdfId === quotation.id
+                                }
                                 className={`p-2 rounded-lg transition-colors duration-300 ${
-                                  loadingPdfId === quotation.id
+                                  !hasPermission(
+                                    PERMISSIONS.EXPORT_CANCELLED_QUOTATIONS
+                                  )
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                    : loadingPdfId === quotation.id
                                     ? 'bg-gray-100 cursor-not-allowed'
                                     : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                                 }`}
@@ -406,6 +495,12 @@ const CancelledQuotationTable = () => {
                                 )}
                               </motion.button>
                             </div>
+
+                            <Tooltip
+                              id="action-tooltip"
+                              place="top"
+                              className="!bg-gray-900 text-white px-3 py-2 rounded-lg text-sm"
+                            />
                           </td>
                         </motion.tr>
                       ))}

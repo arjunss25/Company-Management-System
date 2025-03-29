@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { FiEdit } from 'react-icons/fi';
 import { FcCancel } from 'react-icons/fc';
 import { IoArrowBack } from 'react-icons/io5';
-import { AiOutlinePrinter,AiOutlineFilter } from 'react-icons/ai';
+import { AiOutlinePrinter, AiOutlineFilter } from 'react-icons/ai';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import DeleteConfirmationModal from '../../Contract/DeleteConfirmationModal';
@@ -13,6 +13,10 @@ import CancelConfirmationModal from '../CancelConfirmationModal';
 import { PiFilePdfDuotone } from 'react-icons/pi';
 import axiosInstance from '../../../../Config/axiosInstance';
 import { CiFileOn } from 'react-icons/ci';
+import usePermissions from '../../../../Hooks/userPermission';
+import { PERMISSIONS } from '../../../../Hooks/userPermission';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 
 const Completed = () => {
   const navigate = useNavigate();
@@ -36,6 +40,8 @@ const Completed = () => {
 
   // Add new state for date filter loading
   const [isDateFilterLoading, setIsDateFilterLoading] = useState(false);
+
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     fetchQuotations();
@@ -76,29 +82,30 @@ const Completed = () => {
   };
 
   const handlePrintPDF = async (quotationId) => {
-    try {
-      setLoadingPdfId(quotationId);
-      const response = await axiosInstance.get(
-        `/download-quotation-pdf/${quotationId}/`,
-        {
-          responseType: 'blob',
-        }
-      );
-
-      const file = new Blob([response.data], { type: 'application/pdf' });
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL);
-      URL.revokeObjectURL(fileURL);
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-    } finally {
-      setLoadingPdfId(null);
+    if (hasPermission(PERMISSIONS.EXPORT_COMPLETED)) {
+      try {
+        setLoadingPdfId(quotationId);
+        const response = await axiosInstance.get(
+          `/download-quotation-pdf/${quotationId}/`,
+          { responseType: 'blob' }
+        );
+        const file = new Blob([response.data], { type: 'application/pdf' });
+        const fileURL = URL.createObjectURL(file);
+        window.open(fileURL);
+        URL.revokeObjectURL(fileURL);
+      } catch (error) {
+        console.error('Error downloading PDF:', error);
+      } finally {
+        setLoadingPdfId(null);
+      }
     }
   };
 
   const handleCancel = (quotation) => {
-    setQuotationToCancel(quotation);
-    setIsCancelModalOpen(true);
+    if (hasPermission(PERMISSIONS.DELETE_COMPLETED)) {
+      setQuotationToCancel(quotation);
+      setIsCancelModalOpen(true);
+    }
   };
 
   const handleConfirmCancel = async () => {
@@ -149,7 +156,10 @@ const Completed = () => {
     }
 
     for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
+      pageNumbers.push({
+        number: i,
+        key: `page-${i}`,
+      });
     }
     return pageNumbers;
   };
@@ -205,7 +215,9 @@ const Completed = () => {
   const [quotationToDelete, setQuotationToDelete] = useState(null);
 
   const handleEdit = (quotation) => {
-    navigate(`/edit-work-details/${quotation.id}`);
+    if (hasPermission(PERMISSIONS.EDIT_COMPLETED)) {
+      navigate(`/edit-work-details/${quotation.id}`);
+    }
   };
 
   const handleDelete = (quotation) => {
@@ -336,8 +348,8 @@ const Completed = () => {
               ) : quotations.length === 0 ? (
                 <div className="flex flex-col items-center justify-center min-h-[300px] text-gray-500">
                   <div className="text-gray-400 mb-3 text-[3rem]">
-                                      <CiFileOn />
-                                    </div>
+                    <CiFileOn />
+                  </div>
                   <p className="text-xl font-medium">No Completed Quotations</p>
                   {dateFilters.dateFrom && dateFilters.dateTo ? (
                     <>
@@ -403,30 +415,97 @@ const Completed = () => {
                         <td className="px-8 py-5 text-center whitespace-nowrap">
                           <div className="flex items-center space-x-4">
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
+                              data-tooltip-id="action-tooltip"
+                              data-tooltip-content={
+                                !hasPermission(PERMISSIONS.EDIT_COMPLETED)
+                                  ? "You don't have permission to edit completed quotations"
+                                  : ''
+                              }
+                              whileHover={
+                                hasPermission(PERMISSIONS.EDIT_COMPLETED)
+                                  ? { scale: 1.1 }
+                                  : {}
+                              }
+                              whileTap={
+                                hasPermission(PERMISSIONS.EDIT_COMPLETED)
+                                  ? { scale: 0.95 }
+                                  : {}
+                              }
                               onClick={() => handleEdit(quotation)}
-                              className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-300"
+                              disabled={
+                                !hasPermission(PERMISSIONS.EDIT_COMPLETED)
+                              }
+                              className={`p-2 rounded-lg transition-colors duration-300 ${
+                                hasPermission(PERMISSIONS.EDIT_COMPLETED)
+                                  ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              }`}
                             >
                               <FiEdit size={18} />
                             </motion.button>
+
                             {!quotation.is_cancelled && (
                               <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
+                                data-tooltip-id="action-tooltip"
+                                data-tooltip-content={
+                                  !hasPermission(PERMISSIONS.DELETE_COMPLETED)
+                                    ? "You don't have permission to cancel completed quotations"
+                                    : ''
+                                }
+                                whileHover={
+                                  hasPermission(PERMISSIONS.DELETE_COMPLETED)
+                                    ? { scale: 1.1 }
+                                    : {}
+                                }
+                                whileTap={
+                                  hasPermission(PERMISSIONS.DELETE_COMPLETED)
+                                    ? { scale: 0.95 }
+                                    : {}
+                                }
                                 onClick={() => handleCancel(quotation)}
-                                className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-300"
+                                disabled={
+                                  !hasPermission(PERMISSIONS.DELETE_COMPLETED)
+                                }
+                                className={`p-2 rounded-lg transition-colors duration-300 ${
+                                  hasPermission(PERMISSIONS.DELETE_COMPLETED)
+                                    ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                }`}
                               >
                                 <FcCancel size={18} />
                               </motion.button>
                             )}
+
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
+                              data-tooltip-id="action-tooltip"
+                              data-tooltip-content={
+                                !hasPermission(PERMISSIONS.EXPORT_COMPLETED)
+                                  ? "You don't have permission to export completed quotations"
+                                  : loadingPdfId === quotation.id
+                                  ? 'Generating PDF...'
+                                  : ''
+                              }
+                              whileHover={
+                                hasPermission(PERMISSIONS.EXPORT_COMPLETED) &&
+                                !loadingPdfId
+                                  ? { scale: 1.1 }
+                                  : {}
+                              }
+                              whileTap={
+                                hasPermission(PERMISSIONS.EXPORT_COMPLETED) &&
+                                !loadingPdfId
+                                  ? { scale: 0.95 }
+                                  : {}
+                              }
                               onClick={() => handlePrintPDF(quotation.id)}
-                              disabled={loadingPdfId === quotation.id}
-                              className={`p-2 rounded-lg transition-colors duration-300 ${
+                              disabled={
+                                !hasPermission(PERMISSIONS.EXPORT_COMPLETED) ||
                                 loadingPdfId === quotation.id
+                              }
+                              className={`p-2 rounded-lg transition-colors duration-300 ${
+                                !hasPermission(PERMISSIONS.EXPORT_COMPLETED)
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : loadingPdfId === quotation.id
                                   ? 'bg-gray-100 cursor-not-allowed'
                                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                               }`}
@@ -459,6 +538,12 @@ const Completed = () => {
                               )}
                             </motion.button>
                           </div>
+
+                          <Tooltip
+                            id="action-tooltip"
+                            place="top"
+                            className="!bg-gray-900 text-white px-3 py-2 rounded-lg text-sm"
+                          />
                         </td>
                       </motion.tr>
                     ))}
@@ -483,17 +568,17 @@ const Completed = () => {
                   >
                     Previous
                   </button>
-                  {getPageNumbers().map((number) => (
+                  {getPageNumbers().map((page) => (
                     <button
-                      key={number}
-                      onClick={() => setCurrentPage(number)}
+                      key={page.key}
+                      onClick={() => setCurrentPage(page.number)}
                       className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
-                        currentPage === number
+                        currentPage === page.number
                           ? 'bg-blue-600 text-white'
                           : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
                       }`}
                     >
-                      {number}
+                      {page.number}
                     </button>
                   ))}
                   <button

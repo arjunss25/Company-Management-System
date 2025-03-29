@@ -240,11 +240,45 @@ const Userrights = () => {
   };
 
   const formatPermissionName = (permission) => {
+    // Special cases mapping
+    const specialCases = {
+      view_no_access: 'View No Access Projects',
+      view_closed_projects: 'View Closed Projects',
+      edit_closed_projects: 'Edit Closed Projects',
+      delete_closed_projects: 'Delete Closed Projects',
+      export_closed_projects: 'Export Closed Projects',
+      view_not_started: 'View Not Started Projects',
+      view_in_progress: 'View In Progress Projects',
+      view_on_hold: 'View On Hold Projects',
+      view_handover_overdue: 'View Handover Overdue Projects',
+      view_completed: 'View Completed Projects',
+      view_lpo_pending: 'View LPO Pending',
+      view_wcr_pending: 'View WCR Pending',
+      view_grn_pending: 'View GRN Pending',
+      view_invoice_pending: 'View Invoice Pending',
+      view_lpo_received: 'View LPO Received',
+      view_grn_received: 'View GRN Received',
+      view_invoice_submitted: 'View Invoice Submitted',
+      view_retention_invoice_pending: 'View Retention Invoice Pending',
+      view_retention_invoice_overdue: 'View Retention Invoice Overdue',
+      view_retention_invoice_submitted: 'View Retention Invoice Submitted',
+    };
+
+    // Check if it's a special case
+    if (specialCases[permission]) {
+      return specialCases[permission];
+    }
+
+    // Default formatting for other permissions
     return permission
       .split('_')
       .map((word) => {
         if (word.toLowerCase() === 'export') {
           return 'Export as PDF';
+        }
+        // Handle acronyms
+        if (['lpo', 'wcr', 'grn'].includes(word.toLowerCase())) {
+          return word.toUpperCase();
         }
         return word.charAt(0).toUpperCase() + word.slice(1);
       })

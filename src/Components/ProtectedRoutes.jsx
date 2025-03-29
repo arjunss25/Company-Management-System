@@ -12,6 +12,8 @@ const ProtectedRoute = ({
   const { loading, hasPermission } = usePermissions();
   const token = TokenService.getToken();
   const userRole = TokenService.getUserRole()?.toLowerCase();
+  const isSuperAdmin = userRole === 'superadmin';
+  const isAdmin = userRole === 'admin';
 
   // Add detailed logging
   console.log('ProtectedRoute Debug:', {
@@ -34,6 +36,11 @@ const ProtectedRoute = ({
     return <Navigate to="/login" replace />;
   }
 
+  // SuperAdmin and Admin bypass all permission checks
+  if (isSuperAdmin || isAdmin) {
+    return element ? element : children;
+  }
+
   // If roles are specified, check role-based access
   if (Array.isArray(allowedRoles) && allowedRoles.length > 0) {
     const hasAllowedRole = allowedRoles.some(
@@ -47,43 +54,25 @@ const ProtectedRoute = ({
     });
 
     if (!hasAllowedRole) {
-      console.log(
-        'Unauthorized role, redirecting. Expected one of:',
-        allowedRoles,
-        'but got:',
-        userRole
-      );
+      console.log('Unauthorized role, redirecting');
       return <Navigate to="/unauthorized" replace />;
     }
   }
 
   // If permissions are specified, check permission-based access
   if (Array.isArray(allowedPermissions) && allowedPermissions.length > 0) {
-    const hasRequiredPermission = allowedPermissions.some((permission) =>
+    // Check if user has ANY of the allowed permissions
+    const hasAnyPermission = allowedPermissions.some((permission) =>
       hasPermission(permission)
     );
 
-    console.log('Permission check:', {
-      requiredPermissions: allowedPermissions,
-      hasRequiredPermission,
-    });
-
-    if (!hasRequiredPermission) {
-      console.log(
-        'Unauthorized permission, redirecting. Required one of:',
-        allowedPermissions
-      );
+    if (!hasAnyPermission) {
+      console.log('No required permissions, redirecting');
       return <Navigate to="/unauthorized" replace />;
     }
   }
 
-  // If element prop is provided, render it
-  if (element) {
-    return element;
-  }
-
-  // Otherwise render children
-  return children;
+  return element ? element : children;
 };
 
 export default ProtectedRoute;

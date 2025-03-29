@@ -23,6 +23,40 @@ const QuotationDashboard = () => {
   const isStaff = userRole === 'Staff';
   const isSalesPerson = userRole === 'Sales Person';
 
+  // Define quotation related permissions
+  const quotationRelatedPermissions = [
+    PERMISSIONS.VIEW_QUOTATIONS,
+    PERMISSIONS.CREATE_QUOTATION,
+    PERMISSIONS.VIEW_CANCELLED_QUOTATIONS,
+    PERMISSIONS.VIEW_PENDING_QUOTATIONS,
+    PERMISSIONS.VIEW_PENDING_WORKSTARTED,
+    PERMISSIONS.VIEW_ACTIVE_QUOTATIONS,
+    PERMISSIONS.VIEW_CLOSED_PROJECTS,
+    PERMISSIONS.VIEW_NOT_STARTED,
+    PERMISSIONS.VIEW_IN_PROGRESS,
+    PERMISSIONS.VIEW_NO_ACCESS,
+    PERMISSIONS.VIEW_ON_HOLD,
+    PERMISSIONS.VIEW_HANDOVER_OVERDUE,
+    PERMISSIONS.VIEW_COMPLETED,
+    PERMISSIONS.VIEW_LPO_PENDING,
+    PERMISSIONS.VIEW_WCR_PENDING,
+    PERMISSIONS.VIEW_GRN_PENDING,
+    PERMISSIONS.VIEW_INVOICE_PENDING,
+    PERMISSIONS.VIEW_LPO_RECEIVED,
+    PERMISSIONS.VIEW_GRN_RECEIVED,
+    PERMISSIONS.VIEW_INVOICE_SUBMITTED,
+    PERMISSIONS.VIEW_RETENTION_INVOICE_PENDING,
+    PERMISSIONS.VIEW_RETENTION_INVOICE_OVERDUE,
+    PERMISSIONS.VIEW_RETENTION_INVOICE_SUBMITTED,
+  ];
+
+  // Add this console log temporarily to debug
+  console.log('Current user permissions:', {
+    role: userRole,
+    permissions: hasPermission,
+    hasViewQuotations: hasPermission(PERMISSIONS.VIEW_QUOTATIONS),
+  });
+
   // Helper function to check if user has any of the required permissions
   const hasAnyRequiredPermission = (permissions) => {
     // SuperAdmin and Admin should have access to everything
@@ -35,6 +69,17 @@ const QuotationDashboard = () => {
 
     return false;
   };
+
+  // Check if user has any quotation-related permission
+  const hasAnyQuotationPermission = quotationRelatedPermissions.some(
+    (permission) => hasPermission(permission)
+  );
+
+  // Redirect if no permissions at all
+  if (!isSuperAdmin && !isAdmin && !hasAnyQuotationPermission) {
+    navigate('/unauthorized');
+    return null;
+  }
 
   const sections = [
     {
@@ -259,16 +304,6 @@ const QuotationDashboard = () => {
 
     navigate(path);
   };
-
-  // Check if user has permission to view quotations
-  if (
-    !isSuperAdmin &&
-    !isAdmin &&
-    !hasPermission(PERMISSIONS.VIEW_QUOTATIONS)
-  ) {
-    navigate('/unauthorized');
-    return null;
-  }
 
   return (
     <div className="w-full flex">
