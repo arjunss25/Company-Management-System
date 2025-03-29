@@ -1,16 +1,89 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { IoArrowBack } from 'react-icons/io5';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PERMISSIONS } from '../../../Hooks/userPermission';
 import axiosInstance from '../../../Config/axiosInstance';
+import TokenService from '../../../Config/tokenService';
 
-const UserrightsSuperadmin = () => {
+const Userrights = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const staffData = location.state?.staffId;
-  const allPermissions = Object.values(PERMISSIONS);
+  const userRole = TokenService.getUserRole();
   const [isLoading, setIsLoading] = useState(false);
+
+  // Filter permissions based on user role
+  const getFilteredPermissions = () => {
+    const allPermissions = Object.values(PERMISSIONS);
+
+    if (userRole === 'Admin') {
+      return {
+        'Page Access': allPermissions.filter((p) => p.startsWith('view_')),
+        'User Management': allPermissions.filter((p) => p.includes('user_')),
+        'Client Management': allPermissions.filter((p) => p.includes('client')),
+        'Location Management': allPermissions.filter((p) =>
+          p.includes('location')
+        ),
+        'Material Management': allPermissions.filter((p) =>
+          p.includes('material')
+        ),
+        'Terms & Conditions': allPermissions.filter((p) => p.includes('terms')),
+        'Contract Management': allPermissions.filter((p) =>
+          p.includes('contract')
+        ),
+        'Quotation Management': allPermissions.filter(
+          (p) =>
+            p.includes('quotation') ||
+            p.includes('_started') ||
+            p.includes('_progress') ||
+            p.includes('_hold') ||
+            p.includes('_completed')
+        ),
+        Documentation: allPermissions.filter(
+          (p) =>
+            p.includes('lpo') ||
+            p.includes('wcr') ||
+            p.includes('grn') ||
+            p.includes('invoice')
+        ),
+        'Retention Management': allPermissions.filter((p) =>
+          p.includes('retention')
+        ),
+      };
+    } else if (userRole === 'Sales Person') {
+      return {
+        'Quotation Management': allPermissions.filter(
+          (p) =>
+            p.includes('quotation') ||
+            p.includes('_started') ||
+            p.includes('_progress') ||
+            p.includes('_hold') ||
+            p.includes('_completed')
+        ),
+        Documentation: allPermissions.filter(
+          (p) =>
+            p.includes('lpo') ||
+            p.includes('wcr') ||
+            p.includes('grn') ||
+            p.includes('invoice')
+        ),
+        'Client Management': allPermissions.filter((p) => p.includes('client')),
+        'Location Management': allPermissions.filter((p) =>
+          p.includes('location')
+        ),
+        'Terms & Conditions': allPermissions.filter((p) => p.includes('terms')),
+        'Contract Management': allPermissions.filter((p) =>
+          p.includes('contract')
+        ),
+      };
+    }
+
+    return {};
+  };
+
+  const permissionCategories = getFilteredPermissions();
+  const allPermissions = Object.values(permissionCategories).flat();
 
   const [rights, setRights] = useState({
     selectAll: false,
@@ -19,9 +92,36 @@ const UserrightsSuperadmin = () => {
 
   const [modalState, setModalState] = useState({
     isOpen: false,
-    type: '', // 'success' or 'error'
+    type: '',
     message: '',
   });
+
+  // Fetch existing permissions when component mounts
+  useEffect(() => {
+    const fetchExistingPermissions = async () => {
+      try {
+        const response = await axiosInstance.get(
+          `/list-saved-permissions/`
+        );
+        if (response.data.status === 'Success') {
+          const existingPermissions = response.data.permissions;
+          const newRights = allPermissions.map((permission) =>
+            existingPermissions.includes(permission)
+          );
+          setRights({
+            selectAll: newRights.every((right) => right),
+            rights: newRights,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching permissions:', error);
+      }
+    };
+
+    if (staffData) {
+      fetchExistingPermissions();
+    }
+  }, [staffData, allPermissions]);
 
   const handleSelectAll = () => {
     setRights({
@@ -77,34 +177,6 @@ const UserrightsSuperadmin = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const permissionCategories = {
-    'Page Access': allPermissions.filter((p) => p.startsWith('view_')),
-    'User Management': allPermissions.filter((p) => p.includes('user_')),
-    'Client Management': allPermissions.filter((p) => p.includes('client')),
-    'Location Management': allPermissions.filter((p) => p.includes('location')),
-    'Material Management': allPermissions.filter((p) => p.includes('material')),
-    'Terms & Conditions': allPermissions.filter((p) => p.includes('terms')),
-    'Contract Management': allPermissions.filter((p) => p.includes('contract')),
-    'Quotation Management': allPermissions.filter(
-      (p) =>
-        p.includes('quotation') ||
-        p.includes('_started') ||
-        p.includes('_progress') ||
-        p.includes('_hold') ||
-        p.includes('_completed')
-    ),
-    Documentation: allPermissions.filter(
-      (p) =>
-        p.includes('lpo') ||
-        p.includes('wcr') ||
-        p.includes('grn') ||
-        p.includes('invoice')
-    ),
-    'Retention Management': allPermissions.filter((p) =>
-      p.includes('retention')
-    ),
   };
 
   const formatPermissionName = (permission) => {
@@ -345,4 +417,4 @@ const UserrightsSuperadmin = () => {
   );
 };
 
-export default UserrightsSuperadmin;
+export default Userrights;
