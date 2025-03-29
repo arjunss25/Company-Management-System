@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { IoArrowBack } from 'react-icons/io5';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PERMISSIONS } from '../../../Hooks/userPermission';
 import axiosInstance from '../../../Config/axiosInstance';
 import TokenService from '../../../Config/tokenService';
 
@@ -12,82 +11,13 @@ const Userrights = () => {
   const staffData = location.state?.staffId;
   const userRole = TokenService.getUserRole();
   const [isLoading, setIsLoading] = useState(false);
-
-  // Filter permissions based on user role
-  const getFilteredPermissions = () => {
-    const allPermissions = Object.values(PERMISSIONS);
-
-    if (userRole === 'Admin') {
-      return {
-        'Page Access': allPermissions.filter((p) => p.startsWith('view_')),
-        'User Management': allPermissions.filter((p) => p.includes('user_')),
-        'Client Management': allPermissions.filter((p) => p.includes('client')),
-        'Location Management': allPermissions.filter((p) =>
-          p.includes('location')
-        ),
-        'Material Management': allPermissions.filter((p) =>
-          p.includes('material')
-        ),
-        'Terms & Conditions': allPermissions.filter((p) => p.includes('terms')),
-        'Contract Management': allPermissions.filter((p) =>
-          p.includes('contract')
-        ),
-        'Quotation Management': allPermissions.filter(
-          (p) =>
-            p.includes('quotation') ||
-            p.includes('_started') ||
-            p.includes('_progress') ||
-            p.includes('_hold') ||
-            p.includes('_completed')
-        ),
-        Documentation: allPermissions.filter(
-          (p) =>
-            p.includes('lpo') ||
-            p.includes('wcr') ||
-            p.includes('grn') ||
-            p.includes('invoice')
-        ),
-        'Retention Management': allPermissions.filter((p) =>
-          p.includes('retention')
-        ),
-      };
-    } else if (userRole === 'Sales Person') {
-      return {
-        'Quotation Management': allPermissions.filter(
-          (p) =>
-            p.includes('quotation') ||
-            p.includes('_started') ||
-            p.includes('_progress') ||
-            p.includes('_hold') ||
-            p.includes('_completed')
-        ),
-        Documentation: allPermissions.filter(
-          (p) =>
-            p.includes('lpo') ||
-            p.includes('wcr') ||
-            p.includes('grn') ||
-            p.includes('invoice')
-        ),
-        'Client Management': allPermissions.filter((p) => p.includes('client')),
-        'Location Management': allPermissions.filter((p) =>
-          p.includes('location')
-        ),
-        'Terms & Conditions': allPermissions.filter((p) => p.includes('terms')),
-        'Contract Management': allPermissions.filter((p) =>
-          p.includes('contract')
-        ),
-      };
-    }
-
-    return {};
-  };
-
-  const permissionCategories = getFilteredPermissions();
-  const allPermissions = Object.values(permissionCategories).flat();
+  const [permissions, setPermissions] = useState([]);
+  const [permissionCategories, setPermissionCategories] = useState({});
+  const [existingPermissions, setExistingPermissions] = useState([]);
 
   const [rights, setRights] = useState({
     selectAll: false,
-    rights: Array(allPermissions.length).fill(false),
+    rights: [],
   });
 
   const [modalState, setModalState] = useState({
@@ -96,21 +26,113 @@ const Userrights = () => {
     message: '',
   });
 
-  // Fetch existing permissions when component mounts
+  // Function to organize permissions into categories
+  const organizePermissions = (permissionsList) => {
+    const categories = {
+      'Page Access': [],
+      'User Management': [],
+      'Client Management': [],
+      'Location Management': [],
+      'Material Management': [],
+      'Terms & Conditions': [],
+      'Contract Management': [],
+      'Quotation Management': [],
+      'Documentation Status': [],
+      'Work Status': [],
+      'Retention Management': [],
+      Actions: [],
+    };
+
+    permissionsList.forEach((permission) => {
+      if (permission.startsWith('view_')) {
+        if (permission.includes('quotation')) {
+          categories['Quotation Management'].push(permission);
+        } else if (
+          permission.includes('lpo') ||
+          permission.includes('wcr') ||
+          permission.includes('grn') ||
+          permission.includes('invoice')
+        ) {
+          categories['Documentation Status'].push(permission);
+        } else if (
+          permission.includes('completed') ||
+          permission.includes('progress') ||
+          permission.includes('started') ||
+          permission.includes('hold') ||
+          permission.includes('overdue')
+        ) {
+          categories['Work Status'].push(permission);
+        } else if (permission.includes('retention')) {
+          categories['Retention Management'].push(permission);
+        } else if (permission.includes('user')) {
+          categories['User Management'].push(permission);
+        } else if (permission.includes('client')) {
+          categories['Client Management'].push(permission);
+        } else if (permission.includes('location')) {
+          categories['Location Management'].push(permission);
+        } else if (permission.includes('material')) {
+          categories['Material Management'].push(permission);
+        } else if (permission.includes('terms')) {
+          categories['Terms & Conditions'].push(permission);
+        } else if (permission.includes('contract')) {
+          categories['Contract Management'].push(permission);
+        } else {
+          categories['Page Access'].push(permission);
+        }
+      } else {
+        // Non-view permissions go to their respective categories based on their prefix
+        if (permission.includes('quotation')) {
+          categories['Quotation Management'].push(permission);
+        } else if (
+          permission.includes('lpo') ||
+          permission.includes('wcr') ||
+          permission.includes('grn') ||
+          permission.includes('invoice')
+        ) {
+          categories['Documentation Status'].push(permission);
+        } else if (permission.includes('retention')) {
+          categories['Retention Management'].push(permission);
+        } else if (permission.includes('user')) {
+          categories['User Management'].push(permission);
+        } else if (permission.includes('client')) {
+          categories['Client Management'].push(permission);
+        } else if (permission.includes('location')) {
+          categories['Location Management'].push(permission);
+        } else if (permission.includes('material')) {
+          categories['Material Management'].push(permission);
+        } else if (permission.includes('terms')) {
+          categories['Terms & Conditions'].push(permission);
+        } else if (permission.includes('contract')) {
+          categories['Contract Management'].push(permission);
+        } else {
+          categories['Actions'].push(permission);
+        }
+      }
+    });
+
+    // Remove empty categories
+    Object.keys(categories).forEach((key) => {
+      if (categories[key].length === 0) {
+        delete categories[key];
+      }
+    });
+
+    return categories;
+  };
+
+  // Fetch permissions from API
   useEffect(() => {
-    const fetchExistingPermissions = async () => {
+    const fetchPermissions = async () => {
       try {
-        const response = await axiosInstance.get(
-          `/list-saved-permissions/`
-        );
+        const response = await axiosInstance.get('/list-saved-permissions/');
         if (response.data.status === 'Success') {
-          const existingPermissions = response.data.permissions;
-          const newRights = allPermissions.map((permission) =>
-            existingPermissions.includes(permission)
-          );
+          const permissionsList = response.data.data;
+          setPermissions(permissionsList);
+          const organized = organizePermissions(permissionsList);
+          setPermissionCategories(organized);
           setRights({
-            selectAll: newRights.every((right) => right),
-            rights: newRights,
+            selectAll: false,
+            rights: Array(permissionsList.length).fill(false),
           });
         }
       } catch (error) {
@@ -118,19 +140,53 @@ const Userrights = () => {
       }
     };
 
-    if (staffData) {
-      fetchExistingPermissions();
-    }
-  }, [staffData, allPermissions]);
+    fetchPermissions();
+  }, []);
+
+  // Fetch existing user permissions
+  useEffect(() => {
+    const fetchExistingPermissions = async () => {
+      if (!staffData) return;
+
+      try {
+        // Use the correct endpoint to fetch user permissions
+        const response = await axiosInstance.get(
+          `/list-permission/${staffData}/`
+        );
+
+        if (response.data.status === 'Success') {
+          const userPermissions = response.data.data;
+          setExistingPermissions(userPermissions);
+
+          // Update rights state based on existing permissions
+          if (permissions.length > 0) {
+            const newRights = permissions.map((permission) =>
+              userPermissions.includes(permission)
+            );
+
+            setRights({
+              selectAll: newRights.every((right) => right),
+              rights: newRights,
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user permissions:', error);
+      }
+    };
+
+    fetchExistingPermissions();
+  }, [staffData, permissions]);
 
   const handleSelectAll = () => {
     setRights({
       selectAll: !rights.selectAll,
-      rights: Array(allPermissions.length).fill(!rights.selectAll),
+      rights: Array(permissions.length).fill(!rights.selectAll),
     });
   };
 
-  const handleSingleCheck = (index) => {
+  const handleSingleCheck = (permission) => {
+    const index = permissions.indexOf(permission);
     const newRights = [...rights.rights];
     newRights[index] = !newRights[index];
     setRights({
@@ -143,16 +199,17 @@ const Userrights = () => {
     try {
       setIsLoading(true);
 
-      const selectedPermissions = allPermissions.filter(
+      const selectedPermissions = permissions.filter(
         (_, index) => rights.rights[index]
       );
 
-      const payload = {
-        user_id: staffData,
-        permissions: selectedPermissions,
-      };
-
-      const response = await axiosInstance.post('/save-permission/', payload);
+      // Use the correct endpoint and payload format
+      const response = await axiosInstance.patch(
+        `/edit-permission/${staffData}/`,
+        {
+          permissions: selectedPermissions,
+        }
+      );
 
       if (response.data.status === 'Success') {
         setModalState({
@@ -160,6 +217,9 @@ const Userrights = () => {
           type: 'success',
           message: 'Permissions saved successfully!',
         });
+
+        // Update existing permissions after successful save
+        setExistingPermissions(selectedPermissions);
       } else {
         setModalState({
           isOpen: true,
@@ -235,7 +295,7 @@ const Userrights = () => {
           </div>
 
           {Object.entries(permissionCategories).map(
-            ([category, permissions]) => (
+            ([category, categoryPermissions]) => (
               <motion.div
                 key={category}
                 initial={{ opacity: 0, y: 20 }}
@@ -250,7 +310,7 @@ const Userrights = () => {
                 </div>
 
                 <div className="divide-y divide-gray-100">
-                  {permissions.map((permission, index) => (
+                  {categoryPermissions.map((permission, index) => (
                     <motion.div
                       key={permission}
                       initial={{ opacity: 0 }}
@@ -265,13 +325,9 @@ const Userrights = () => {
                         <input
                           type="checkbox"
                           checked={
-                            rights.rights[allPermissions.indexOf(permission)]
+                            rights.rights[permissions.indexOf(permission)]
                           }
-                          onChange={() =>
-                            handleSingleCheck(
-                              allPermissions.indexOf(permission)
-                            )
-                          }
+                          onChange={() => handleSingleCheck(permission)}
                           className="w-5 h-5 text-blue-600 border-gray-300 rounded-lg focus:ring-blue-500 transition-all duration-200 cursor-pointer"
                         />
                       </div>

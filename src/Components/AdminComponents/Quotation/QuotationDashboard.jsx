@@ -19,13 +19,14 @@ const QuotationDashboard = () => {
   const { hasPermission } = usePermissions();
   const userRole = TokenService.getUserRole();
   const isSuperAdmin = userRole === 'SuperAdmin';
+  const isAdmin = userRole === 'Admin';
   const isStaff = userRole === 'Staff';
   const isSalesPerson = userRole === 'Sales Person';
 
   // Helper function to check if user has any of the required permissions
   const hasAnyRequiredPermission = (permissions) => {
-    // SuperAdmin should have access to everything
-    if (isSuperAdmin) return true;
+    // SuperAdmin and Admin should have access to everything
+    if (isSuperAdmin || isAdmin) return true;
 
     // Staff and Sales Person need to have at least one of the required permissions
     if (isStaff || isSalesPerson) {
@@ -238,8 +239,8 @@ const QuotationDashboard = () => {
     .filter((section) => section.items.length > 0);
 
   const handleCardClick = (path, requiredPermissions) => {
-    // SuperAdmin should have access to everything
-    if (isSuperAdmin) {
+    // SuperAdmin and Admin should have access to everything
+    if (isSuperAdmin || isAdmin) {
       navigate(path);
       return;
     }
@@ -260,7 +261,11 @@ const QuotationDashboard = () => {
   };
 
   // Check if user has permission to view quotations
-  if (!isSuperAdmin && !hasPermission(PERMISSIONS.VIEW_QUOTATIONS)) {
+  if (
+    !isSuperAdmin &&
+    !isAdmin &&
+    !hasPermission(PERMISSIONS.VIEW_QUOTATIONS)
+  ) {
     navigate('/unauthorized');
     return null;
   }
