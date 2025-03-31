@@ -11,9 +11,13 @@ import { AdminApi } from '../../../Services/AdminApi';
 import { IoMdAddCircleOutline } from 'react-icons/io';
 import { MdDeleteForever } from 'react-icons/md';
 import SuccessModal from './SuccessModal';
+import usePermissions, { PERMISSIONS } from '../../../Hooks/userPermission';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 
 const AddContract = () => {
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
   const [expandedSection, setExpandedSection] = useState('addContract');
   const [formData, setFormData] = useState({
     client: '',
@@ -155,7 +159,7 @@ const AddContract = () => {
     if (validateForm()) {
       try {
         const formDataObj = new FormData();
-    
+
         // Append basic contract details
         formDataObj.append('client', formData.client);
         formDataObj.append('location', formData.location);
@@ -163,22 +167,22 @@ const AddContract = () => {
         formDataObj.append('contract_no', formData.contractNo);
         formDataObj.append('valid_from', formatDate(formData.validFrom));
         formDataObj.append('valid_till', formatDate(formData.validTill));
-    
+
         // Append attachments with the correct field name
         attachments.forEach((file) => {
           if (file instanceof File) {
             formDataObj.append('attachments[]', file);
           }
         });
-    
+
         // Log FormData entries for debugging
         for (let pair of formDataObj.entries()) {
           console.log('FormData Entry:', pair[0], pair[1]);
         }
-    
+
         const response = await AdminApi.addContract(formDataObj);
         console.log('API Response:', response);
-    
+
         if (response.status === 'Success') {
           setFormData({
             client: '',
@@ -192,11 +196,11 @@ const AddContract = () => {
           setAttachments([]);
           setModalMessage('Contract added successfully!');
           setIsSuccessModalOpen(true);
-    
+
           const timer = setTimeout(() => {
             navigate('/admin/contract-dashboard');
           }, 3000);
-    
+
           setNavigationTimer(timer);
         }
       } catch (error) {
@@ -211,20 +215,24 @@ const AddContract = () => {
   };
 
   const handleEdit = async (contractId) => {
-    const contract = contracts.find((c) => c.id === contractId);
-    if (contract) {
-      setSelectedContract(contract);
-      setIsUpdateModalOpen(true);
+    if (hasPermission(PERMISSIONS.EDIT_CONTRACT)) {
+      const contract = contracts.find((c) => c.id === contractId);
+      if (contract) {
+        setSelectedContract(contract);
+        setIsUpdateModalOpen(true);
+      }
     }
   };
 
   const handleDelete = (contractId) => {
-    setContractToDelete(contractId);
-    setIsDeleteModalOpen(true);
+    if (hasPermission(PERMISSIONS.DELETE_CONTRACT)) {
+      setContractToDelete(contractId);
+      setIsDeleteModalOpen(true);
+    }
   };
 
   const handleConfirmDelete = async () => {
-    if (contractToDelete) {
+    if (contractToDelete && hasPermission(PERMISSIONS.DELETE_CONTRACT)) {
       try {
         const response = await AdminApi.deleteContract(contractToDelete);
         if (response.status === 'Success') {
@@ -747,22 +755,71 @@ const AddContract = () => {
                             <td className="px-8 py-5">
                               <div className="flex items-center space-x-4">
                                 <motion.button
-                                  whileHover={{ scale: 1.1 }}
-                                  whileTap={{ scale: 0.95 }}
+                                  data-tooltip-id="action-tooltip"
+                                  data-tooltip-content={
+                                    !hasPermission(PERMISSIONS.EDIT_CONTRACT)
+                                      ? "You don't have permission to edit contracts"
+                                      : ''
+                                  }
+                                  whileHover={
+                                    hasPermission(PERMISSIONS.EDIT_CONTRACT)
+                                      ? { scale: 1.1 }
+                                      : {}
+                                  }
+                                  whileTap={
+                                    hasPermission(PERMISSIONS.EDIT_CONTRACT)
+                                      ? { scale: 0.95 }
+                                      : {}
+                                  }
                                   onClick={() => handleEdit(contract.id)}
-                                  className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-300"
+                                  disabled={
+                                    !hasPermission(PERMISSIONS.EDIT_CONTRACT)
+                                  }
+                                  className={`p-2 rounded-lg transition-colors duration-300 ${
+                                    hasPermission(PERMISSIONS.EDIT_CONTRACT)
+                                      ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  }`}
                                 >
                                   <FiEdit size={18} />
                                 </motion.button>
+
                                 <motion.button
-                                  whileHover={{ scale: 1.1 }}
-                                  whileTap={{ scale: 0.95 }}
+                                  data-tooltip-id="action-tooltip"
+                                  data-tooltip-content={
+                                    !hasPermission(PERMISSIONS.DELETE_CONTRACT)
+                                      ? "You don't have permission to delete contracts"
+                                      : ''
+                                  }
+                                  whileHover={
+                                    hasPermission(PERMISSIONS.DELETE_CONTRACT)
+                                      ? { scale: 1.1 }
+                                      : {}
+                                  }
+                                  whileTap={
+                                    hasPermission(PERMISSIONS.DELETE_CONTRACT)
+                                      ? { scale: 0.95 }
+                                      : {}
+                                  }
                                   onClick={() => handleDelete(contract.id)}
-                                  className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-300"
+                                  disabled={
+                                    !hasPermission(PERMISSIONS.DELETE_CONTRACT)
+                                  }
+                                  className={`p-2 rounded-lg transition-colors duration-300 ${
+                                    hasPermission(PERMISSIONS.DELETE_CONTRACT)
+                                      ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                      : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  }`}
                                 >
                                   <RiDeleteBin6Line size={18} />
                                 </motion.button>
                               </div>
+
+                              <Tooltip
+                                id="action-tooltip"
+                                place="top"
+                                className="!bg-gray-900 text-white px-3 py-2 rounded-lg text-sm"
+                              />
                             </td>
                           </motion.tr>
                         ))}

@@ -8,9 +8,13 @@ import UpdateMaterialModal from './UpdateMaterialModal';
 import { AdminApi } from '../../../Services/AdminApi';
 import SuccessModal from './SuccessModal';
 import ConfirmationModal from './ConfirmationModal';
+import usePermissions, { PERMISSIONS } from '../../../Hooks/userPermission';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 
 const ViewMaterial = () => {
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
   const [materials, setMaterials] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -50,14 +54,18 @@ const ViewMaterial = () => {
   };
 
   const handleEdit = (materialId) => {
-    const material = materials.find((m) => m.id === materialId);
-    setSelectedMaterial(material);
-    setIsUpdateModalOpen(true);
+    if (hasPermission(PERMISSIONS.EDIT_MATERIAL)) {
+      const material = materials.find((m) => m.id === materialId);
+      setSelectedMaterial(material);
+      setIsUpdateModalOpen(true);
+    }
   };
 
   const handleDeleteClick = (material) => {
-    setMaterialToDelete(material);
-    setShowConfirmation(true);
+    if (hasPermission(PERMISSIONS.DELETE_MATERIAL)) {
+      setMaterialToDelete(material);
+      setShowConfirmation(true);
+    }
   };
 
   const handleDeleteConfirm = async () => {
@@ -190,18 +198,58 @@ const ViewMaterial = () => {
                       <td className="px-8 py-5 w-32">
                         <div className="flex items-center space-x-4">
                           <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
+                            data-tooltip-id="action-tooltip"
+                            data-tooltip-content={
+                              !hasPermission(PERMISSIONS.EDIT_MATERIAL)
+                                ? "You don't have permission to edit materials"
+                                : ''
+                            }
+                            whileHover={
+                              hasPermission(PERMISSIONS.EDIT_MATERIAL)
+                                ? { scale: 1.1 }
+                                : {}
+                            }
+                            whileTap={
+                              hasPermission(PERMISSIONS.EDIT_MATERIAL)
+                                ? { scale: 0.95 }
+                                : {}
+                            }
                             onClick={() => handleEdit(material.id)}
-                            className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-300"
+                            disabled={!hasPermission(PERMISSIONS.EDIT_MATERIAL)}
+                            className={`p-2 rounded-lg transition-colors duration-300 ${
+                              hasPermission(PERMISSIONS.EDIT_MATERIAL)
+                                ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
                           >
                             <FiEdit size={18} />
                           </motion.button>
                           <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
+                            data-tooltip-id="action-tooltip"
+                            data-tooltip-content={
+                              !hasPermission(PERMISSIONS.DELETE_MATERIAL)
+                                ? "You don't have permission to delete materials"
+                                : ''
+                            }
+                            whileHover={
+                              hasPermission(PERMISSIONS.DELETE_MATERIAL)
+                                ? { scale: 1.1 }
+                                : {}
+                            }
+                            whileTap={
+                              hasPermission(PERMISSIONS.DELETE_MATERIAL)
+                                ? { scale: 0.95 }
+                                : {}
+                            }
                             onClick={() => handleDeleteClick(material)}
-                            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-300"
+                            disabled={
+                              !hasPermission(PERMISSIONS.DELETE_MATERIAL)
+                            }
+                            className={`p-2 rounded-lg transition-colors duration-300 ${
+                              hasPermission(PERMISSIONS.DELETE_MATERIAL)
+                                ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
                           >
                             <RiDeleteBin6Line size={18} />
                           </motion.button>
@@ -289,6 +337,12 @@ const ViewMaterial = () => {
         onConfirm={handleDeleteConfirm}
         title="Delete Material"
         message={`Are you sure you want to delete "${materialToDelete?.name}"? This action cannot be undone.`}
+      />
+
+      <Tooltip
+        id="action-tooltip"
+        place="top"
+        className="!bg-gray-900 text-white px-3 py-2 rounded-lg text-sm"
       />
     </div>
   );

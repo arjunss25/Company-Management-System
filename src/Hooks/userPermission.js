@@ -7,7 +7,7 @@ export const PERMISSIONS = {
   VIEW_DASHBOARD: 'view_dashboard',
   VIEW_CLIENTS: 'view_clients',
   VIEW_LOCATIONS: 'view_locations',
-
+  
   // User Management permissions
   VIEW_USER_MANAGEMENT: 'view_user_management',
   CREATE_USER: 'create_user',
@@ -221,5 +221,4 @@ const usePermissions = () => {
     canPerformAction,
   };
 };
-
 export default usePermissions;

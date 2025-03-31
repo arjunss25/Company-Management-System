@@ -67,6 +67,8 @@ import RetentionInvoiceSubmitted from '../Components/AdminComponents/Quotation/R
 import InvoiceSubmitted from '../Components/AdminComponents/Quotation/DocumentationStatus/InvoiceSubmitted';
 import UserrightsSuperadmin from '../Components/SuperadminComponents/UserrightsSuperadmin';
 
+import TokenService from '../Config/tokenService';
+
 const quotationRelatedPermissions = [
   PERMISSIONS.VIEW_QUOTATIONS,
   PERMISSIONS.CREATE_QUOTATION,
@@ -93,6 +95,81 @@ const quotationRelatedPermissions = [
   PERMISSIONS.VIEW_RETENTION_INVOICE_SUBMITTED,
 ];
 
+const contractRelatedPermissions = [
+  PERMISSIONS.VIEW_CONTRACTS,
+  PERMISSIONS.CREATE_CONTRACT,
+  PERMISSIONS.EDIT_CONTRACT,
+  PERMISSIONS.DELETE_CONTRACT,
+  PERMISSIONS.VIEW_RATE_CARDS,
+  PERMISSIONS.CREATE_RATE_CARD,
+  PERMISSIONS.EDIT_RATE_CARD,
+  PERMISSIONS.DELETE_RATE_CARD,
+  PERMISSIONS.VIEW_RATE_CARD_ITEMS,
+  PERMISSIONS.CREATE_RATE_CARD_ITEMS,
+  PERMISSIONS.EDIT_RATE_CARD_ITEMS,
+  PERMISSIONS.DELETE_RATE_CARD_ITEMS,
+];
+
+const materialRelatedPermissions = [
+  PERMISSIONS.VIEW_MATERIALS,
+  PERMISSIONS.CREATE_MATERIAL,
+  PERMISSIONS.EDIT_MATERIAL,
+  PERMISSIONS.DELETE_MATERIAL,
+  PERMISSIONS.VIEW_MATERIAL_REQUESTS,
+  PERMISSIONS.CREATE_MATERIAL_REQUEST,
+  PERMISSIONS.MANAGE_MATERIAL_REQUESTS,
+  PERMISSIONS.VIEW_MATERIAL_CONSUMPTION,
+  PERMISSIONS.MANAGE_STORE,
+];
+
+const termsRelatedPermissions = [
+  PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+  PERMISSIONS.CREATE_TERMS_AND_CONDITIONS,
+  PERMISSIONS.VIEW_GENERAL_TERMS,
+  PERMISSIONS.CREATE_GENERAL_TERMS,
+  PERMISSIONS.VIEW_PAYMENT_TERMS,
+  PERMISSIONS.CREATE_PAYMENT_TERMS,
+  PERMISSIONS.VIEW_COMPLETION_TERMS,
+  PERMISSIONS.CREATE_COMPLETION_TERMS,
+  PERMISSIONS.VIEW_QUOTATION_TERMS,
+  PERMISSIONS.CREATE_QUOTATION_TERMS,
+  PERMISSIONS.VIEW_WARRANTY_TERMS,
+  PERMISSIONS.CREATE_WARRANTY_TERMS,
+];
+
+
+
+const clientLocationPermissions = [
+  PERMISSIONS.VIEW_CLIENTS,
+  PERMISSIONS.LIST_CLIENTS,
+  PERMISSIONS.CREATE_CLIENT,
+  PERMISSIONS.EDIT_CLIENT,
+  PERMISSIONS.DELETE_CLIENT,
+  PERMISSIONS.VIEW_LOCATIONS,
+  PERMISSIONS.LIST_LOCATIONS,
+  PERMISSIONS.CREATE_LOCATION,
+  PERMISSIONS.EDIT_LOCATION,
+  PERMISSIONS.DELETE_LOCATION,
+  PERMISSIONS.MANAGE_CLIENTS,
+  PERMISSIONS.MANAGE_LOCATIONS,
+  ];
+
+
+  const contractDashboardPermissions = [
+    PERMISSIONS.VIEW_CONTRACTS,
+    PERMISSIONS.CREATE_CONTRACT,
+    PERMISSIONS.EDIT_CONTRACT,
+    PERMISSIONS.DELETE_CONTRACT,
+    PERMISSIONS.VIEW_RATE_CARDS,
+    PERMISSIONS.CREATE_RATE_CARD,
+    PERMISSIONS.EDIT_RATE_CARD,
+    PERMISSIONS.DELETE_RATE_CARD,
+    PERMISSIONS.VIEW_RATE_CARD_ITEMS,
+    PERMISSIONS.CREATE_RATE_CARD_ITEMS,
+    PERMISSIONS.EDIT_RATE_CARD_ITEMS,
+    PERMISSIONS.DELETE_RATE_CARD_ITEMS,
+    ];
+    
 const AppRoutes = () => {
   return (
     <Routes>
@@ -156,12 +233,14 @@ const AppRoutes = () => {
             />
           }
         />
+        
+        
         <Route
           path="client-location"
           element={
             <ProtectedRoute
-              allowedRoles={['admin', 'SuperAdmin']}
-              allowedPermissions={['view_clients', 'view_locations']}
+              allowedPermissions={clientLocationPermissions}
+              requiresAllPermissions={false}
               element={<ClientLocationDashboard />}
             />
           }
@@ -185,14 +264,15 @@ const AppRoutes = () => {
           }
         />
         <Route
-          path="material-dashboard"
-          element={
-            <ProtectedRoute
-              allowedPermissions={['view_materials']}
-              element={<MaterialDashboard />}
-            />
-          }
-        />
+  path="material-dashboard"
+  element={
+    <ProtectedRoute
+      allowedPermissions={materialRelatedPermissions}
+      requiresAllPermissions={false}
+      element={<MaterialDashboard />}
+    />
+  }
+/>
         <Route
           path="view-material"
           element={
@@ -253,7 +333,22 @@ const AppRoutes = () => {
           path="terms-and-conditions-dashboard"
           element={
             <ProtectedRoute
-              allowedPermissions={['view_terms_and_conditions']}
+              allowedRoles={['admin', 'SuperAdmin', 'Staff', 'Sales Person']}
+              allowedPermissions={[
+                PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+                PERMISSIONS.CREATE_TERMS_AND_CONDITIONS,
+                PERMISSIONS.VIEW_GENERAL_TERMS,
+                PERMISSIONS.CREATE_GENERAL_TERMS,
+                PERMISSIONS.VIEW_PAYMENT_TERMS,
+                PERMISSIONS.CREATE_PAYMENT_TERMS,
+                PERMISSIONS.VIEW_COMPLETION_TERMS,
+                PERMISSIONS.CREATE_COMPLETION_TERMS,
+                PERMISSIONS.VIEW_QUOTATION_TERMS,
+                PERMISSIONS.CREATE_QUOTATION_TERMS,
+                PERMISSIONS.VIEW_WARRANTY_TERMS,
+                PERMISSIONS.CREATE_WARRANTY_TERMS,
+              ]}
+              requiresAllPermissions={false}
               element={<TermsandConditionDashboard />}
             />
           }
@@ -262,7 +357,14 @@ const AppRoutes = () => {
           path="general-terms"
           element={
             <ProtectedRoute
-              allowedPermissions={['view_general_terms']}
+              allowedRoles={['admin', 'SuperAdmin', 'Staff', 'Sales Person']}
+              allowedPermissions={[
+                PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+                PERMISSIONS.CREATE_TERMS_AND_CONDITIONS,
+                PERMISSIONS.VIEW_GENERAL_TERMS,
+                PERMISSIONS.CREATE_GENERAL_TERMS,
+              ]}
+              requiresAllPermissions={false}
               element={<GeneralTermsandCondition />}
             />
           }
@@ -271,7 +373,14 @@ const AppRoutes = () => {
           path="payment-terms"
           element={
             <ProtectedRoute
-              allowedPermissions={['view_payment_terms']}
+              allowedRoles={['admin', 'SuperAdmin', 'Staff', 'Sales Person']}
+              allowedPermissions={[
+                PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+                PERMISSIONS.CREATE_TERMS_AND_CONDITIONS,
+                PERMISSIONS.VIEW_PAYMENT_TERMS,
+                PERMISSIONS.CREATE_PAYMENT_TERMS,
+              ]}
+              requiresAllPermissions={false}
               element={<Paymentterms />}
             />
           }
@@ -280,7 +389,12 @@ const AppRoutes = () => {
           path="completion-delivery"
           element={
             <ProtectedRoute
-              allowedPermissions={['view_completion_terms']}
+              allowedRoles={['admin', 'SuperAdmin', 'Staff', 'Sales Person']}
+              allowedPermissions={[
+                PERMISSIONS.VIEW_COMPLETION_TERMS,
+                PERMISSIONS.CREATE_COMPLETION_TERMS,
+              ]}
+              requiresAllPermissions={false}
               element={<CompletionandDelivery />}
             />
           }
@@ -289,7 +403,12 @@ const AppRoutes = () => {
           path="quotation-validity"
           element={
             <ProtectedRoute
-              allowedPermissions={['view_quotation_terms']}
+              allowedRoles={['admin', 'SuperAdmin', 'Staff', 'Sales Person']}
+              allowedPermissions={[
+                PERMISSIONS.VIEW_QUOTATION_TERMS,
+                PERMISSIONS.CREATE_QUOTATION_TERMS,
+              ]}
+              requiresAllPermissions={false}
               element={<Quotationvalidity />}
             />
           }
@@ -298,22 +417,19 @@ const AppRoutes = () => {
           path="warranty-terms"
           element={
             <ProtectedRoute
-              allowedPermissions={['view_warranty_terms']}
+              allowedRoles={['admin', 'SuperAdmin', 'Staff', 'Sales Person']}
+              allowedPermissions={[
+                PERMISSIONS.VIEW_WARRANTY_TERMS,
+                PERMISSIONS.CREATE_WARRANTY_TERMS,
+              ]}
+              requiresAllPermissions={false}
               element={<Warranty />}
             />
           }
         />
 
         {/* Contract Routes */}
-        <Route
-          path="contract-dashboard"
-          element={
-            <ProtectedRoute
-              allowedPermissions={['view_contracts']}
-              element={<ContractDashboard />}
-            />
-          }
-        />
+        
         <Route
           path="add-rate-card"
           element={
@@ -327,7 +443,8 @@ const AppRoutes = () => {
           path="view-rate-card"
           element={
             <ProtectedRoute
-              allowedPermissions={['view_rate_cards']}
+              allowedRoles={['admin', 'SuperAdmin', 'Sales Person']}
+              allowedPermissions={[PERMISSIONS.VIEW_RATE_CARDS]}
               element={<ViewRateCard />}
             />
           }
@@ -345,7 +462,8 @@ const AppRoutes = () => {
           path="add-contract"
           element={
             <ProtectedRoute
-              allowedPermissions={['create_contract']}
+              allowedRoles={['admin', 'SuperAdmin', 'Sales Person']}
+              allowedPermissions={[PERMISSIONS.CREATE_CONTRACT]}
               element={<AddContract />}
             />
           }
@@ -354,7 +472,8 @@ const AppRoutes = () => {
           path="active-contracts"
           element={
             <ProtectedRoute
-              allowedPermissions={['view_contracts']}
+              allowedRoles={['admin', 'SuperAdmin', 'Sales Person']}
+              allowedPermissions={[PERMISSIONS.VIEW_CONTRACTS]}
               element={<ActiveContract />}
             />
           }
@@ -363,7 +482,8 @@ const AppRoutes = () => {
           path="expired-contracts"
           element={
             <ProtectedRoute
-              allowedPermissions={['view_contracts']}
+              allowedRoles={['admin', 'SuperAdmin', 'Sales Person']}
+              allowedPermissions={[PERMISSIONS.VIEW_CONTRACTS]}
               element={<ExpiredContracts />}
             />
           }
@@ -372,7 +492,8 @@ const AppRoutes = () => {
           path="expiring-contracts"
           element={
             <ProtectedRoute
-              allowedPermissions={['view_contracts']}
+              allowedRoles={['admin', 'SuperAdmin', 'Sales Person']}
+              allowedPermissions={[PERMISSIONS.VIEW_CONTRACTS]}
               element={<ExpiringSoon />}
             />
           }
@@ -381,7 +502,8 @@ const AppRoutes = () => {
           path="view-rate-card-items"
           element={
             <ProtectedRoute
-              allowedPermissions={['view_rate_cards']}
+              allowedRoles={['admin', 'SuperAdmin', 'Sales Person']}
+              allowedPermissions={[PERMISSIONS.VIEW_RATE_CARD_ITEMS]}
               element={<ViewRateCardItems />}
             />
           }
@@ -392,7 +514,13 @@ const AppRoutes = () => {
           path="user-management"
           element={
             <ProtectedRoute
-              allowedPermissions={['view_user_management']}
+              allowedPermissions={[
+                PERMISSIONS.VIEW_USER_MANAGEMENT,
+                PERMISSIONS.VIEW_USER_DETAILS,
+                PERMISSIONS.CREATE_USER,
+                PERMISSIONS.MANAGE_USER_PERMISSIONS,
+              ]}
+              requiresAllPermissions={false}
               element={<UsermanagementDashboard />}
             />
           }
@@ -401,7 +529,143 @@ const AppRoutes = () => {
           path="staff-details"
           element={
             <ProtectedRoute
-              allowedPermissions={['view_user_details']}
+              allowedPermissions={[
+                PERMISSIONS.VIEW_USER_MANAGEMENT,
+                PERMISSIONS.VIEW_USER_DETAILS,
+              ]}
+              requiresAllPermissions={false}
+              element={<Staffdetails />}
+            />
+          }
+        />
+        <Route
+          path="user-rights/:userId"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[PERMISSIONS.MANAGE_USER_PERMISSIONS]}
+              element={<Userrights />}
+            />
+          }
+        />
+
+        {/* Quotation Routes */}
+        
+        {/* Contract Routes */}
+        <Route
+          path="contract-dashboard"
+          element={
+            <ProtectedRoute
+              allowedPermissions={contractDashboardPermissions}
+              requiresAllPermissions={false}
+              element={<ContractDashboard />}
+            />
+          }
+        />
+        
+        <Route
+          path="add-rate-card"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['create_rate_card']}
+              element={<AddRateCardModal />}
+            />
+          }
+        />
+        <Route
+          path="view-rate-card"
+          element={
+            <ProtectedRoute
+              allowedRoles={['admin', 'SuperAdmin', 'Sales Person']}
+              allowedPermissions={[PERMISSIONS.VIEW_RATE_CARDS]}
+              element={<ViewRateCard />}
+            />
+          }
+        />
+        <Route
+          path="update-rate-card/:id"
+          element={
+            <ProtectedRoute
+              allowedPermissions={['edit_rate_card']}
+              element={<UpdateRateCardModal />}
+            />
+          }
+        />
+        <Route
+          path="add-contract"
+          element={
+            <ProtectedRoute
+              allowedRoles={['admin', 'SuperAdmin', 'Sales Person']}
+              allowedPermissions={[PERMISSIONS.CREATE_CONTRACT]}
+              element={<AddContract />}
+            />
+          }
+        />
+        <Route
+          path="active-contracts"
+          element={
+            <ProtectedRoute
+              allowedRoles={['admin', 'SuperAdmin', 'Sales Person']}
+              allowedPermissions={[PERMISSIONS.VIEW_CONTRACTS]}
+              element={<ActiveContract />}
+            />
+          }
+        />
+        <Route
+          path="expired-contracts"
+          element={
+            <ProtectedRoute
+              allowedRoles={['admin', 'SuperAdmin', 'Sales Person']}
+              allowedPermissions={[PERMISSIONS.VIEW_CONTRACTS]}
+              element={<ExpiredContracts />}
+            />
+          }
+        />
+        <Route
+          path="expiring-contracts"
+          element={
+            <ProtectedRoute
+              allowedRoles={['admin', 'SuperAdmin', 'Sales Person']}
+              allowedPermissions={[PERMISSIONS.VIEW_CONTRACTS]}
+              element={<ExpiringSoon />}
+            />
+          }
+        />
+        <Route
+          path="view-rate-card-items"
+          element={
+            <ProtectedRoute
+              allowedRoles={['admin', 'SuperAdmin', 'Sales Person']}
+              allowedPermissions={[PERMISSIONS.VIEW_RATE_CARD_ITEMS]}
+              element={<ViewRateCardItems />}
+            />
+          }
+        />
+
+        {/* User Management Routes */}
+        <Route
+          path="user-management"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_USER_MANAGEMENT,
+                PERMISSIONS.VIEW_USER_DETAILS,
+                PERMISSIONS.CREATE_USER,
+                PERMISSIONS.MANAGE_USER_PERMISSIONS,
+              ]}
+              requiresAllPermissions={false}
+              element={<UsermanagementDashboard />}
+            />
+          }
+        />
+        <Route
+          path="staff-details"
+          element={
+            <ProtectedRoute
+              allowedPermissions={[
+                PERMISSIONS.VIEW_USER_MANAGEMENT,
+                PERMISSIONS.VIEW_USER_DETAILS,
+              ]}
+              requiresAllPermissions={false}
               element={<Staffdetails />}
             />
           }

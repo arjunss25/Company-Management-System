@@ -13,6 +13,10 @@ import LoadingSpinner from '../../../Common/LoadingSpinner';
 import SuccessModal from '../../../Common/SuccessModal';
 import CancelConfirmationModal from '../CancelConfirmationModal';
 import { CiFileOn } from 'react-icons/ci';
+import usePermissions from '../../../../Hooks/userPermission';
+import { PERMISSIONS } from '../../../../Hooks/userPermission';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 
 const RetentionInvoicePending = () => {
   const navigate = useNavigate();
@@ -36,6 +40,8 @@ const RetentionInvoicePending = () => {
 
   // Add new state for date filter loading
   const [isDateFilterLoading, setIsDateFilterLoading] = useState(false);
+
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     // Only fetch all quotations when there are no date filters
@@ -117,29 +123,30 @@ const RetentionInvoicePending = () => {
   };
 
   const handlePrintPDF = async (quotationId) => {
-    try {
-      setLoadingPdfId(quotationId);
-      const response = await axiosInstance.get(
-        `/download-quotation-pdf/${quotationId}/`,
-        {
-          responseType: 'blob',
-        }
-      );
-
-      const file = new Blob([response.data], { type: 'application/pdf' });
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL);
-      URL.revokeObjectURL(fileURL);
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-    } finally {
-      setLoadingPdfId(null);
+    if (hasPermission(PERMISSIONS.EXPORT_RETENTION_INVOICE_PENDING)) {
+      try {
+        setLoadingPdfId(quotationId);
+        const response = await axiosInstance.get(
+          `/download-quotation-pdf/${quotationId}/`,
+          { responseType: 'blob' }
+        );
+        const file = new Blob([response.data], { type: 'application/pdf' });
+        const fileURL = URL.createObjectURL(file);
+        window.open(fileURL);
+        URL.revokeObjectURL(fileURL);
+      } catch (error) {
+        console.error('Error downloading PDF:', error);
+      } finally {
+        setLoadingPdfId(null);
+      }
     }
   };
 
   const handleCancel = (quotation) => {
-    setQuotationToCancel(quotation);
-    setIsCancelModalOpen(true);
+    if (hasPermission(PERMISSIONS.DELETE_RETENTION_INVOICE_PENDING)) {
+      setQuotationToCancel(quotation);
+      setIsCancelModalOpen(true);
+    }
   };
 
   const handleConfirmCancel = async () => {
@@ -214,6 +221,26 @@ const RetentionInvoicePending = () => {
     setDateFilters({ dateFrom: '', dateTo: '' });
     setCurrentPage(1); // Reset to first page
     fetchQuotations(); // Fetch all quotations again
+  };
+
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = startPage + maxVisiblePages - 1;
+
+    if (endPage > totalPages) {
+      endPage = totalPages;
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push({
+        number: i,
+        key: `page-${i}`,
+      });
+    }
+    return pageNumbers;
   };
 
   return (
@@ -390,21 +417,82 @@ const RetentionInvoicePending = () => {
                           <div className="flex items-center space-x-4">
                             {!quotation.is_cancelled && (
                               <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
+                                data-tooltip-id="action-tooltip"
+                                data-tooltip-content={
+                                  !hasPermission(
+                                    PERMISSIONS.DELETE_RETENTION_INVOICE_PENDING
+                                  )
+                                    ? "You don't have permission to cancel retention invoice pending quotations"
+                                    : ''
+                                }
+                                whileHover={
+                                  hasPermission(
+                                    PERMISSIONS.DELETE_RETENTION_INVOICE_PENDING
+                                  )
+                                    ? { scale: 1.1 }
+                                    : {}
+                                }
+                                whileTap={
+                                  hasPermission(
+                                    PERMISSIONS.DELETE_RETENTION_INVOICE_PENDING
+                                  )
+                                    ? { scale: 0.95 }
+                                    : {}
+                                }
                                 onClick={() => handleCancel(quotation)}
-                                className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-300"
+                                disabled={
+                                  !hasPermission(
+                                    PERMISSIONS.DELETE_RETENTION_INVOICE_PENDING
+                                  )
+                                }
+                                className={`p-2 rounded-lg transition-colors duration-300 ${
+                                  hasPermission(
+                                    PERMISSIONS.DELETE_RETENTION_INVOICE_PENDING
+                                  )
+                                    ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                }`}
                               >
                                 <FcCancel size={18} />
                               </motion.button>
                             )}
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
+                              data-tooltip-id="action-tooltip"
+                              data-tooltip-content={
+                                !hasPermission(
+                                  PERMISSIONS.EXPORT_RETENTION_INVOICE_PENDING
+                                )
+                                  ? "You don't have permission to export retention invoice pending quotations"
+                                  : loadingPdfId === quotation.id
+                                  ? 'Generating PDF...'
+                                  : ''
+                              }
+                              whileHover={
+                                hasPermission(
+                                  PERMISSIONS.EXPORT_RETENTION_INVOICE_PENDING
+                                ) && !loadingPdfId
+                                  ? { scale: 1.1 }
+                                  : {}
+                              }
+                              whileTap={
+                                hasPermission(
+                                  PERMISSIONS.EXPORT_RETENTION_INVOICE_PENDING
+                                ) && !loadingPdfId
+                                  ? { scale: 0.95 }
+                                  : {}
+                              }
                               onClick={() => handlePrintPDF(quotation.id)}
-                              disabled={loadingPdfId === quotation.id}
+                              disabled={
+                                !hasPermission(
+                                  PERMISSIONS.EXPORT_RETENTION_INVOICE_PENDING
+                                ) || loadingPdfId === quotation.id
+                              }
                               className={`p-2 rounded-lg transition-colors duration-300 ${
-                                loadingPdfId === quotation.id
+                                !hasPermission(
+                                  PERMISSIONS.EXPORT_RETENTION_INVOICE_PENDING
+                                )
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : loadingPdfId === quotation.id
                                   ? 'bg-gray-100 cursor-not-allowed'
                                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                               }`}
@@ -437,6 +525,11 @@ const RetentionInvoicePending = () => {
                               )}
                             </motion.button>
                           </div>
+                          <Tooltip
+                            id="action-tooltip"
+                            place="top"
+                            className="!bg-gray-900 text-white px-3 py-2 rounded-lg text-sm"
+                          />
                         </td>
                       </motion.tr>
                     ))}
@@ -452,24 +545,19 @@ const RetentionInvoicePending = () => {
                   Page {currentPage} of {totalPages}
                 </div>
                 <div className="flex items-center space-x-2">
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.max(1, prev - 1))
-                    }
-                    disabled={currentPage === 1}
-                    className="px-4 py-2 rounded-lg bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Previous
-                  </button>
-                  <button
-                    onClick={() =>
-                      setCurrentPage((prev) => Math.min(totalPages, prev + 1))
-                    }
-                    disabled={currentPage === totalPages}
-                    className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition-colors duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    Next
-                  </button>
+                  {getPageNumbers().map((page) => (
+                    <button
+                      key={page.key}
+                      onClick={() => setCurrentPage(page.number)}
+                      className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
+                        currentPage === page.number
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                      }`}
+                    >
+                      {page.number}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}

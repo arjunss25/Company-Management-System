@@ -5,6 +5,10 @@ import { IoArrowBack } from 'react-icons/io5';
 import { motion } from 'framer-motion';
 import usePermissions, { PERMISSIONS } from '../../../Hooks/userPermission';
 import { AdminApi } from '../../../Services/AdminApi';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
+import { FiEdit } from 'react-icons/fi';
+import { MdDelete } from 'react-icons/md';
 
 // Notification Modal Component
 const NotificationModal = ({ isOpen, type, message, onClose }) => {
@@ -416,27 +420,70 @@ const ClientTable = () => {
                           {client.attentions.map((att) => att.name).join(', ')}
                         </span>
                       </td> */}
-                      <td className="px-6 py-5 space-x-2 flex gap-2">
-                        {hasPermission(PERMISSIONS.EDIT_CLIENT) && (
+                      <td className="px-6 py-5">
+                        <div className="flex items-center space-x-4 justify-center">
                           <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            data-tooltip-id="action-tooltip"
+                            data-tooltip-content={
+                              !hasPermission(PERMISSIONS.EDIT_CLIENT)
+                                ? "You don't have permission to edit clients"
+                                : ''
+                            }
+                            whileHover={
+                              hasPermission(PERMISSIONS.EDIT_CLIENT)
+                                ? { scale: 1.1 }
+                                : {}
+                            }
+                            whileTap={
+                              hasPermission(PERMISSIONS.EDIT_CLIENT)
+                                ? { scale: 0.95 }
+                                : {}
+                            }
                             onClick={() => handleEdit(client)}
-                            className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300"
+                            disabled={!hasPermission(PERMISSIONS.EDIT_CLIENT)}
+                            className={`p-2 rounded-lg transition-colors duration-300 ${
+                              hasPermission(PERMISSIONS.EDIT_CLIENT)
+                                ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
                           >
-                            Edit
+                            <FiEdit size={18} />
                           </motion.button>
-                        )}
-                        {hasPermission(PERMISSIONS.DELETE_CLIENT) && (
+
                           <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            data-tooltip-id="action-tooltip"
+                            data-tooltip-content={
+                              !hasPermission(PERMISSIONS.DELETE_CLIENT)
+                                ? "You don't have permission to delete clients"
+                                : ''
+                            }
+                            whileHover={
+                              hasPermission(PERMISSIONS.DELETE_CLIENT)
+                                ? { scale: 1.1 }
+                                : {}
+                            }
+                            whileTap={
+                              hasPermission(PERMISSIONS.DELETE_CLIENT)
+                                ? { scale: 0.95 }
+                                : {}
+                            }
                             onClick={() => handleDeleteClick(client)}
-                            className="px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-700 transition-colors duration-300"
+                            disabled={!hasPermission(PERMISSIONS.DELETE_CLIENT)}
+                            className={`p-2 rounded-lg transition-colors duration-300 ${
+                              hasPermission(PERMISSIONS.DELETE_CLIENT)
+                                ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
                           >
-                            Delete
+                            <MdDelete size={18} />
                           </motion.button>
-                        )}
+                        </div>
+
+                        <Tooltip
+                          id="action-tooltip"
+                          place="top"
+                          className="!bg-gray-900 text-white px-3 py-2 rounded-lg text-sm"
+                        />
                       </td>
                     </motion.tr>
                   ))}

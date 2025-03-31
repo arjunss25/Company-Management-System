@@ -7,9 +7,13 @@ import { motion } from 'framer-motion';
 import UpdateRateCardModal from './UpdateRateCardModal';
 import DeleteConfirmationModal from './DeleteConfirmationModal';
 import { AdminApi } from '../../../Services/AdminApi';
+import usePermissions, { PERMISSIONS } from '../../../Hooks/userPermission';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 
 const ViewRateCard = () => {
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
   const [rateCards, setRateCards] = useState([]);
   const [selectedRateCard, setSelectedRateCard] = useState(null);
   const [isUpdateModalOpen, setIsUpdateModalOpen] = useState(false);
@@ -30,25 +34,31 @@ const ViewRateCard = () => {
   }, []);
 
   const handleEdit = async (rateCard) => {
-    setSelectedRateCard(rateCard);
-    setIsUpdateModalOpen(true);
+    if (hasPermission(PERMISSIONS.EDIT_RATE_CARD)) {
+      setSelectedRateCard(rateCard);
+      setIsUpdateModalOpen(true);
+    }
   };
 
   const handleDelete = (rateCard) => {
-    setRateCardToDelete(rateCard);
-    setIsDeleteModalOpen(true);
+    if (hasPermission(PERMISSIONS.DELETE_RATE_CARD)) {
+      setRateCardToDelete(rateCard);
+      setIsDeleteModalOpen(true);
+    }
   };
 
   const handleConfirmDelete = async () => {
-    try {
-      await AdminApi.deleteRateCard(rateCardToDelete.id);
-      setRateCards((prev) =>
-        prev.filter((card) => card.id !== rateCardToDelete.id)
-      );
-      setIsDeleteModalOpen(false);
-      setRateCardToDelete(null);
-    } catch (error) {
-      console.error('Error deleting rate card:', error);
+    if (rateCardToDelete && hasPermission(PERMISSIONS.DELETE_RATE_CARD)) {
+      try {
+        await AdminApi.deleteRateCard(rateCardToDelete.id);
+        setRateCards((prev) =>
+          prev.filter((card) => card.id !== rateCardToDelete.id)
+        );
+        setIsDeleteModalOpen(false);
+        setRateCardToDelete(null);
+      } catch (error) {
+        console.error('Error deleting rate card:', error);
+      }
     }
   };
 
@@ -148,22 +158,71 @@ const ViewRateCard = () => {
                       <td className="px-8 py-5">
                         <div className="flex items-center space-x-4">
                           <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
+                            data-tooltip-id="action-tooltip"
+                            data-tooltip-content={
+                              !hasPermission(PERMISSIONS.EDIT_RATE_CARD)
+                                ? "You don't have permission to edit rate cards"
+                                : ''
+                            }
+                            whileHover={
+                              hasPermission(PERMISSIONS.EDIT_RATE_CARD)
+                                ? { scale: 1.1 }
+                                : {}
+                            }
+                            whileTap={
+                              hasPermission(PERMISSIONS.EDIT_RATE_CARD)
+                                ? { scale: 0.95 }
+                                : {}
+                            }
                             onClick={() => handleEdit(rateCard)}
-                            className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-300"
+                            disabled={
+                              !hasPermission(PERMISSIONS.EDIT_RATE_CARD)
+                            }
+                            className={`p-2 rounded-lg transition-colors duration-300 ${
+                              hasPermission(PERMISSIONS.EDIT_RATE_CARD)
+                                ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
                           >
                             <FiEdit size={18} />
                           </motion.button>
+
                           <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
+                            data-tooltip-id="action-tooltip"
+                            data-tooltip-content={
+                              !hasPermission(PERMISSIONS.DELETE_RATE_CARD)
+                                ? "You don't have permission to delete rate cards"
+                                : ''
+                            }
+                            whileHover={
+                              hasPermission(PERMISSIONS.DELETE_RATE_CARD)
+                                ? { scale: 1.1 }
+                                : {}
+                            }
+                            whileTap={
+                              hasPermission(PERMISSIONS.DELETE_RATE_CARD)
+                                ? { scale: 0.95 }
+                                : {}
+                            }
                             onClick={() => handleDelete(rateCard)}
-                            className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-300"
+                            disabled={
+                              !hasPermission(PERMISSIONS.DELETE_RATE_CARD)
+                            }
+                            className={`p-2 rounded-lg transition-colors duration-300 ${
+                              hasPermission(PERMISSIONS.DELETE_RATE_CARD)
+                                ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
                           >
                             <RiDeleteBin6Line size={18} />
                           </motion.button>
                         </div>
+
+                        <Tooltip
+                          id="action-tooltip"
+                          place="top"
+                          className="!bg-gray-900 text-white px-3 py-2 rounded-lg text-sm"
+                        />
                       </td>
                     </motion.tr>
                   ))}

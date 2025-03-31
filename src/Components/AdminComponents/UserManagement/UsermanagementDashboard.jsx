@@ -7,9 +7,16 @@ import { AdminApi } from '../../../Services/AdminApi';
 import { Formik } from 'formik';
 import * as Yup from 'yup';
 import VerifyOtpModal from './VerifyOtpModal';
+import usePermissions, { PERMISSIONS } from '../../../Hooks/userPermission';
+import TokenService from '../../../Config/tokenService';
 
 const UsermanagementDashboard = () => {
   const navigate = useNavigate();
+  const { loading, error, hasPermission } = usePermissions();
+  const userRole = TokenService.getUserRole();
+  const isSuperAdmin = userRole === 'SuperAdmin';
+  const isAdmin = userRole === 'Admin';
+
   const [showModal, setShowModal] = useState(false);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [registeredStaffEmail, setRegisteredStaffEmail] = useState('');
@@ -36,24 +43,77 @@ const UsermanagementDashboard = () => {
       .matches(/^\d{10}$/, 'Enter a valid 10-digit phone number'),
   });
 
+  // Define user management related permissions
+  const userManagementPermissions = [
+    PERMISSIONS.VIEW_USER_MANAGEMENT,
+    PERMISSIONS.CREATE_USER,
+    PERMISSIONS.VIEW_USER_DETAILS,
+    PERMISSIONS.MANAGE_USER_PERMISSIONS,
+  ];
+
+  // Helper function to check if user has view permission
+  const hasViewPermission = () => {
+    // SuperAdmin and Admin should have access to everything
+    if (isSuperAdmin || isAdmin) return true;
+
+    // Check for view permission
+    return hasPermission(PERMISSIONS.VIEW_USER_MANAGEMENT);
+  };
+
   const cards = [
     {
       title: 'Add New User',
       count: '+',
       icon: <MdAddCircle size={30} />,
       iconColor: 'text-blue-500',
+      requiredPermission: PERMISSIONS.CREATE_USER,
     },
     {
       title: 'View Users',
       count: '21',
       icon: <FaEye size={30} />,
       iconColor: 'text-green-500',
+      requiredPermission: PERMISSIONS.VIEW_USER_DETAILS,
     },
   ];
 
+  // Filter cards based on permissions
+  const visibleCards = cards.filter((card) => {
+    // SuperAdmin and Admin see all cards
+    if (isSuperAdmin || isAdmin) return true;
+
+    // If user has VIEW_USER_MANAGEMENT, they should see the View Users card
+    if (
+      card.title === 'View Users' &&
+      hasPermission(PERMISSIONS.VIEW_USER_MANAGEMENT)
+    ) {
+      return true;
+    }
+
+    // For Add New User card, check for CREATE_USER permission
+    if (card.title === 'Add New User') {
+      return hasPermission(PERMISSIONS.CREATE_USER);
+    }
+
+    return false;
+  });
+
   const handleCardClick = (title) => {
-    if (title === 'Add New User') setShowModal(true);
-    else if (title === 'View Users') navigate('/admin/staff-details');
+    if (title === 'Add New User') {
+      // Only show modal if user has CREATE_USER permission
+      if (isSuperAdmin || isAdmin || hasPermission(PERMISSIONS.CREATE_USER)) {
+        setShowModal(true);
+      }
+    } else if (title === 'View Users') {
+      // Allow navigation if user has VIEW_USER_MANAGEMENT
+      if (
+        isSuperAdmin ||
+        isAdmin ||
+        hasPermission(PERMISSIONS.VIEW_USER_MANAGEMENT)
+      ) {
+        navigate('/admin/staff-details');
+      }
+    }
   };
 
   const handleSubmit = async (values, { resetForm }) => {
@@ -63,8 +123,8 @@ const UsermanagementDashboard = () => {
       // Convert date format from YYYY-MM-DD to DD-MM-YYYY
       const formattedDate = values.dateOfRegistration
         ? new Date(values.dateOfRegistration)
-          .toLocaleDateString('en-GB')
-          .replace(/\//g, '-')
+            .toLocaleDateString('en-GB')
+            .replace(/\//g, '-')
         : '';
 
       // Prepare form data
@@ -84,7 +144,7 @@ const UsermanagementDashboard = () => {
 
       // Call the API
       const response = await AdminApi.registerStaff(formData);
-      console.log('API Response:', response);  // Logs the API response
+      console.log('API Response:', response); // Logs the API response
 
       if (response.status === 'Success') {
         setRegisteredStaffEmail(values.username); // Assuming email is part of form values
@@ -92,10 +152,8 @@ const UsermanagementDashboard = () => {
         resetForm();
         setShowModal(false);
       }
-
-
     } catch (error) {
-      console.error('API Error:', error);  // Logs the API error
+      console.error('API Error:', error); // Logs the API error
       setNotification({
         isOpen: true,
         type: 'error',
@@ -106,11 +164,39 @@ const UsermanagementDashboard = () => {
     }
   };
 
-
-
   const closeNotification = () => {
     setNotification({ isOpen: false, type: '', message: '' });
   };
+
+  // Loading state check
+  if (loading) {
+    return (
+      <div className="w-full h-screen bg-gray-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+      </div>
+    );
+  }
+
+  // Error state check
+  if (error) {
+    return (
+      <div className="w-full h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-red-500">Error loading permissions: {error}</div>
+      </div>
+    );
+  }
+
+  // Check if user has view permission
+  if (!hasViewPermission()) {
+    return (
+      <div className="w-full h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-gray-500">
+          You don't have permission to access this section.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="w-full flex">
       <div className="main-content w-full">
@@ -124,7 +210,7 @@ const UsermanagementDashboard = () => {
         {/* cards-section */}
         <div className="cards-sec w-full p-8">
           <div className="cards-sec-inner w-full flex flex-wrap gap-4 justify-center">
-            {cards.map((card, index) => (
+            {visibleCards.map((card, index) => (
               <div
                 key={index}
                 className="card bg-white rounded-2xl shadow-sm hover:shadow-lg p-6 w-[240px] h-[210px] cursor-pointer
@@ -208,7 +294,6 @@ const UsermanagementDashboard = () => {
               validateOnChange={false}
               validateOnBlur={false}
             >
-
               {({
                 handleSubmit,
                 handleChange,
@@ -229,8 +314,11 @@ const UsermanagementDashboard = () => {
                         value={values.staffName}
                         onChange={handleChange}
                         placeholder="Enter staff name"
-                        className={`w-full p-3 border ${errors.staffName ? 'border-red-500' : 'border-gray-300'
-                          } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                        className={`w-full p-3 border ${
+                          errors.staffName
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
                       />
                       {errors.staffName && (
                         <p className="text-red-500 text-xs mt-1">
@@ -250,8 +338,11 @@ const UsermanagementDashboard = () => {
                         value={values.abbreviation}
                         onChange={handleChange}
                         placeholder="Enter abbreviation"
-                        className={`w-full p-3 border ${errors.abbreviation ? 'border-red-500' : 'border-gray-300'
-                          } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                        className={`w-full p-3 border ${
+                          errors.abbreviation
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
                       />
                       {errors.abbreviation && (
                         <p className="text-red-500 text-xs mt-1">
@@ -270,8 +361,9 @@ const UsermanagementDashboard = () => {
                           name="role"
                           value={values.role}
                           onChange={handleChange}
-                          className={`w-full p-3 border ${errors.role ? 'border-red-500' : 'border-gray-300'
-                            } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white pr-10`}
+                          className={`w-full p-3 border ${
+                            errors.role ? 'border-red-500' : 'border-gray-300'
+                          } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all appearance-none bg-white pr-10`}
                         >
                           <option value="">Select role</option>
                           <option value="Staff">Staff</option>
@@ -283,7 +375,9 @@ const UsermanagementDashboard = () => {
                         />
                       </div>
                       {errors.role && (
-                        <p className="text-red-500 text-xs mt-1">{errors.role}</p>
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.role}
+                        </p>
                       )}
                     </div>
 
@@ -298,8 +392,9 @@ const UsermanagementDashboard = () => {
                         value={values.username}
                         onChange={handleChange}
                         placeholder="Enter username"
-                        className={`w-full p-3 border ${errors.username ? 'border-red-500' : 'border-gray-300'
-                          } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                        className={`w-full p-3 border ${
+                          errors.username ? 'border-red-500' : 'border-gray-300'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
                       />
                       {errors.username && (
                         <p className="text-red-500 text-xs mt-1">
@@ -310,25 +405,37 @@ const UsermanagementDashboard = () => {
 
                     {/* Password */}
                     <div className="space-y-2">
-                      <label className="text-sm font-medium text-gray-700">Password</label>
+                      <label className="text-sm font-medium text-gray-700">
+                        Password
+                      </label>
                       <div className="relative">
                         <input
-                          type={showPassword ? "text" : "password"}
+                          type={showPassword ? 'text' : 'password'}
                           name="password"
                           value={values.password}
                           onChange={handleChange}
                           placeholder="Enter password"
-                          className={`w-full p-3 border ${errors.password ? 'border-red-500' : 'border-gray-300'} rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                          className={`w-full p-3 border ${
+                            errors.password
+                              ? 'border-red-500'
+                              : 'border-gray-300'
+                          } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
                         />
                         <div
                           onClick={() => setShowPassword(!showPassword)}
                           className="absolute inset-y-0 right-3 flex items-center cursor-pointer text-gray-500 hover:text-gray-700"
                         >
-                          {showPassword ? <FaEyeSlash size={20} /> : <FaEye size={20} />}
+                          {showPassword ? (
+                            <FaEyeSlash size={20} />
+                          ) : (
+                            <FaEye size={20} />
+                          )}
                         </div>
                       </div>
                       {errors.password && (
-                        <p className="text-red-500 text-xs mt-1">{errors.password}</p>
+                        <p className="text-red-500 text-xs mt-1">
+                          {errors.password}
+                        </p>
                       )}
                     </div>
 
@@ -342,8 +449,11 @@ const UsermanagementDashboard = () => {
                         name="dateOfRegistration"
                         value={values.dateOfRegistration}
                         onChange={handleChange}
-                        className={`w-full p-3 border ${errors.dateOfRegistration ? 'border-red-500' : 'border-gray-300'
-                          } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                        className={`w-full p-3 border ${
+                          errors.dateOfRegistration
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
                       />
                       {errors.dateOfRegistration && (
                         <p className="text-red-500 text-xs mt-1">
@@ -363,8 +473,11 @@ const UsermanagementDashboard = () => {
                         value={values.phoneNumber}
                         onChange={handleChange}
                         placeholder="Enter phone number"
-                        className={`w-full p-3 border ${errors.phoneNumber ? 'border-red-500' : 'border-gray-300'
-                          } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
+                        className={`w-full p-3 border ${
+                          errors.phoneNumber
+                            ? 'border-red-500'
+                            : 'border-gray-300'
+                        } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all`}
                       />
                       {errors.phoneNumber && (
                         <p className="text-red-500 text-xs mt-1">
@@ -414,7 +527,10 @@ const UsermanagementDashboard = () => {
                             type="file"
                             name="photo"
                             onChange={(event) => {
-                              setFieldValue('photo', event.currentTarget.files[0]);
+                              setFieldValue(
+                                'photo',
+                                event.currentTarget.files[0]
+                              );
                             }}
                             className="hidden"
                             accept="image/*"
@@ -450,25 +566,31 @@ const UsermanagementDashboard = () => {
                 <div className="bg-white rounded-xl w-full max-w-md p-6 shadow-xl">
                   <div className="flex flex-col items-center text-center">
                     {notification.type === 'success' ? (
-                      <svg className="w-16 h-16 text-green-500 mb-4" /*...*/ >
+                      <svg className="w-16 h-16 text-green-500 mb-4" /*...*/>
                         {/* Success icon */}
                       </svg>
                     ) : (
-                      <svg className="w-16 h-16 text-red-500 mb-4" /*...*/ >
+                      <svg className="w-16 h-16 text-red-500 mb-4" /*...*/>
                         {/* Error icon */}
                       </svg>
                     )}
-                    <h3 className={`text-xl font-semibold mb-2 ${notification.type === 'success' ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                    <h3
+                      className={`text-xl font-semibold mb-2 ${
+                        notification.type === 'success'
+                          ? 'text-green-600'
+                          : 'text-red-600'
+                      }`}
+                    >
                       {notification.type === 'success' ? 'Success!' : 'Error!'}
                     </h3>
                     <p className="text-gray-600 mb-6">{notification.message}</p>
                     <button
                       onClick={closeNotification}
-                      className={`px-6 py-2 rounded-lg text-white font-medium ${notification.type === 'success'
-                        ? 'bg-green-500 hover:bg-green-600'
-                        : 'bg-red-500 hover:bg-red-600'
-                        }`}
+                      className={`px-6 py-2 rounded-lg text-white font-medium ${
+                        notification.type === 'success'
+                          ? 'bg-green-500 hover:bg-green-600'
+                          : 'bg-red-500 hover:bg-red-600'
+                      }`}
                     >
                       Close
                     </button>
@@ -485,7 +607,6 @@ const UsermanagementDashboard = () => {
         onClose={() => setShowOtpModal(false)}
         staffId={registeredStaffEmail}
       />
-
     </div>
   );
 };

@@ -3,6 +3,8 @@ import { MdAddCircle, MdClose } from 'react-icons/md';
 import { FaEye, FaCheckCircle, FaTimesCircle } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import { AdminApi } from '../../../Services/AdminApi';
+import usePermissions, { PERMISSIONS } from '../../../Hooks/userPermission';
+import TokenService from '../../../Config/tokenService';
 
 const NotificationModal = ({ isOpen, onClose, type, message }) => {
   if (!isOpen) return null;
@@ -227,6 +229,29 @@ const TermsModal = ({ isOpen, onClose, title }) => {
 
 const TermsandConditionDashboard = () => {
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();
+  
+  // Remove role-based checks and rely solely on permissions
+  const hasMinimumPermission = () => {
+    const minimumPermissions = [
+      PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+      PERMISSIONS.CREATE_TERMS_AND_CONDITIONS,
+      PERMISSIONS.VIEW_GENERAL_TERMS,
+      PERMISSIONS.VIEW_PAYMENT_TERMS,
+      PERMISSIONS.VIEW_COMPLETION_TERMS,
+      PERMISSIONS.VIEW_QUOTATION_TERMS,
+      PERMISSIONS.VIEW_WARRANTY_TERMS,
+    ];
+
+    return minimumPermissions.some((permission) => hasPermission(permission));
+  };
+
+  useEffect(() => {
+    if (!hasMinimumPermission()) {
+      navigate('/unauthorized');
+    }
+  }, [navigate]);
+
   const [modalConfig, setModalConfig] = useState({
     isOpen: false,
     title: '',
@@ -279,65 +304,88 @@ const TermsandConditionDashboard = () => {
   const sections = [
     {
       title: 'General Terms & Conditions',
+      addPermissions: [
+        PERMISSIONS.CREATE_GENERAL_TERMS,
+        PERMISSIONS.CREATE_TERMS_AND_CONDITIONS,
+      ],
+      viewPermissions: [
+        PERMISSIONS.VIEW_GENERAL_TERMS,
+        PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+      ],
       addCount: counts.generalTerms,
       viewPath: '/admin/general-terms',
     },
     {
       title: 'Payment Terms',
+      addPermissions: [
+        PERMISSIONS.CREATE_PAYMENT_TERMS,
+        PERMISSIONS.CREATE_TERMS_AND_CONDITIONS,
+      ],
+      viewPermissions: [
+        PERMISSIONS.VIEW_PAYMENT_TERMS,
+        PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+      ],
       addCount: counts.paymentTerms,
       viewPath: '/admin/payment-terms',
     },
     {
       title: 'Completion & Delivery',
+      addPermissions: [
+        PERMISSIONS.CREATE_COMPLETION_TERMS,
+        PERMISSIONS.CREATE_TERMS_AND_CONDITIONS,
+      ],
+      viewPermissions: [
+        PERMISSIONS.VIEW_COMPLETION_TERMS,
+        PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+      ],
       addCount: counts.completionTerms,
       viewPath: '/admin/completion-delivery',
     },
     {
       title: 'Quotation Validity',
+      addPermissions: [
+        PERMISSIONS.CREATE_QUOTATION_TERMS,
+        PERMISSIONS.CREATE_TERMS_AND_CONDITIONS,
+      ],
+      viewPermissions: [
+        PERMISSIONS.VIEW_QUOTATION_TERMS,
+        PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+      ],
       addCount: counts.quotationTerms,
       viewPath: '/admin/quotation-validity',
     },
     {
       title: 'Warranty',
+      addPermissions: [
+        PERMISSIONS.CREATE_WARRANTY_TERMS,
+        PERMISSIONS.CREATE_TERMS_AND_CONDITIONS,
+      ],
+      viewPermissions: [
+        PERMISSIONS.VIEW_WARRANTY_TERMS,
+        PERMISSIONS.VIEW_TERMS_AND_CONDITIONS,
+      ],
       addCount: counts.warrantyTerms,
       viewPath: '/admin/warranty-terms',
     },
   ];
 
-  const handleAddClick = (title) => {
-    setModalConfig({
-      isOpen: true,
-      title: title,
-    });
+  // Debug log for section visibility
+  const shouldShowSection = (section) => {
+    const hasAddPermission = section.addPermissions.some((perm) =>
+      hasPermission(perm)
+    );
+    const hasViewPermission = section.viewPermissions.some((perm) =>
+      hasPermission(perm)
+    );
+
+    // Show section if user has either view or add permissions
+    return hasViewPermission || hasAddPermission;
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="w-16 h-16 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <p className="text-red-500 text-lg mb-4">{error}</p>
-          <button
-            onClick={fetchCounts}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
-      </div>
-    );
-  }
-
+  // Update the Add Card rendering condition
   return (
     <div className="w-full flex">
-      <div className="main-content w-full h-full ">
+      <div className="main-content w-full h-full">
         {/* Title Section */}
         <div className="w-full h-[12vh] flex items-center justify-center px-8">
           <h1 className="text-[2rem] font-bold text-gray-800">
@@ -348,7 +396,7 @@ const TermsandConditionDashboard = () => {
         {/* Sections Grid */}
         <div className="p-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {sections.map((section, index) => (
+            {filteredSections.map((section, index) => (
               <div key={index} className="bg-white p-6 rounded-xl shadow-sm">
                 <h2 className="text-xl font-semibold text-gray-800 mb-6 pb-2 border-b">
                   {section.title}
@@ -356,35 +404,39 @@ const TermsandConditionDashboard = () => {
 
                 <div className="flex gap-4 justify-between">
                   {/* Add Card */}
-                  <div
-                    onClick={() => handleAddClick(section.title)}
-                    className="flex-1 bg-white rounded-xl border hover:border-blue-500 p-6 cursor-pointer 
+                  {shouldShowSection(section) && (
+                    <div
+                      onClick={() => handleAddClick(section.title)}
+                      className="flex-1 bg-white rounded-xl border hover:border-blue-500 p-6 cursor-pointer 
                               group transition-all duration-300 flex flex-col items-center justify-center"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-3">
-                      <MdAddCircle className="text-blue-500 text-2xl" />
+                    >
+                      <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center mb-3">
+                        <MdAddCircle className="text-blue-500 text-2xl" />
+                      </div>
+                      <span className="text-gray-600 font-medium group-hover:text-blue-500 transition-colors">
+                        Add
+                      </span>
                     </div>
-                    <span className="text-gray-600 font-medium group-hover:text-blue-500 transition-colors">
-                      Add
-                    </span>
-                  </div>
+                  )}
 
                   {/* View Card */}
-                  <div
-                    onClick={() => navigate(section.viewPath)}
-                    className="flex-1 bg-white rounded-xl border hover:border-green-500 p-6 cursor-pointer 
+                  {shouldShowSection(section) && (
+                    <div
+                      onClick={() => navigate(section.viewPath)}
+                      className="flex-1 bg-white rounded-xl border hover:border-green-500 p-6 cursor-pointer 
                               group transition-all duration-300 flex flex-col items-center justify-center"
-                  >
-                    <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-3">
-                      <FaEye className="text-green-500 text-2xl" />
+                    >
+                      <div className="w-12 h-12 rounded-full bg-green-50 flex items-center justify-center mb-3">
+                        <FaEye className="text-green-500 text-2xl" />
+                      </div>
+                      <span className="text-2xl font-bold text-gray-800 mb-1">
+                        {section.addCount}
+                      </span>
+                      <span className="text-gray-600 font-medium group-hover:text-green-500 transition-colors">
+                        View
+                      </span>
                     </div>
-                    <span className="text-2xl font-bold text-gray-800 mb-1">
-                      {section.addCount}
-                    </span>
-                    <span className="text-gray-600 font-medium group-hover:text-green-500 transition-colors">
-                      View
-                    </span>
-                  </div>
+                  )}
                 </div>
               </div>
             ))}

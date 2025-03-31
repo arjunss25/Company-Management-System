@@ -12,6 +12,10 @@ import LoadingSpinner from '../../../Common/LoadingSpinner';
 import SuccessModal from '../../../Common/SuccessModal';
 import CancelConfirmationModal from '../CancelConfirmationModal';
 import { CiFileOn } from 'react-icons/ci';
+import usePermissions from '../../../../Hooks/userPermission';
+import { PERMISSIONS } from '../../../../Hooks/userPermission';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
 
 const InvoicePending = () => {
   const navigate = useNavigate();
@@ -35,6 +39,8 @@ const InvoicePending = () => {
 
   // Add new state for date filter loading
   const [isDateFilterLoading, setIsDateFilterLoading] = useState(false);
+
+  const { hasPermission } = usePermissions();
 
   useEffect(() => {
     // Only fetch all quotations when there are no date filters
@@ -136,30 +142,17 @@ const InvoicePending = () => {
     return statusColors[status] || statusColors.default;
   };
 
-  const handlePrintPDF = async (quotationId) => {
-    try {
-      setLoadingPdfId(quotationId);
-      const response = await axiosInstance.get(
-        `/download-quotation-pdf/${quotationId}/`,
-        {
-          responseType: 'blob',
-        }
-      );
-
-      const file = new Blob([response.data], { type: 'application/pdf' });
-      const fileURL = URL.createObjectURL(file);
-      window.open(fileURL);
-      URL.revokeObjectURL(fileURL);
-    } catch (error) {
-      console.error('Error downloading PDF:', error);
-    } finally {
-      setLoadingPdfId(null);
+  const handleEdit = (quotation) => {
+    if (hasPermission(PERMISSIONS.EDIT_INVOICE_PENDING)) {
+      navigate(`/edit-work-details/${quotation.id}`);
     }
   };
 
   const handleCancel = (quotation) => {
-    setQuotationToCancel(quotation);
-    setIsCancelModalOpen(true);
+    if (hasPermission(PERMISSIONS.DELETE_INVOICE_PENDING)) {
+      setQuotationToCancel(quotation);
+      setIsCancelModalOpen(true);
+    }
   };
 
   const handleConfirmCancel = async () => {
@@ -195,6 +188,26 @@ const InvoicePending = () => {
       setIsCancelModalOpen(false);
       setQuotationToCancel(null);
       setIsResultModalOpen(true);
+    }
+  };
+
+  const handlePrintPDF = async (quotationId) => {
+    if (hasPermission(PERMISSIONS.EXPORT_INVOICE_PENDING)) {
+      try {
+        setLoadingPdfId(quotationId);
+        const response = await axiosInstance.get(
+          `/download-quotation-pdf/${quotationId}/`,
+          { responseType: 'blob' }
+        );
+        const file = new Blob([response.data], { type: 'application/pdf' });
+        const fileURL = URL.createObjectURL(file);
+        window.open(fileURL);
+        URL.revokeObjectURL(fileURL);
+      } catch (error) {
+        console.error('Error downloading PDF:', error);
+      } finally {
+        setLoadingPdfId(null);
+      }
     }
   };
 
@@ -235,7 +248,10 @@ const InvoicePending = () => {
     }
 
     for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(i);
+      pageNumbers.push({
+        number: i,
+        key: `page-${i}`,
+      });
     }
     return pageNumbers;
   };
@@ -412,30 +428,114 @@ const InvoicePending = () => {
                         <td className="px-8 py-5 text-center whitespace-nowrap">
                           <div className="flex items-center space-x-4">
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
+                              data-tooltip-id="action-tooltip"
+                              data-tooltip-content={
+                                !hasPermission(PERMISSIONS.EDIT_INVOICE_PENDING)
+                                  ? "You don't have permission to edit invoice pending quotations"
+                                  : ''
+                              }
+                              whileHover={
+                                hasPermission(PERMISSIONS.EDIT_INVOICE_PENDING)
+                                  ? { scale: 1.1 }
+                                  : {}
+                              }
+                              whileTap={
+                                hasPermission(PERMISSIONS.EDIT_INVOICE_PENDING)
+                                  ? { scale: 0.95 }
+                                  : {}
+                              }
                               onClick={() => handleEdit(quotation)}
-                              className="p-2 rounded-lg bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors duration-300"
+                              disabled={
+                                !hasPermission(PERMISSIONS.EDIT_INVOICE_PENDING)
+                              }
+                              className={`p-2 rounded-lg transition-colors duration-300 ${
+                                hasPermission(PERMISSIONS.EDIT_INVOICE_PENDING)
+                                  ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                  : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                              }`}
                             >
                               <FiEdit size={18} />
                             </motion.button>
+
                             {!quotation.is_cancelled && (
                               <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
+                                data-tooltip-id="action-tooltip"
+                                data-tooltip-content={
+                                  !hasPermission(
+                                    PERMISSIONS.DELETE_INVOICE_PENDING
+                                  )
+                                    ? "You don't have permission to cancel invoice pending quotations"
+                                    : ''
+                                }
+                                whileHover={
+                                  hasPermission(
+                                    PERMISSIONS.DELETE_INVOICE_PENDING
+                                  )
+                                    ? { scale: 1.1 }
+                                    : {}
+                                }
+                                whileTap={
+                                  hasPermission(
+                                    PERMISSIONS.DELETE_INVOICE_PENDING
+                                  )
+                                    ? { scale: 0.95 }
+                                    : {}
+                                }
                                 onClick={() => handleCancel(quotation)}
-                                className="p-2 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition-colors duration-300"
+                                disabled={
+                                  !hasPermission(
+                                    PERMISSIONS.DELETE_INVOICE_PENDING
+                                  )
+                                }
+                                className={`p-2 rounded-lg transition-colors duration-300 ${
+                                  hasPermission(
+                                    PERMISSIONS.DELETE_INVOICE_PENDING
+                                  )
+                                    ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                    : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                }`}
                               >
                                 <FcCancel size={18} />
                               </motion.button>
                             )}
+
                             <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.95 }}
+                              data-tooltip-id="action-tooltip"
+                              data-tooltip-content={
+                                !hasPermission(
+                                  PERMISSIONS.EXPORT_INVOICE_PENDING
+                                )
+                                  ? "You don't have permission to export invoice pending quotations"
+                                  : loadingPdfId === quotation.id
+                                  ? 'Generating PDF...'
+                                  : ''
+                              }
+                              whileHover={
+                                hasPermission(
+                                  PERMISSIONS.EXPORT_INVOICE_PENDING
+                                ) && !loadingPdfId
+                                  ? { scale: 1.1 }
+                                  : {}
+                              }
+                              whileTap={
+                                hasPermission(
+                                  PERMISSIONS.EXPORT_INVOICE_PENDING
+                                ) && !loadingPdfId
+                                  ? { scale: 0.95 }
+                                  : {}
+                              }
                               onClick={() => handlePrintPDF(quotation.id)}
-                              disabled={loadingPdfId === quotation.id}
+                              disabled={
+                                !hasPermission(
+                                  PERMISSIONS.EXPORT_INVOICE_PENDING
+                                ) || loadingPdfId === quotation.id
+                              }
                               className={`p-2 rounded-lg transition-colors duration-300 ${
-                                loadingPdfId === quotation.id
+                                !hasPermission(
+                                  PERMISSIONS.EXPORT_INVOICE_PENDING
+                                )
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                  : loadingPdfId === quotation.id
                                   ? 'bg-gray-100 cursor-not-allowed'
                                   : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                               }`}
@@ -468,6 +568,12 @@ const InvoicePending = () => {
                               )}
                             </motion.button>
                           </div>
+
+                          <Tooltip
+                            id="action-tooltip"
+                            place="top"
+                            className="!bg-gray-900 text-white px-3 py-2 rounded-lg text-sm"
+                          />
                         </td>
                       </motion.tr>
                     ))}
@@ -492,17 +598,17 @@ const InvoicePending = () => {
                   >
                     Previous
                   </button>
-                  {getPageNumbers().map((number) => (
+                  {getPageNumbers().map((page) => (
                     <button
-                      key={number}
-                      onClick={() => setCurrentPage(number)}
+                      key={page.key}
+                      onClick={() => setCurrentPage(page.number)}
                       className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
-                        currentPage === number
+                        currentPage === page.number
                           ? 'bg-blue-600 text-white'
                           : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
                       }`}
                     >
-                      {number}
+                      {page.number}
                     </button>
                   ))}
                   <button

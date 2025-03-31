@@ -4,9 +4,13 @@ import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { AdminApi } from '../../../Services/AdminApi';
 import StaffEditModal from './StaffEditModal';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
+import usePermissions, { PERMISSIONS } from '../../../Hooks/userPermission';  // Make sure this import is correct
 
 const Staffdetails = () => {
   const navigate = useNavigate();
+  const { hasPermission } = usePermissions();  // Add this line
   const [staffData, setStaffData] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -37,16 +41,38 @@ const Staffdetails = () => {
     }
   };
 
+  // Update the click handlers to check permissions
+  const handleUserRightsClick = (staff) => {
+    if (hasPermission(PERMISSIONS.MANAGE_USER_PERMISSIONS)) {
+      navigate('/admin/user-rights/:userId', {
+        state: {
+          staffId: staff.user,
+          staffName: staff.username,
+          role: staff.role,
+        },
+      });
+    }
+  };
+  
+  const handleEditClick = (staff) => {
+    if (hasPermission(PERMISSIONS.EDIT_USER)) {
+      setSelectedStaff(staff);
+      setEditModalOpen(true);
+    }
+  };
+  
   const handleDeleteStaff = async (staffId) => {
+    if (!hasPermission(PERMISSIONS.DELETE_USER)) return;
+    
     if (window.confirm('Are you sure you want to delete this staff member?')) {
       try {
         // Verify the staff ID being used
         console.log('Deleting staff with ID:', staffId); // Add this for debugging
         await AdminApi.deleteStaff(staffId);
-
+  
         // Refresh the list by filtering out the deleted staff
         setStaffData((prev) => prev.filter((staff) => staff.id !== staffId));
-
+  
         setNotification({
           isOpen: true,
           type: 'success',
@@ -61,11 +87,6 @@ const Staffdetails = () => {
         });
       }
     }
-  };
-
-  const handleEditClick = (staff) => {
-    setSelectedStaff(staff);
-    setEditModalOpen(true);
   };
   const handleSaveChanges = async (updatedData, tabType) => {
     try {
@@ -238,37 +259,65 @@ const Staffdetails = () => {
                           {staff.date_of_registration}
                         </span>
                       </td>
+                     
                       <td className="px-8 py-5">
                         <div className="flex space-x-2">
                           <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() =>
-                              navigate('/admin/user-rights/:userId', {
-                                state: {
-                                  staffId: staff.user,
-                                  staffName: staff.username,
-                                  role: staff.role,
-                                },
-                              })
+                            data-tooltip-id="action-tooltip"
+                            data-tooltip-content={
+                              !hasPermission(PERMISSIONS.MANAGE_USER_PERMISSIONS)
+                                ? "You don't have permission to manage user rights"
+                                : ''
                             }
-                            className="px-4 py-2 text-yellow-500 border border-yellow-500 rounded-lg hover:bg-yellow-50 transition-colors duration-300"
+                            whileHover={hasPermission(PERMISSIONS.MANAGE_USER_PERMISSIONS) ? { scale: 1.05 } : {}}
+                            whileTap={hasPermission(PERMISSIONS.MANAGE_USER_PERMISSIONS) ? { scale: 0.95 } : {}}
+                            onClick={() => handleUserRightsClick(staff)}
+                            disabled={!hasPermission(PERMISSIONS.MANAGE_USER_PERMISSIONS)}
+                            className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
+                              hasPermission(PERMISSIONS.MANAGE_USER_PERMISSIONS)
+                                ? 'text-yellow-500 border border-yellow-500 hover:bg-yellow-50'
+                                : 'text-gray-400 border border-gray-300 cursor-not-allowed bg-gray-50'
+                            }`}
                           >
                             User Rights
                           </motion.button>
+                      
                           <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            data-tooltip-id="action-tooltip"
+                            data-tooltip-content={
+                              !hasPermission(PERMISSIONS.EDIT_USER)
+                                ? "You don't have permission to edit users"
+                                : ''
+                            }
+                            whileHover={hasPermission(PERMISSIONS.EDIT_USER) ? { scale: 1.05 } : {}}
+                            whileTap={hasPermission(PERMISSIONS.EDIT_USER) ? { scale: 0.95 } : {}}
                             onClick={() => handleEditClick(staff)}
-                            className="px-4 py-2 text-blue-500 border border-blue-500 rounded-lg hover:bg-blue-50 transition-colors duration-300"
+                            disabled={!hasPermission(PERMISSIONS.EDIT_USER)}
+                            className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
+                              hasPermission(PERMISSIONS.EDIT_USER)
+                                ? 'text-blue-500 border border-blue-500 hover:bg-blue-50'
+                                : 'text-gray-400 border border-gray-300 cursor-not-allowed bg-gray-50'
+                            }`}
                           >
                             Edit
                           </motion.button>
+                      
                           <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            data-tooltip-id="action-tooltip"
+                            data-tooltip-content={
+                              !hasPermission(PERMISSIONS.DELETE_USER)
+                                ? "You don't have permission to delete users"
+                                : ''
+                            }
+                            whileHover={hasPermission(PERMISSIONS.DELETE_USER) ? { scale: 1.05 } : {}}
+                            whileTap={hasPermission(PERMISSIONS.DELETE_USER) ? { scale: 0.95 } : {}}
                             onClick={() => handleDeleteStaff(staff.id)}
-                            className="px-4 py-2 text-red-500 border border-red-500 rounded-lg hover:bg-red-50 transition-colors duration-300"
+                            disabled={!hasPermission(PERMISSIONS.DELETE_USER)}
+                            className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
+                              hasPermission(PERMISSIONS.DELETE_USER)
+                                ? 'text-red-500 border border-red-500 hover:bg-red-50'
+                                : 'text-gray-400 border border-gray-300 cursor-not-allowed bg-gray-50'
+                            }`}
                           >
                             Delete
                           </motion.button>
@@ -303,6 +352,12 @@ const Staffdetails = () => {
           onSave={handleSaveChanges}
         />
       )}
+      {/* Add Tooltip inside the return statement */}
+      <Tooltip
+        id="action-tooltip"
+        place="top"
+        className="!bg-gray-900 text-white px-3 py-2 rounded-lg text-sm"
+      />
     </div>
   );
 };

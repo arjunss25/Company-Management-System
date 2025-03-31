@@ -5,6 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import LocationEditModal from './LocationEditModal';
 import usePermissions, { PERMISSIONS } from '../../../Hooks/userPermission';
 import { AdminApi } from '../../../Services/AdminApi';
+import { Tooltip } from 'react-tooltip';
+import 'react-tooltip/dist/react-tooltip.css';
+import { FiEdit } from 'react-icons/fi';
+import { MdDelete } from 'react-icons/md';
 
 // Delete Confirmation Modal Component
 const DeleteConfirmationModal = ({
@@ -99,6 +103,7 @@ const LocationTable = () => {
   const [editError, setEditError] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const locationsPerPage = 10;
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -108,9 +113,17 @@ const LocationTable = () => {
   const fetchLocations = async () => {
     try {
       setIsLoading(true);
-      const response = await AdminApi.listLocations();
+      const response = await AdminApi.listLocations({
+        page: currentPage,
+        page_size: locationsPerPage,
+      });
+
       if (response.status === 'Success') {
         setLocations(response.data || []);
+        // Calculate total pages based on total count from API
+        const totalCount =
+          parseInt(response.total_count) || response.data.length;
+        setTotalPages(Math.ceil(totalCount / locationsPerPage));
       } else {
         setError('Failed to fetch locations');
       }
@@ -214,10 +227,25 @@ const LocationTable = () => {
     indexOfFirstLocation,
     indexOfLastLocation
   );
-  const totalPages = Math.ceil(locations.length / locationsPerPage);
 
-  const handlePageChange = (pageNumber) => {
-    setCurrentPage(pageNumber);
+  const getPageNumbers = () => {
+    const pageNumbers = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(1, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = startPage + maxVisiblePages - 1;
+
+    if (endPage > totalPages) {
+      endPage = totalPages;
+      startPage = Math.max(1, endPage - maxVisiblePages + 1);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push({
+        number: i,
+        key: `page-${i}`,
+      });
+    }
+    return pageNumbers;
   };
 
   if (isLoading) {
@@ -311,32 +339,72 @@ const LocationTable = () => {
                           {location.location_name}
                         </span>
                       </td>
-                      <td className="px-8 py-5 space-x-2 flex gap-2">
-                        {hasPermission(PERMISSIONS.EDIT_LOCATION) && (
+                      <td className="px-8 py-5">
+                        <div className="flex items-center space-x-4 justify-center">
                           <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            data-tooltip-id="action-tooltip"
+                            data-tooltip-content={
+                              !hasPermission(PERMISSIONS.EDIT_LOCATION)
+                                ? "You don't have permission to edit locations"
+                                : ''
+                            }
+                            whileHover={
+                              hasPermission(PERMISSIONS.EDIT_LOCATION)
+                                ? { scale: 1.1 }
+                                : {}
+                            }
+                            whileTap={
+                              hasPermission(PERMISSIONS.EDIT_LOCATION)
+                                ? { scale: 0.95 }
+                                : {}
+                            }
                             onClick={() => handleEdit(index)}
-                            className="px-3 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-700 transition-colors duration-300"
+                            disabled={!hasPermission(PERMISSIONS.EDIT_LOCATION)}
+                            className={`p-2 rounded-lg transition-colors duration-300 ${
+                              hasPermission(PERMISSIONS.EDIT_LOCATION)
+                                ? 'bg-blue-50 text-blue-600 hover:bg-blue-100'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
                           >
-                            Edit
+                            <FiEdit size={18} />
                           </motion.button>
-                        )}
-                        {hasPermission(PERMISSIONS.DELETE_LOCATION) && (
+
                           <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
+                            data-tooltip-id="action-tooltip"
+                            data-tooltip-content={
+                              !hasPermission(PERMISSIONS.DELETE_LOCATION)
+                                ? "You don't have permission to delete locations"
+                                : ''
+                            }
+                            whileHover={
+                              hasPermission(PERMISSIONS.DELETE_LOCATION)
+                                ? { scale: 1.1 }
+                                : {}
+                            }
+                            whileTap={
+                              hasPermission(PERMISSIONS.DELETE_LOCATION)
+                                ? { scale: 0.95 }
+                                : {}
+                            }
                             onClick={() => handleDelete(index)}
-                            disabled={isDeleting}
-                            className={`px-3 py-2 ${
-                              isDeleting
-                                ? 'bg-gray-400 cursor-not-allowed'
-                                : 'bg-red-500 hover:bg-red-700'
-                            } text-white rounded-lg transition-colors duration-300`}
+                            disabled={
+                              !hasPermission(PERMISSIONS.DELETE_LOCATION)
+                            }
+                            className={`p-2 rounded-lg transition-colors duration-300 ${
+                              hasPermission(PERMISSIONS.DELETE_LOCATION)
+                                ? 'bg-red-50 text-red-600 hover:bg-red-100'
+                                : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                            }`}
                           >
-                            {isDeleting ? 'Deleting...' : 'Delete'}
+                            <MdDelete size={18} />
                           </motion.button>
-                        )}
+                        </div>
+
+                        <Tooltip
+                          id="action-tooltip"
+                          place="top"
+                          className="!bg-gray-900 text-white px-3 py-2 rounded-lg text-sm"
+                        />
                       </td>
                     </motion.tr>
                   ))}
@@ -357,48 +425,52 @@ const LocationTable = () => {
             )}
 
             {/* Pagination */}
-            {locations.length > locationsPerPage && (
+            {locations.length > 0 && (
               <div className="px-8 py-5 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
-                <div className="text-sm text-gray-500">
-                  Showing {indexOfFirstLocation + 1} to{' '}
-                  {Math.min(indexOfLastLocation, locations.length)} of{' '}
-                  {locations.length} locations
+                <div className="text-sm text-gray-600">
+                  Page {currentPage} of {totalPages || 1}
                 </div>
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={() => handlePageChange(currentPage - 1)}
+                    onClick={() =>
+                      setCurrentPage((prev) => Math.max(1, prev - 1))
+                    }
                     disabled={currentPage === 1}
-                    className={`px-4 py-2 rounded-lg border ${
+                    className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
                       currentPage === 1
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300'
-                    } transition-all duration-300`}
+                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                    }`}
                   >
                     Previous
                   </button>
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (pageNumber) => (
-                      <button
-                        key={pageNumber}
-                        onClick={() => handlePageChange(pageNumber)}
-                        className={`px-4 py-2 rounded-lg ${
-                          currentPage === pageNumber
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
-                        } transition-all duration-300`}
-                      >
-                        {pageNumber}
-                      </button>
-                    )
-                  )}
+
+                  {getPageNumbers().map((page) => (
+                    <button
+                      key={page.key}
+                      onClick={() => setCurrentPage(page.number)}
+                      className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
+                        currentPage === page.number
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                      }`}
+                    >
+                      {page.number}
+                    </button>
+                  ))}
+
                   <button
-                    onClick={() => handlePageChange(currentPage + 1)}
-                    disabled={currentPage === totalPages}
-                    className={`px-4 py-2 rounded-lg border ${
-                      currentPage === totalPages
+                    onClick={() =>
+                      setCurrentPage((prev) =>
+                        Math.min(totalPages || 1, prev + 1)
+                      )
+                    }
+                    disabled={currentPage === (totalPages || 1)}
+                    className={`px-4 py-2 rounded-lg transition-colors duration-300 ${
+                      currentPage === (totalPages || 1)
                         ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                        : 'bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300'
-                    } transition-all duration-300`}
+                        : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+                    }`}
                   >
                     Next
                   </button>
